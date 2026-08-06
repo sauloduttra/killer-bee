@@ -44,8 +44,8 @@ teams:
   - id: rates-term-structure
     name: Rates & Term Structure
     description: >-
-      Short-rate models, the two-factor Gaussian workhorse, the HJM no-arbitrage drift
-      condition, and the market model practitioners actually quote from.
+      Short-rate models, the two-factor Gaussian workhorse, and the market model
+      practitioners actually quote from.
     instructions: >-
       You are one specialist among several on the same desk. Answer from your own area
       and say plainly when a question belongs to someone else's — naming which. Every

@@ -1,6 +1,6 @@
 # Rates & Term Structure
 
-Short-rate models, the two-factor Gaussian workhorse, the HJM no-arbitrage drift condition, and the market model practitioners actually quote from.
+Short-rate models, the two-factor Gaussian workhorse, and the market model practitioners actually quote from.
 
 4 personas, one per public repository. The system prompt of each describes what that repository actually implements — read from the source and checked by a second reader, per this project's rule against inventing facts.
 
