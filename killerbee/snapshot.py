@@ -5,9 +5,9 @@ Schema-alvo verificado no fonte @ ed4b3e7a:
 - `AgentSnapshot` — agent_snapshot.rs:163-175: `format`, `version`, `definition`,
   `profile`, `memory`; serde `rename_all = "camelCase"`.
 - `definition` — campos materializados por `build_snapshot`
-  (agent_snapshot.rs:188-211): name, sourceIsBuiltIn, systemPrompt, runtime,
-  model, provider, parallelism, respondTo, respondToAllowlist, namePool,
-  idleTimeoutSeconds, maxTurnDurationSeconds.
+  (agent_snapshot.rs:188-213; struct em :92-120): name, sourceIsBuiltIn,
+  systemPrompt, runtime, model, provider, parallelism, respondTo,
+  respondToAllowlist, namePool, idleTimeoutSeconds, maxTurnDurationSeconds.
 - `profile` — displayName, about, avatarDataUrl, avatarUrl.
 - `memory` — level (snake_case: none|core|everything) + entries
   (agent_snapshot.rs:142-157). Emitimos sempre `level: "none"` — pack de
@@ -16,7 +16,7 @@ Schema-alvo verificado no fonte @ ed4b3e7a:
   description?, instructions?}, members: Vec<AgentSnapshot> — EMBUTIDOS.
 
 Detalhe fiel ao emissor upstream: `definition.name` recebe o display name
-(agent_snapshot.rs:195-198 usa display_name com fallback para name), não o slug.
+(agent_snapshot.rs:198-201 usa display_name com fallback para name), não o slug.
 """
 
 from __future__ import annotations
@@ -37,13 +37,15 @@ def agent_snapshot(persona: Persona) -> dict:
         "systemPrompt": persona.system_prompt,
         "parallelism": compiled["parallelism"],
         "respondTo": compiled["respondTo"],
-        "respondToAllowlist": [],
-        "namePool": [],
         "idleTimeoutSeconds": compiled["idleTimeoutSeconds"],
         "maxTurnDurationSeconds": compiled["maxTurnDurationSeconds"],
     }
     # Opcionais entram só quando existem — espelha o skip_serializing_if do
-    # emissor Rust e evita afirmar `null` onde o upstream omitiria.
+    # emissor Rust e evita afirmar valor onde o upstream omitiria. Isso inclui
+    # respondToAllowlist e namePool: `skip_serializing_if = "Vec::is_empty"`
+    # (agent_snapshot.rs:112-115) — a versão anterior os emitia sempre como [],
+    # divergindo do exportador de referência (o import aceita os dois jeitos;
+    # o §10.9 observou o preview do app descartando os [] na reserialização).
     if persona.runtime:
         definition["runtime"] = persona.runtime
     if model_id:

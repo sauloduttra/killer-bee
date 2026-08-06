@@ -87,8 +87,8 @@ O bônus: campo nativo *faz* alguma coisa — um metadado inerte não faria.
 
 | Traço | Valores | Alvo nativo | Citação do alvo | Semântica |
 |---|---|---|---|---|
-| `recruitment` | inteiro `1..=32` | `definition.parallelism` | faixa e default em `types.rs:812` | mapeamento **direto**, sem tradução — a faixa é a do campo nativo |
-| `persistence` | `short` / `medium` / `long` | `definition.idleTimeoutSeconds` + `definition.maxTurnDurationSeconds` | campos em `agent_snapshot.rs:188-211` | `short`=300/600s · `medium`=900/1800s · `long`=3600/7200s |
+| `recruitment` | inteiro `1..=32` | `definition.parallelism` | default em `types.rs:812`; faixa `1..=32` validada em `types.rs:967` | mapeamento **direto**, sem tradução — a faixa é a do campo nativo |
+| `persistence` | `short` / `medium` / `long` | `definition.idleTimeoutSeconds` + `definition.maxTurnDurationSeconds` | campos em `agent_snapshot.rs:188-213` (struct `:116-119`) | `short`=300/600s · `medium`=900/1800s · `long`=3600/7200s |
 | `threshold` (eixo **quem**) | `low` / `medium` / `high` | `definition.respondTo` | valores válidos `{owner-only, allowlist, anyone}` no import (§10.8) | `low`/`medium`→`anyone` · `high`→`owner-only` |
 | `threshold` (eixo **o quê**) | idem | `require_mention` na regra ACP | `SubscriptionRule` em `filter.rs`; arquivo `TomlConfig{rules}` em `config.rs:1158` | `low`→`false` (reage a tudo no canal) · `medium`/`high`→`true` (só menção) |
 | `propagation` | `low` / `medium` / `high` | **nada** | — | metadado de catálogo (badge no site, sinal de forkabilidade); não existe alvo de runtime |

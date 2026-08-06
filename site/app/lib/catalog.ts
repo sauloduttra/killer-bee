@@ -25,6 +25,16 @@ export interface ScutellataProfile {
   propagation: Propagation;
 }
 
+/** Um artefato baixável: nome + sha256 + tamanho, computados no emissor sobre
+ * os MESMOS bytes que o build grava. O hash publicado ao lado do botão é o que
+ * torna o download verificável — e é o `x` que o card de snapshot do chat do
+ * Buzz exige para habilitar Import (markdownFileCard.ts:101-103). */
+export interface ArtifactFile {
+  name: string;
+  sha256: string;
+  bytes: number;
+}
+
 export interface Persona {
   name: string;
   displayName: string;
@@ -34,6 +44,7 @@ export interface Persona {
   model: string | null;
   runtime: string | null;
   profile: ScutellataProfile;
+  files: ArtifactFile[];
 }
 
 export interface Team {
@@ -42,6 +53,9 @@ export interface Team {
   description: string;
   instructions: string;
   members: string[];
+  /** O snapshot compacto cabe no corpo de um evento kind 30178? (Q-006) */
+  fitsIn30178: boolean;
+  files: ArtifactFile[];
 }
 
 export interface Pack {

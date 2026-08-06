@@ -111,9 +111,15 @@ export function CatalogBrowser({ packs, tags }: { packs: Pack[]; tags: string[] 
 
         {tags.length > 0 && (
           <div className="filters" role="group" aria-label="Filter by tag">
+            {/* aria-pressed é o estado REAL do toggle — data-on é só tinta.
+                Sem ele, leitor de tela anuncia um botão comum e o usuário não
+                sabe qual filtro está ativo (WCAG 4.1.2). Em forced-colors o
+                fundo some, então o CSS também desenha o estado por
+                [aria-pressed] em vez de só cor. */}
             <button
               type="button"
               data-on={activeTag === null || undefined}
+              aria-pressed={activeTag === null}
               onClick={() => setActiveTag(null)}
             >
               All
@@ -123,6 +129,7 @@ export function CatalogBrowser({ packs, tags }: { packs: Pack[]; tags: string[] 
                 key={tag}
                 type="button"
                 data-on={activeTag === tag || undefined}
+                aria-pressed={activeTag === tag}
                 onClick={() => setActiveTag(activeTag === tag ? null : tag)}
               >
                 {tag}

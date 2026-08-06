@@ -1,15 +1,16 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { REPO_URL } from "@/app/lib/install";
+import { SITE_URL } from "@/app/lib/site";
 import "./globals.css";
 
 /**
- * `metadataBase` é **https por construção**. O defeito nº 2 que atribuímos ao
+ * `metadataBase` é **https por construção** e vem de `lib/site.ts` — a mesma
+ * constante que alimenta sitemap e robots. O defeito nº 2 que atribuímos ao
  * buzzdir não existia — os metadados dele já eram relativos resolvidos contra uma
  * base https. Mantemos o teste de build que reprova `http://` em metadado assim
  * mesmo: o custo é uma asserção e o modo de falha é silencioso.
  */
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://killerbee-buzz.github.io";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -33,9 +34,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  /* Igual a --stock em globals.css, nos dois temas. Os valores anteriores
+     (#f4ede1/#14100c) eram de uma paleta que não existe mais — a barra do
+     navegador ficava numa cor que a página nunca usa. */
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f4ede1" },
-    { media: "(prefers-color-scheme: dark)", color: "#14100c" },
+    { media: "(prefers-color-scheme: light)", color: "#e3e8df" },
+    { media: "(prefers-color-scheme: dark)", color: "#1a1e19" },
   ],
   colorScheme: "light dark",
 };
@@ -108,6 +112,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <p className="colophon-meta">
             Apache-2.0 · <a href={`${REPO_URL}/blob/main/docs/BIBLIOGRAFIA.md`}>References</a> ·{" "}
             <a href={`${REPO_URL}/blob/main/docs/PROTOCOL-NOTES.md`}>Protocol notes</a>
+          </p>
+          <p className="colophon-meta">
+            Built by Saulo Duttra ·{" "}
+            <a href="https://github.com/sauloduttra">GitHub</a> ·{" "}
+            <a href="https://x.com/sauloduttra">X</a> ·{" "}
+            <a href="https://primal.net/p/nprofile1qqsxwact6elv3edmvdnx88p87ug6hklxrqxzvax360j382gq8s869jsz37dga">
+              Nostr
+            </a>
           </p>
         </footer>
       </body>

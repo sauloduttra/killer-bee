@@ -2,8 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { allPersonaRoutes, getPersona, splitModel } from "@/app/lib/catalog";
-import { AFTER_IMPORT, IMPORT_CLICK_COUNT, agentFileName } from "@/app/lib/install";
+import {
+  AFTER_IMPORT,
+  IMPORT_CLICK_COUNT,
+  agentFileName,
+  downloadHref,
+} from "@/app/lib/install";
 import { VerbatimPrompt } from "@/app/lib/verbatim";
+import { Checksums } from "@/app/components/Checksums";
 import { ProfileMeter } from "@/app/components/ProfileMeter";
 import { CopyButton } from "@/app/components/CopyButton";
 
@@ -23,7 +29,11 @@ export async function generateMetadata({
     title: `${found.persona.displayName} — ${found.pack.name}`,
     description: found.persona.description,
     alternates: { canonical: "./" },
+    // Repete type e siteName porque o openGraph da página SUBSTITUI o do
+    // layout — sem isto as páginas internas os perdiam (auditoria 2026-08-06).
     openGraph: {
+      type: "website",
+      siteName: "Waggle — Killer Bee agent packs for Buzz",
       title: `${found.persona.displayName} — Waggle`,
       description: found.persona.description,
       url: "./",
@@ -135,19 +145,20 @@ export default async function PersonaPage({
         <div className="downloads">
           <a
             className="button"
-            href={`/downloads/${pack.name}/${agentFileName(persona.name, "json")}`}
+            href={downloadHref(pack.name, agentFileName(persona.name, "json"))}
             download
           >
             {agentFileName(persona.name, "json")}
           </a>
           <a
             className="button button-quiet"
-            href={`/downloads/${pack.name}/${agentFileName(persona.name, "png")}`}
+            href={downloadHref(pack.name, agentFileName(persona.name, "png"))}
             download
           >
             {agentFileName(persona.name, "png")}
           </a>
         </div>
+        <Checksums files={persona.files} />
         <p className="install-count">
           Import in Buzz Desktop: <strong>{IMPORT_CLICK_COUNT}</strong>.
         </p>

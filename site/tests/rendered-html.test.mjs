@@ -221,10 +221,153 @@ test("o prompt é verbatim: a sintaxe markdown continua na tela", async () => {
   }
 });
 
+test("a página de pack não promete o atalho de arrastar-e-soltar", async () => {
+  // Regressão de um erro que foi PUBLICADO: o site afirmava que arrastar o
+  // arquivo sobre a seção Agents pulava dois cliques. O Buzz Desktop 0.5.5 não
+  // tem alvo de drop ali — `tauri.conf.json:27` desliga o drop do webview
+  // (`"dragDropEnabled": false`) e a enumeração completa de `onDrop=` em
+  // `desktop/src` não devolve nenhum handler na seção Agents nem no dialog de
+  // import.
+  //
+  // O modo de falha é silencioso: a frase é plausível, não quebra build nenhum,
+  // e só é desmentida por quem tenta. Por isso vira contrato.
+  const html = decodeEntities(await read(join("packs", firstPack.name, "index.html")));
+  for (const claim of [/drag(ging)?\s+(the\s+)?file/i, /skips\s+two/i, /drop\s+it\s+on/i]) {
+    assert.ok(
+      !claim.test(html),
+      `a página de pack voltou a prometer arrastar-e-soltar (${claim}) — o app não suporta`,
+    );
+  }
+  assert.ok(
+    html.includes('Click the "+" card'),
+    'o passo do import tem que citar o card "+", que é o rótulo real da UI',
+  );
+});
+
 test("cada linha do prompt tem endereço próprio", async () => {
   const persona = firstPack.personas[0];
   const html = await read(join("personas", firstPack.name, persona.name, "index.html"));
   const lines = persona.systemPrompt.replace(/\s+$/, "").split("\n").length;
   assert.ok(html.includes('id="L1"'), "faltando a âncora da primeira linha");
   assert.ok(html.includes(`id="L${lines}"`), `faltando a âncora da linha ${lines}`);
+});
+
+/** Todos os .html exportados, recursivamente. */
+async function allHtmlFiles(dir = OUT) {
+  const { readdir: rd } = await import("node:fs/promises");
+  const out = [];
+  for (const entry of await rd(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...(await allHtmlFiles(path)));
+    else if (entry.name.endsWith(".html")) out.push(path);
+  }
+  return out;
+}
+
+test("todo href/src interno resolve para um arquivo do export", async () => {
+  // O teste que faltava e teria pego o 404 dos downloads (auditoria
+  // 2026-08-06, CONFIRMED): os arquivos existiam em out/, mas nenhum teste
+  // conferia que algum href APONTAVA para eles. Com PAGES_BASE_PATH setado
+  // (como no pages.yml), exige também o prefixo em cada link interno — <a>
+  // cru não recebe basePath do Next, então este é o contrato que impede a
+  // regressão.
+  const basePath = process.env.PAGES_BASE_PATH ?? "";
+  const { readFile: rf } = await import("node:fs/promises");
+  let checked = 0;
+  for (const file of await allHtmlFiles()) {
+    const html = await rf(file, "utf8");
+    const refs = [...html.matchAll(/<[a-z][^>]*?(?:href|src)="([^"]+)"[^>]*>/g)]
+      // preconnect/dns-prefetch são hints de ORIGEM (o Next emite href="/")
+      // — não buscam caminho nenhum, então não entram na verificação.
+      .filter((m) => !/rel="(?:preconnect|dns-prefetch)"/.test(m[0]))
+      .map((m) => decodeEntities(m[1]))
+      .filter((u) => u.startsWith("/") && !u.startsWith("//"));
+    for (const url of refs) {
+      assert.ok(
+        basePath === "" || url === basePath || url.startsWith(`${basePath}/`),
+        `${file}: link interno sem o basePath '${basePath}': ${url}`,
+      );
+      const clean = url.slice(basePath.length).split(/[?#]/)[0];
+      const target = join(OUT, ...clean.split("/").filter(Boolean));
+      const resolved =
+        existsSync(target) || existsSync(join(target, "index.html")) || existsSync(`${target}.html`);
+      assert.ok(resolved, `${file}: href aponta para fora do export: ${url}`);
+      checked += 1;
+    }
+  }
+  assert.ok(checked > 0, "nenhum link interno encontrado — o extrator quebrou?");
+});
+
+test("o sha256 publicado no catálogo bate com o arquivo servido", async () => {
+  // O hash ao lado do botão é prova, não decoração — se divergir do arquivo,
+  // o site mente exatamente onde promete verificabilidade.
+  const { createHash } = await import("node:crypto");
+  const { readFile: rf } = await import("node:fs/promises");
+  let checked = 0;
+  for (const pack of catalog.packs) {
+    const entries = [
+      ...pack.personas.flatMap((p) => p.files ?? []),
+      ...pack.teams.flatMap((t) => t.files ?? []),
+    ];
+    assert.ok(entries.length > 0, `${pack.name}: catálogo sem files/sha256`);
+    for (const entry of entries) {
+      const raw = await rf(join(OUT, "downloads", pack.name, entry.name));
+      const sha = createHash("sha256").update(raw).digest("hex");
+      assert.equal(sha, entry.sha256, `${entry.name}: hash publicado diverge do arquivo`);
+      checked += 1;
+    }
+  }
+  assert.ok(checked >= 8, `só ${checked} artefatos conferidos — faltam arquivos?`);
+});
+
+test("o hash aparece na página, ao lado do download", async () => {
+  const html = await read(join("packs", firstPack.name, "index.html"));
+  const first = firstPack.personas[0].files?.[0];
+  assert.ok(first?.sha256, "catálogo sem sha256 — o emissor regrediu?");
+  assert.ok(
+    html.includes(first.sha256),
+    "sha256 do primeiro artefato não está no HTML da página de pack",
+  );
+});
+
+test("a meta CSP sobrevive no HTML exportado", async () => {
+  // Limite conhecido e documentado: em CSP via <meta> no App Router, os
+  // primeiros loads do <head> podem preceder a política, e frame-ancestors é
+  // inerte. O que ESTE teste trava é a política continuar presente e estrita —
+  // sumir da página seria silencioso.
+  const html = await read("index.html");
+  const meta = /<meta http-equiv="Content-Security-Policy" content="([^"]+)"/i.exec(html);
+  assert.ok(meta, "meta CSP ausente do export");
+  const csp = decodeEntities(meta[1]);
+  assert.ok(csp.includes("default-src 'self'"), "CSP perdeu default-src 'self'");
+  assert.ok(csp.includes("object-src 'none'"), "CSP perdeu object-src 'none'");
+});
+
+test("superfície de compartilhamento: og:image, favicon, robots e sitemap", async () => {
+  // Um link do Waggle colado no X/Nostr/Slack sem imagem é a primeira
+  // impressão desperdiçada (auditoria 2026-08-06).
+  const html = await read("index.html");
+  assert.ok(/property="og:image"/.test(html), "og:image ausente do <head>");
+  assert.ok(/rel="icon"/.test(html), "favicon ausente do <head>");
+  assert.ok(existsSync(join(OUT, "robots.txt")), "robots.txt não exportado");
+  assert.ok(existsSync(join(OUT, "sitemap.xml")), "sitemap.xml não exportado");
+  const robots = await read("robots.txt");
+  assert.ok(robots.includes("sitemap"), "robots.txt não aponta o sitemap");
+  const sitemap = await read("sitemap.xml");
+  for (const pack of catalog.packs) {
+    assert.ok(sitemap.includes(`/packs/${pack.name}/`), `sitemap sem a página de ${pack.name}`);
+  }
+});
+
+test("páginas internas mantêm og:site_name e og:type", async () => {
+  // O openGraph de página SUBSTITUI o do layout — sem repetir os campos, as
+  // páginas internas os perdiam (auditoria 2026-08-06).
+  for (const page of [
+    join("packs", firstPack.name, "index.html"),
+    join("personas", firstPack.name, firstPack.personas[0].name, "index.html"),
+  ]) {
+    const html = await read(page);
+    assert.ok(/property="og:site_name"/.test(html), `${page}: og:site_name sumiu`);
+    assert.ok(/property="og:type"/.test(html), `${page}: og:type sumiu`);
+  }
 });

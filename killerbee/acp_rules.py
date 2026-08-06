@@ -12,8 +12,11 @@ Formato-alvo verificado @ ed4b3e7a:
 
 A regra inegociável (DECISIONS D-007): **`require_mention` sai SEMPRE escrito**,
 nunca herdado do default. O default do struct é `false` (filter.rs:122) — uma
-regra gerada sem o campo nasce surda a menção, e o crossfire inteiro depende de
-menção funcionar. O teste que trava isso é test_acp_rules.py.
+regra gerada sem o campo nasce respondendo a TODAS as mensagens do canal,
+menção ou não. O modo de falha é excesso barulhento, não silêncio (uma versão
+anterior deste docstring dizia "nasce surda", que é o inverso — auditoria
+2026-08-06). Explicitar o campo elimina a ambiguidade nos dois sentidos.
+O teste que trava isso é test_acp_rules.py.
 """
 
 from __future__ import annotations
@@ -23,9 +26,29 @@ from .profile import compile_acp_trigger
 
 
 def _toml_string(value: str) -> str:
-    """Escapa uma string para TOML básico (aspas duplas)."""
-    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
-    return f'"{escaped}"'
+    """Escapa uma string para TOML básico (aspas duplas).
+
+    Inclui caracteres de controle (\\n, \\t, C0): a versão anterior só escapava
+    aspas/backslash, e um valor com newline geraria um TOML **inválido** que o
+    load_rules do buzz-acp rejeitaria inteiro.
+    """
+    out = []
+    for ch in value:
+        if ch == "\\":
+            out.append("\\\\")
+        elif ch == '"':
+            out.append('\\"')
+        elif ch == "\n":
+            out.append("\\n")
+        elif ch == "\t":
+            out.append("\\t")
+        elif ch == "\r":
+            out.append("\\r")
+        elif ord(ch) < 0x20 or ch == "\x7f":
+            out.append(f"\\u{ord(ch):04X}")
+        else:
+            out.append(ch)
+    return '"' + "".join(out) + '"'
 
 
 def rule_for_persona(persona: Persona) -> str:
@@ -54,7 +77,10 @@ def rules_file(personas: list[Persona] | tuple[Persona, ...]) -> str:
     header = (
         "# Regras de subscrição buzz-acp geradas pelo Killer Bee.\n"
         "# require_mention é SEMPRE explícito: o default do campo é false\n"
-        "# (crates/buzz-acp/src/filter.rs:122) e uma regra sem ele nasce surda.\n"
-        "# Uso: buzz-acp --subscribe config --rules <este arquivo>\n"
+        "# (crates/buzz-acp/src/filter.rs:122), e uma regra sem ele nasceria\n"
+        "# respondendo a TUDO no canal — promíscua, não surda.\n"
+        "# Uso: buzz-acp --subscribe config --config <este arquivo>\n"
+        "# (a flag é --config / env BUZZ_ACP_CONFIG, config.rs:336-337;\n"
+        "#  --rules, que uma versão anterior deste cabeçalho citava, não existe)\n"
     )
     return header + "\n" + "\n\n".join(rule_for_persona(p) for p in personas) + "\n"

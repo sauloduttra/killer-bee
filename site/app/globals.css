@@ -26,7 +26,11 @@
      número, "parece mais frio" não é. */
   --stock: #e3e8df;
   --panel: #dee4da; /* poço: bloco de código, campo de busca */
-  --wash: #dedfd3; /* lavagem da linha citada — 6%, não 12% (ver contraste) */
+  /* --wash, --hair e --ramp-2 foram removidos na auditoria 2026-08-06: os três
+     eram definidos e nunca aplicados — token documentado sem regra é desvio da
+     própria lei deste arquivo. A "lavagem da linha citada" que --wash prometia
+     é feita pelo color-mix de --burn em .vline:target, que tem contraste
+     medido. */
 
   /* --- Tinta de escala (impressa ANTES do dado) -----------------------
      Em papel de barógrafo a grade vem em tinta diferente do estilete, para
@@ -37,7 +41,6 @@
   /* 1,35:1 — graticula intermediária APENAS, e só onde os extremos já estão
      impressos como TEXTO em --grid sólido. Nunca carrega informação sozinha. */
   --grid-faint: color-mix(in srgb, var(--grid) 22%, transparent);
-  --hair: color-mix(in srgb, var(--grid) 30%, transparent);
 
   /* --- O pigmento: UM só, em densidades -------------------------------
      Não é "um acento sobre um fundo" — é queima em papel térmico: mais
@@ -60,11 +63,10 @@
   --char: #221d16;
   --char-muted: #5d564b; /* 5,82:1 medido — legenda, meta */
 
-  /* A rampa inteira numa expressão. `--t` = magnitude normalizada 0..1.
-     A MESMA fórmula produz as duas direções nos dois temas, porque no escuro
-     --char é claro e --burn é escuro: queima no claro, exposição no escuro. */
+  /* A rampa numa expressão. A MESMA fórmula produz as duas direções nos dois
+     temas, porque no escuro --char é claro e --burn é escuro: queima no claro,
+     exposição no escuro. */
   --ramp-1: color-mix(in oklab, var(--char) 30%, var(--burn)); /* 6,83:1 */
-  --ramp-2: color-mix(in oklab, var(--char) 60%, var(--burn)); /* 9,7:1 */
 
   /* --- Anotação do operador -------------------------------------------
      Caneta azul sobre o traço marrom: convenção de caderno de laboratório.
@@ -139,7 +141,6 @@
   :root {
     --stock: #1a1e19;
     --panel: #222a26;
-    --wash: color-mix(in srgb, var(--burn) 10%, var(--stock));
     --grid: #7fa3a0; /* 6,15:1 */
     /* A MESMA cor proibida como texto no claro (2,52:1) é segura aqui
        (5,57:1). A regra muda porque o meio mudou — não porque afrouxamos. */
@@ -173,18 +174,26 @@ body {
   font-size: var(--step-0);
   line-height: 1.62;
   font-variant-numeric: tabular-nums;
-  /* A grade do papel: linhas finas de escala, quase no limiar. Não é textura
-     decorativa — é o que faz o substrato ler como papel de instrumento. */
-  background-image: repeating-linear-gradient(
-      to bottom,
-      color-mix(in oklab, var(--grid) 6%, transparent) 0 1px,
-      transparent 1px 40px
-    ),
-    repeating-linear-gradient(
-      to right,
-      color-mix(in oklab, var(--grid) 4%, transparent) 0 1px,
-      transparent 1px 40px
-    );
+  /* A grade do papel é FAVO, não quadrícula (D-019, pedido do Saulo: abelha
+     desenha hexágono). Continua tinta de escala no limiar, não decoração.
+
+     Geometria DERIVADA, não copiada: hexágono pointy-top com √3·R = 40px —
+     o mesmo ritmo horizontal da quadrícula que substitui. Tile 40 × 69.282
+     (= 3R), cada aresta desenhada UMA vez: zigue superior, verticais em x=0 e
+     x=20, zigue do meio — a repetição fecha o favo sem aresta dupla, então a
+     tinta é uniforme. SVG inline em data:, permitido pela CSP (img-src data:)
+     e sem requisição externa.
+
+     A cor não pode ser var() dentro de data-URI — por isso o hex de --grid
+     está DUPLICADO aqui e no bloco dark abaixo. Mudou --grid, mude os dois. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='69.282'%3E%3Cpath fill='none' stroke='%2343605f' stroke-opacity='.06' d='M0 11.547L20 0l20 11.547M0 11.547v23.094l20 11.547 20-11.547M20 46.188v23.094'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    /* Mesmo favo, tinta do tema escuro (--grid escuro = #7fa3a0). */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='69.282'%3E%3Cpath fill='none' stroke='%237fa3a0' stroke-opacity='.05' d='M0 11.547L20 0l20 11.547M0 11.547v23.094l20 11.547 20-11.547M20 46.188v23.094'/%3E%3C/svg%3E");
+  }
 }
 
 /* A LEI: Archivo é o INVÓLUCRO (nome próprio de objeto do catálogo) ·
@@ -502,10 +511,20 @@ section,
   border-radius: 2px;
   cursor: pointer;
 }
-.filters button[data-on] {
+.filters button[aria-pressed="true"] {
   color: var(--stock);
   background: var(--grid);
   border-color: var(--grid);
+}
+
+/* Em forced-colors o fundo é removido pelo UA — o estado ativo precisa de um
+   traço que sobreviva: borda mais grossa, desenhada pelo atributo ARIA que o
+   leitor de tela também anuncia. Um estado que só existe em cor não existe
+   para todo mundo. */
+@media (forced-colors: active) {
+  .filters button[aria-pressed="true"] {
+    border-width: 3px;
+  }
 }
 
 .linklike {
@@ -817,6 +836,9 @@ section,
 .verbatim:has(.raw-toggle:checked) .vline {
   white-space: pre;
   padding-inline-start: 4.2em;
+  /* Na vista bruta não há wrap — o hanging indent do modo leitura deslocaria
+     a linha inteira para a esquerda. */
+  text-indent: 0;
 }
 .verbatim:has(.raw-toggle:checked) .vline::before {
   content: counter(line);
@@ -825,15 +847,19 @@ section,
 .vline {
   counter-increment: line;
   position: relative;
-  padding-inline: 1.4em 1.2em;
+  /* 2.8em de padding com -1.4em de indent: a primeira linha visual começa em
+     1.4em e a CONTINUAÇÃO de uma linha longa em 2.8em — quebra visual não se
+     confunde com linha nova do documento. É o hanging indent clássico; a
+     versão anterior usava `text-indent: -0.001px hanging`, e o keyword
+     `hanging` sem suporte nos navegadores invalidava a declaração INTEIRA
+     (auditoria 2026-08-06). */
+  padding-inline: 2.8em 1.2em;
+  text-indent: -1.4em;
   white-space: pre-wrap;
   /* Linha em branco não carrega caractere nenhum — a altura vem daqui. Injetar
      um espaço não-quebrável faria o "copiar prompt" trazer um caractere que não
      está na fonte. */
   min-block-size: 1.72em;
-  /* Quebra visual de linha longa fica indentada, para não se confundir com uma
-     linha nova do documento. */
-  text-indent: -0.001px hanging;
 }
 
 .vline::before {
@@ -842,7 +868,11 @@ section,
   inset-inline-start: 0;
   inline-size: 3.4em;
   text-align: end;
-  color: var(--grid-faint);
+  /* --grid sólido (5,48:1 claro / 6,15:1 escuro), não --grid-faint: o número
+     da linha é INFORMAÇÃO — é o endereço que o #Ln promete — e a lei deste
+     arquivo proíbe --grid-faint de carregar informação sozinha. Em 1,35:1 ele
+     reprovava WCAG 1.4.3 (auditoria 2026-08-06). */
+  color: var(--grid);
   /* Fora da seleção: copiar o prompt tem que copiar o prompt, não uma coluna
      de números. */
   user-select: none;
@@ -882,9 +912,13 @@ section,
   color: var(--char-muted);
 }
 
-/* A marcação continua visível — só perde tinta. É a regra da página. */
+/* A marcação continua visível — perde peso, não legibilidade. A tinta é
+   --grid sólido: "apagada" tem que continuar passando 1.4.3, porque o `##` na
+   tela É a tese da página — marcação ilegível seria a promessa verbatim
+   quebrada exatamente no caractere que a demonstra (auditoria 2026-08-06;
+   antes era --grid-faint, 1,35:1). */
 .syn {
-  color: var(--grid-faint);
+  color: var(--grid);
 }
 .marker {
   color: var(--ramp-1);
@@ -1066,6 +1100,31 @@ section,
 .subhead {
   font-size: var(--step-1);
   margin-block-start: 32px;
+}
+
+/* sha256 dos artefatos: prova, apresentada como nota de rodapé de instrumento.
+   `anywhere` porque 64 hex não têm ponto de quebra natural e estourariam o
+   layout no móvel. */
+.checksums {
+  margin-block-start: 10px;
+}
+.hashes {
+  margin: 8px 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+}
+.hashes dt {
+  color: var(--grid);
+}
+.hash-bytes {
+  color: var(--char-muted);
+}
+.hashes dd {
+  margin: 0 0 8px;
+}
+.hashes code {
+  color: var(--char-muted);
+  overflow-wrap: anywhere;
 }
 
 .downloads {

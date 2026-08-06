@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- O favicon é a célula: um hexágono pointy-top na tinta de queima do tema
+       claro, traço na tinta de escala. Derivado da mesma geometria do fundo
+       (D-019) — R=13, vértices a 30°. -->
+  <rect width="32" height="32" fill="#e3e8df"/>
+  <path d="M16 3 27.258 9.5v13L16 29 4.742 22.5v-13Z" fill="#87581d"/>
+  <path d="M16 8.2 22.755 12.1v7.8L16 23.8 9.245 19.9v-7.8Z" fill="#e3e8df"/>
+</svg>

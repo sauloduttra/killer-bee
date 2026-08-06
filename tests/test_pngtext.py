@@ -73,3 +73,37 @@ def test_keyword_errada_no_round_trip_e_erro_claro():
     png = snapshot_png("buzz_agent_snapshot", {"a": 1})
     with pytest.raises(ValueError, match="buzz_team_snapshot"):
         read_snapshot_from_png(png, "buzz_team_snapshot")
+
+
+# ---------------------------------------------------------------------------
+# Endurecimento do leitor — `killerbee inspect` aceita arquivo de terceiro
+# ---------------------------------------------------------------------------
+
+
+def test_png_truncado_da_valueerror_nao_struct_error():
+    """PNG cortado no meio de um chunk: ValueError com contexto, nunca
+    struct.error cru (contrato §2.3 do AUTONOMIA)."""
+    png = build_png_with_text("k", "eA==")
+    with pytest.raises(ValueError, match="truncado"):
+        list(iter_chunks(png[:20]))
+
+
+def test_chunk_com_length_mentiroso_e_rejeitado():
+    """length que aponta além do buffer é lixo ou ataque — erro nomeado."""
+    png = bytearray(build_png_with_text("k", "eA=="))
+    # Corrompe o length do IHDR (4 bytes big-endian logo após a assinatura).
+    png[8:12] = struct.pack(">I", 2**24)
+    with pytest.raises(ValueError, match=r"truncado|declara"):
+        list(iter_chunks(bytes(png)))
+
+
+def test_iteracao_para_no_iend():
+    """Bytes anexados após o IEND não são chunks — o formato termina ali."""
+    png = build_png_with_text("k", "eA==") + b"\x00" * 64
+    types = [t for t, _ in iter_chunks(png)]
+    assert types[-1] == b"IEND"
+
+
+def test_texto_fora_de_latin1_da_valueerror_com_contexto():
+    with pytest.raises(ValueError, match="Latin-1"):
+        build_png_with_text("k", "snapshot com emoji \U0001f41d")

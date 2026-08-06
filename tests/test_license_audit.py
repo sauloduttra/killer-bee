@@ -16,10 +16,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from license_audit import (
     Repo,
+    assert_jq_projection,
     classify_license_text,
     copyright_line,
     external_contributors,
-    gh_json,
     has_license_file,
     suggest_tier,
 )
@@ -138,24 +138,25 @@ def test_jq_escalar_e_recusado_antes_de_chamar_a_api():
 
     Este erro derrubou 118 chamadas numa rodada e 123 em outra, e as duas vezes o
     sintoma foi "repositório sem licença". A guarda falha alto em vez de contar
-    como erro de rede.
+    como erro de rede. Testamos a função PURA — a versão anterior chamava
+    `gh_json`, que na projeção válida executava `gh` de verdade (rede + retries
+    com sleep) num teste que se dizia hermético.
     """
     with pytest.raises(ValueError, match="escalar"):
-        gh_json(["api", "repos/x/y/contents/LICENSE", "--jq", ".content"])
+        assert_jq_projection(["api", "repos/x/y/contents/LICENSE", "--jq", ".content"])
     with pytest.raises(ValueError, match="escalar"):
-        gh_json(["api", "repos/x/y", "--jq", ".license.spdx_id"])
+        assert_jq_projection(["api", "repos/x/y", "--jq", ".license.spdx_id"])
 
 
 def test_jq_de_array_continua_permitido():
-    """`[.[].name]` produz JSON válido e não deve ser bloqueado.
+    """`[.[].name]` produz JSON válido e não deve ser bloqueado. Puro: só a guarda."""
+    assert_jq_projection(["api", "repos/x/y/contents", "--jq", "[.[].name]"])
 
-    Não chamamos a API aqui — só checamos que a guarda não dispara. O `gh` pode
-    até falhar depois, e nesse caso a função devolve None, que é o contrato.
-    """
-    try:
-        gh_json(["api", "repos/does-not-exist-xyz/nope/contents", "--jq", "[.[].name]"])
-    except ValueError as exc:  # pragma: no cover
-        pytest.fail(f"a guarda bloqueou uma projeção de array válida: {exc}")
+
+def test_jq_sem_expressao_e_recusado():
+    """`--jq` no fim da lista, sem expressão: também é uso errado, não crash."""
+    with pytest.raises(ValueError, match="escalar"):
+        assert_jq_projection(["api", "repos/x/y", "--jq"])
 
 
 # ---------------------------------------------------------------------------

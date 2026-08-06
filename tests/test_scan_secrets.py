@@ -50,7 +50,9 @@ def test_pega_nsec_bech32():
 
 
 def test_pega_hex_nomeado_como_chave_privada():
-    assert "hex_privkey_64" in rules_for(f'private_key = "{FAKE_HEX64}"')
+    assert "hex_privkey_64" in rules_for(
+        f'private_key = "{FAKE_HEX64}"'  # scan-secrets: allow
+    )
 
 
 def test_pega_bloco_pem():
@@ -58,7 +60,9 @@ def test_pega_bloco_pem():
 
 
 def test_pega_credencial_atribuida():
-    assert "generic_assignment" in rules_for('api_key = "s3cr3t-value-longa"')
+    assert "generic_assignment" in rules_for(
+        'api_key = "s3cr3t-value-longa"'  # scan-secrets: allow
+    )
 
 
 def test_pega_token_por_sufixo_do_nome():
@@ -67,16 +71,45 @@ def test_pega_token_por_sufixo_do_nome():
     A primeira versão da regra só conhecia `access_token`/`auth_token` e deixava
     passar. Regressão coberta aqui.
     """
-    assert "generic_assignment" in rules_for('SEMGREP_TOKEN: "abc123def456ghi"')
-    assert "generic_assignment" in rules_for('BUZZ_S3_SECRET_KEY = "r4nd0m-s3cr3t-v4l"')
+    assert "generic_assignment" in rules_for(
+        'SEMGREP_TOKEN: "abc123def456ghi"'  # scan-secrets: allow
+    )
+    assert "generic_assignment" in rules_for(
+        'BUZZ_S3_SECRET_KEY = "r4nd0m-s3cr3t-v4l"'  # scan-secrets: allow
+    )
 
 
 def test_pega_senha_em_string_de_conexao():
-    assert "connection_string" in rules_for("postgres://buzz:hunter2hunter2@db:5432/buzz")
+    assert "connection_string" in rules_for(
+        "postgres://buzz:hunter2hunter2@db:5432/buzz"  # scan-secrets: allow
+    )
 
 
 def test_pega_cpf():
-    assert "cpf" in rules_for("cliente 123.456.789-00 cadastrado")
+    assert "cpf" in rules_for("cliente 123.456.789-00 cadastrado")  # scan-secrets: allow
+
+
+def test_pega_credencial_sem_aspas_estilo_dotenv():
+    """`API_KEY=valor` sem aspas é a forma NATIVA do `.env` — a regra que só
+    aceitava valor entre aspas não via o formato do arquivo que mais carrega
+    segredo. Auditoria 2026-08-06."""
+    assert "generic_assignment" in rules_for("API_KEY=abcdef123456789")  # scan-secrets: allow
+    assert "generic_assignment" in rules_for("DB_PASSWORD=hunter2hunter2")  # scan-secrets: allow
+
+
+def test_pega_ncryptsec():
+    fake = "ncryptsec1" + BECH32  # scan-secrets: allow
+    assert "nostr_ncryptsec" in rules_for(f"backup: {fake}")
+
+
+def test_pega_hex64_nu_como_media():
+    assert severity_of(FAKE_HEX64, "bare_hex_64") == "media"
+
+
+def test_hex64_em_contexto_de_sha256_nao_grita():
+    """O catálogo publica sha256 de cada artefato — mesmo formato, outro
+    significado. A exclusão é por contexto de linha, nunca global."""
+    assert severity_of(f'"sha256": "{FAKE_HEX64}"', "bare_hex_64") is None
 
 
 # ---------------------------------------------------------------------------
@@ -105,7 +138,13 @@ def test_getenv_nao_e_credencial():
 
 
 def test_placeholder_nao_promove_severidade_media():
-    assert severity_of('api_key = "your-api-key-here"', "generic_assignment") == "baixa"
+    assert (
+        severity_of(
+            'api_key = "your-api-key-here"',  # scan-secrets: allow
+            "generic_assignment",
+        )
+        == "baixa"
+    )
 
 
 def test_placeholder_NAO_rebaixa_severidade_alta():
@@ -178,3 +217,17 @@ def test_linha_absurdamente_longa_nao_trava():
     """Dado serializado numa linha só não pode degradar o regex nem estourar tempo."""
     text = "x" * 100_000 + ' api_key = "abcdefgh12345678"'  # scan-secrets: allow
     scan_text(text)  # basta não pendurar nem levantar
+
+
+def test_segredo_depois_da_coluna_4000_e_encontrado():
+    """A versão anterior truncava a linha em 4000 chars ANTES do regex — segredo
+    após a coluna 4000 (JSON minificado, .env de linha única) era invisível.
+    Agora a varredura é em janelas sobrepostas. Auditoria 2026-08-06."""
+    text = "x" * 5000 + " " + PEM_HEADER
+    assert "private_key_block" in rules_for(text)
+
+
+def test_allow_marker_depois_da_coluna_4000_tambem_vale():
+    """O marcador é checado na linha INTEIRA, antes de qualquer janela."""
+    text = "x" * 5000 + " " + PEM_HEADER + "  # scan-secrets: allow"
+    assert scan_text(text) == []

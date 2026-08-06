@@ -83,7 +83,8 @@ precisa ser redesenhada em cima disso.
 ## 1. Tabela de kinds
 
 `crates/buzz-core/src/kind.rs` é o registro autoritativo (`kind.rs:1`), 1085 linhas,
-133 constantes `u32`. `ALL_KINDS` (`kind.rs:635`) exporta 130 — ficam de fora
+129 constantes `KIND_*` (recontado na auditoria 2026-08-06; uma versão anterior dizia
+"133 constantes u32"). `ALL_KINDS` (`kind.rs:635`) exporta 130 — ficam de fora
 `KIND_AUTH` (22242), `KIND_NOSTR_IDENTITY_BINDING` (24243) e `KIND_PUSH_LEASE` (30350).
 
 ### Família de agentes (a que importa para nós)
@@ -308,8 +309,9 @@ link nativo.
 comunidade; "Add agent" cria uma **cópia local** com `catalogSource`.
 
 **(b) Snapshots de arquivo.** `.agent.json` / `.agent.png` e `.team.json` / `.team.png`,
-por drag-drop ou file-picker, ou compartilhados via chat (upload Blossom + card
-clicável que navega para Agents e abre o preview de import).
+pelo file-picker, ou compartilhados via chat (upload Blossom + card clicável que navega
+para Agents e abre o preview de import). ~~ou por drag-drop~~ — corrigido em
+[§10.5](#105-quantos-cliques--o-número-que-vai-no-site): **não existe drop target**.
 
 O "Copy link" do `PersonaShareDialog` produz **URL HTTPS Blossom do relay**, e
 `require_media_get_auth` tem default `false` — esse `.agent.png` é publicamente
@@ -676,17 +678,43 @@ o Waggle: é o único artefato instalável que já tem URL pública hoje (via Bl
 
 ### 10.5 Quantos cliques — o número que vai no site
 
-Arquivo em disco: sidebar **Agents** → card **New agent** → **Import** → seletor de
-arquivo do SO → dialog de preview → **Import**. **4 cliques no app + 1 no seletor.**
+> **Corrigido em 2026-08-05 contra o app rodando (0.5.5).** Ver [§10.9](#109-verificação-no-app-real--2026-08-05).
+> O número estava certo; dois detalhes ao redor dele, não.
 
-- Arrastar e soltar sobre a seção Agents pula 2 cliques.
-- Recebido por chat: card com **Add agent** → dialog → **Import** = **2 cliques**.
-- Teams: card **New team** → **Import**, aceita `.team.json` / `.team.png`.
+Arquivo em disco: sidebar **Agents** → card **`+`** → **Import** → seletor de arquivo do
+SO → dialog de preview → **Import**. **4 cliques no app + 1 no seletor.**
+
+- O card **não se chama "New agent"**. É um card `+` que abre um menu de três entradas:
+  **Create agent**, **Discover agents**, **Import**. Em teams o menu tem duas: **Create
+  team** e **Import**.
+- ~~Arrastar e soltar sobre a seção Agents pula 2 cliques.~~ **FALSO.** Não existe alvo de
+  drop na seção Agents. `desktop/src-tauri/tauri.conf.json:27` traz
+  `"dragDropEnabled": false`, e a enumeração completa de `onDrop=` em `desktop/src`
+  devolve dez handlers — dois de avatar em `AgentCreationPreview.tsx:446` e `:789`,
+  `NostrKeyImportForm.tsx:354`, dois de `BackupTestFlow`, `ChannelPane.tsx:607`,
+  `ForumComposer.tsx:457`, `MessageComposer.tsx:901`, `AvatarUpload.tsx:138` e
+  `ProfileAvatarEditor.tsx:546` — **nenhum** em `UnifiedAgentsSection.tsx` ou
+  `AgentSnapshotImportDialog.tsx`. A enumeração devolveu resultado, então isto é ausência
+  confirmada, não coleta falha ([D-014](DECISIONS.md)). Esta linha chegou ao site e foi
+  publicada; agora há teste que impede o retorno.
+- ⚠️ **NÃO VERIFICADO:** "recebido por chat: card com **Add agent** → dialog → **Import**
+  = 2 cliques". Nunca foi exercitado num app rodando; só lido no fonte.
+- Teams: card `+` → **Import**, aceita `.team.json` / `.team.png`.
+- O seletor de arquivo filtra por tipo: o import de agente lista só `*.agent.json` e
+  `*.agent.png`; o de team, só `*.team.json` e `*.team.png`. Observado — `acp-rules.toml`
+  e `catalog.json` não aparecem em nenhum dos dois.
 
 ### 10.6 Importado não é rodando
 
-`import.rs` grava `start_on_app_launch: false`, `runtime_pid: None`,
-`agent_command: String::new()` e `env_vars: BTreeMap::new()` — **sem chave de API**.
+`import.rs` grava `start_on_app_launch: false` (`:624`), `runtime_pid: None` (`:626`),
+`agent_command: String::new()` (`:610`) e `env_vars: BTreeMap::new()` (`:623`) — **sem
+chave de API**.
+
+**`acp_command` é a exceção e não fica vazio:** `import.rs:609` grava
+`DEFAULT_ACP_COMMAND`, que é `"buzz-acp"` (`managed_agents/types.rs:809`). O painel
+Runtime do agente importado mostra `ACP command: buzz-acp`, e quem esperasse campo vazio
+ali leria como bug. O comentário em `:607-608` explica: comandos de máquina se derivam do
+catálogo de runtime, nunca se fabricam a partir do snapshot.
 
 Para rodar, o agente ainda precisa de `BUZZ_AGENT_PROVIDER` + `BUZZ_AGENT_MODEL` + chave
 do provider, vindos da configuração global do app. E o import **não coloca o agente em
@@ -713,6 +741,50 @@ a `none` com `entries` não-vazio; allowlist de 64 hex; `respondTo` em
 `{owner-only, allowlist, anyone}`; `parallelism` em `1..=32`; team com ao menos 1 membro.
 
 Magic bytes são sniffados — **a extensão é ignorada**.
+
+### 10.9 Verificação no app real — 2026-08-05
+
+Até aqui todo o §10 era conformidade com o fonte lido. Isto é o registro da primeira vez
+que os arquivos emitidos pelo Killer Bee entraram num **Buzz Desktop rodando**.
+
+**Versão.** `C:\Users\saulo\AppData\Local\buzz\buzz-desktop.exe` → `FileVersion 0.5.5`,
+idêntica a `desktop/src-tauri/tauri.conf.json` do clone em `ed4b3e7a`. **Sem skew.**
+O instalador `Buzz_0.4.25_x64-setup_alpha-unsigned` parado em `Downloads` é lixo antigo —
+inferir a versão do app pelo nome desse arquivo teria produzido um falso "duas versões
+diferentes", que é o erro D-014 na forma clássica.
+
+| Artefato | Resultado | O que isso prova |
+|---|---|---|
+| `forager.agent.json` | ✅ `Forager was created successfully` | O `.agent.json` do emissor passa por `validate_snapshot` e cria o registro |
+| `adversary.agent.png` | ✅ `Adversary was created successfully` | **O chunk `tEXt` gerado fora do app decodifica.** Era a aposta de §10.4 e o que sustenta a distribuição via URL |
+| `crossfire-review.team.json` | ✅ `created successfully with 3 members` | Membros embutidos se reconstituem: preview lista Forager, Adversary e Guard |
+
+**O que sobreviveu.** O "Full embedded manifest" do preview reserializa e mostra
+`parallelism: 4`, `respondTo: "anyone"`, `idleTimeoutSeconds: 900`,
+`maxTurnDurationSeconds: 1800`. **Os três eixos scutellata que compilam para campo nativo
+atravessam o import intactos** — `recruitment`, `threshold` e `persistence` deixam de ser
+promessa de [`PROFILE-COMPILATION.md`](PROFILE-COMPILATION.md) e viram fato observado.
+
+**O que a reserialização descarta.** Arrays vazias somem: `respondToAllowlist: []`,
+`namePool: []` e `memory.entries: []` não aparecem no manifesto reexibido, efeito de
+`skip_serializing_if`. O emissor escreve as três; é inofensivo, mas quem comparar o
+arquivo com a tela vai ver diferença.
+
+**Três providers, confirmados na UI.** `Forager → claude-sonnet-5`,
+`Adversary → gpt-5`, `Guard → deepseek/deepseek-chat` com `Provider: openrouter`. O card
+do team recebe o rótulo **"Mixed models"** do próprio app. O painel Runtime marca model e
+provider como *inherited from template* — vêm do snapshot, não do padrão global.
+
+**"Importado não é rodando", medido e não deduzido.** No perfil do Guard recém-importado:
+`Status: STOPPED`, `Start on launch: No`, aba **Channels vazia** com "Add this agent to a
+channel — choose a channel above so it can join the conversation", `Memories 0`.
+`Public key 6ccba27b…96aa`, chave nova: **identidade não viaja**, como o preview promete.
+
+**Achado novo: o import de team não deduplica.** Importar `crossfire-review.team.json`
+depois de já ter importado Forager e Adversary avulsos criou **outro** Forager e **outro**
+Adversary, com keypairs novos — oito agentes onde se esperaria seis. O team snapshot
+embute os membros e o import os materializa sem procurar por nome. Consequência prática
+para o site: **importe o team OU as personas, não os dois.**
 
 ## 11. Kind 30178 — veredito da camada L3 (E2)
 
@@ -764,7 +836,8 @@ pubkey. É `is_global_only_kind` — nunca escopado a canal.
 
 ### 11.4 O teste e2e cobre leitor estrangeiro
 
-Sete testes `#[ignore]` em `e2e_team_catalog.rs`. O fluxo de leitura estrangeira
+Nove testes `#[ignore]` em `e2e_team_catalog.rs` (recontado 2026-08-06; uma versão
+anterior dizia sete). O fluxo de leitura estrangeira
 (`:236`): o autor publica um 30178 sem `shared` e outro com; um leitor estrangeiro, com
 chave própria e **autenticado**, faz `REQ {kind:30178, author:<autor>}` e vê **só o
 shared**. O autor vê os dois. Também cobre: ids-lookup do unshared devolve vazio (`:304`),

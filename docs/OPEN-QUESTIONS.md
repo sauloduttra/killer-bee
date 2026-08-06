@@ -123,3 +123,40 @@ de comunidade existente, ou o site apenas *apontar* para relays de terceiros sem
 
 **Custo de errar:** subir relay cedo demais é gastar dinheiro e atenção com moderação
 antes de haver o que moderar.
+
+---
+
+## Q-008 — Sobraram cinco agentes de teste no Buzz Desktop do usuário
+
+**Contexto.** A verificação de import de 2026-08-05 criou, na comunidade privada do
+usuário, oito registros onde antes havia três: `Forager` ×2, `Adversary` ×2 e `Guard`, mais
+o team `Crossfire Review`. As duplicatas são consequência de [D-018](DECISIONS.md) — o
+import de team não deduplica —, e nenhum deles está em canal nenhum nem consome nada
+(todos `Status: STOPPED`, sem credencial de provider).
+
+**Recomendação.** Apagar as duplicatas e deixar um de cada, ou apagar todos os cinco: o
+`killerbee build` os regenera em segundos. **Não fiz porque apagar coisa do usuário fora
+de `killer-bee/` é 🔴** — a decisão é dele, e o custo de não decidir é cosmético.
+
+**Custo de errar:**
+- Apagar tudo: nulo. Os arquivos em `dist/` reconstroem o estado.
+- Deixar como está: cinco cards a mais na tela Agents. Nada roda, nada gasta.
+
+**O que preciso:** um "pode apagar" — e quais.
+
+---
+
+## Q-009 — O caminho de import por chat nunca foi exercitado
+
+**Contexto.** [PROTOCOL-NOTES §10.5](PROTOCOL-NOTES.md) afirma que um snapshot recebido por
+chat instala em **2 cliques** (card com "Add agent" → dialog → "Import"). Isso foi lido no
+fonte e **nunca visto num app rodando**. É a mesma classe de afirmação que produziu o erro
+de arrastar-e-soltar de [D-017](DECISIONS.md): comportamento de UI deduzido de código.
+
+**Recomendação.** Exercitar junto com E3/E4/E5, quando houver duas identidades e um canal —
+o caminho exige alguém enviando o arquivo. Está marcado `⚠️ NÃO VERIFICADO` no §10.5 e o
+site não promete esse número em lugar nenhum.
+
+**Custo de errar:**
+- Se estiver certo e eu não verificar: perde-se um número bom de vídeo.
+- Se estiver errado e for publicado: repete-se D-017, e aí com reincidência.

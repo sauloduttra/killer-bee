@@ -178,6 +178,21 @@ relatório com falhas silenciadas foi exatamente o que produziu conclusão errad
 duas vezes hoje — nunca de novo."""
 
 
+def assert_jq_projection(args: list[str]) -> None:
+    """A guarda do `--jq`, pura — recebe args, levanta ou não. Sem subprocess.
+
+    Separada de `gh_json` para que o teste da guarda não execute `gh` de
+    verdade (rede + retries + sleep num teste era o oposto de hermético).
+    """
+    if "--jq" in args:
+        expression = args[args.index("--jq") + 1] if args.index("--jq") + 1 < len(args) else ""
+        if not expression.strip().startswith("["):
+            raise ValueError(
+                f"--jq com projeção escalar produz saída não-JSON: {expression!r}. "
+                "Peça o objeto inteiro e indexe em Python."
+            )
+
+
 def gh_json(args: list[str]) -> object:
     """Chama `gh` e devolve JSON. None em falha — mas a falha é CONTADA e logada.
 
@@ -194,14 +209,9 @@ def gh_json(args: list[str]) -> object:
     # e o repositório é reportado como "sem licença" quando o dado estava lá.
     #
     # Regra: `--jq` só é permitido quando a projeção é objeto ou array. Para
-    # escalar, peça o objeto inteiro e indexe em Python.
-    if "--jq" in args:
-        expression = args[args.index("--jq") + 1] if args.index("--jq") + 1 < len(args) else ""
-        if not expression.strip().startswith("["):
-            raise ValueError(
-                f"--jq com projeção escalar produz saída não-JSON: {expression!r}. "
-                "Peça o objeto inteiro e indexe em Python."
-            )
+    # escalar, peça o objeto inteiro e indexe em Python. A guarda vive em
+    # `assert_jq_projection` (pura, testável sem subprocess) — não a remova.
+    assert_jq_projection(args)
 
     last_error = ""
     for attempt in range(3):

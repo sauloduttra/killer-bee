@@ -9,20 +9,20 @@ funcionando".
 | 1 | `PROTOCOL-NOTES.md` com `## Premissas corrigidas na Fase 0` | ✅ em [`PROMPT.md`](../PROMPT.md#premissas-corrigidas-na-fase-0), com tabela derrubado/confirmado e citações |
 | 2 | Schema `.agent.json`/`.team.json` documentado com citação | ✅ [PROTOCOL-NOTES §10](PROTOCOL-NOTES.md) |
 | 3 | Veredito do 30178 registrado | ✅ [§11.5](PROTOCOL-NOTES.md) — **vai**, com a ressalva de NIP-42 |
-| 4 | `killerbee build` emite arquivo que o desktop importa, com nº de cliques documentado | 🟨 **emite e valida; import real não testado** — 4 cliques + seletor, em [§10.5](PROTOCOL-NOTES.md) e no README do pack |
+| 4 | `killerbee build` emite arquivo que o desktop importa, com nº de cliques documentado | ✅ **importado num Buzz Desktop 0.5.5 rodando** em 2026-08-05: `.agent.json`, `.agent.png` e `.team.json` com 3 membros, os três aceitos. Registro em [§10.9](PROTOCOL-NOTES.md); cliques corrigidos em [§10.5](PROTOCOL-NOTES.md) |
 | 5 | Personas publicadas como kind:30175 `shared`, legíveis pelo `PersonaCatalogDialog` | ⛔ bloqueado em 🔴 credencial |
 | 6 | Team catalog 30178 publicado e lido ao vivo pelo site | ⛔ bloqueado em 🔴 credencial + site não existe |
 | 7 | `killerbee validate` no CI, falhando em pack inválido | ✅ dois jobs: valida os packs **e** prova que rejeita um quebrado |
 | 8 | `recruitment` → campo nativo de paralelismo (1–32); resto em `PROFILE-COMPILATION.md` | ✅ [`PROFILE-COMPILATION.md`](PROFILE-COMPILATION.md), com teste de faixa |
-| 9 | Crossfire por menção, 3 agentes respondendo no canal | 🟨 **pack pronto, 3 providers distintos travados por teste; execução bloqueada** |
-| 10 | Site estático buildando, catálogo de `packs/`, fontes com `@font-face` | 🟨 **builda, 7 páginas estáticas, 12/13 testes de export passando**; fontes baixadas, falta o CSS final |
+| 9 | Crossfire por menção, 3 agentes respondendo no canal | 🟨 **os 3 existem no app, em 3 providers distintos** — o Buzz rotula o team como "Mixed models". Faltam credencial de provider e "Add to channel"; execução segue bloqueada |
+| 10 | Site estático buildando, catálogo de `packs/`, fontes com `@font-face` | ✅ **builda nos dois modos (com e sem basePath), 20/20 testes de export** — incluindo integridade de todos os links internos, sha256 publicado vs arquivo servido, CSP, og:image/favicon/robots/sitemap. Fontes auto-hospedadas com subset filtrado (232 KB). Auditoria e correções em [AUDIT-2026-08-06](AUDIT-2026-08-06.md) |
 | 11 | `LICENSE` Apache-2.0, `NOTICE`, `THIRD_PARTY_NOTICES.md`, `CONTRIBUTING.md` com DCO | ✅ os quatro, + job de DCO no CI |
 | 12 | `docs/LICENSE-AUDIT.md` completo | ✅ **123 repos, zero falhas, duas fontes concordando** — 48 MIT, 1 ausente, 0 contribuidores externos |
 | 13 | README com missão nova e nota de premissa corrigida | ✅ |
 | 14 | `gitleaks` no CI, zero chave versionada | ✅ gitleaks + scanner próprio, ambos no CI |
 | 15 | Vídeo de 90s | ⛔ depende de 5, 9 e 10 |
 
-**Placar: 9 ✅ · 3 🟨 · 3 ⛔**
+**Placar: 11 ✅ · 1 🟨 · 3 ⛔**
 
 ## O site, em detalhe
 
@@ -48,8 +48,10 @@ Um único vermelho — **gerar credencial** — trava os itens 5, 6, 9 e, por de
 15. Não é dificuldade técnica: o runbook está pronto em
 [`LOCAL-SETUP.md`](LOCAL-SETUP.md) e precisa de seis valores no `.env`.
 
-O item 10 (site) é o único bloco grande de trabalho ainda não começado, e é ele que abre
-o gate do [`BACKLOG.md`](BACKLOG.md).
+O item 10 (site) fechou em 2026-08-06. Restam o item 9 (execução real dos três agentes,
+🔴 credencial) e o 15 (vídeo — cujo roteiro sem credencial está pronto em
+[AUDIT-2026-08-06](AUDIT-2026-08-06.md)). O gate do [`BACKLOG.md`](BACKLOG.md) só abre
+depois do item 15.
 
 ## Diferença entre 🟨 e ✅
 
@@ -57,6 +59,12 @@ o gate do [`BACKLOG.md`](BACKLOG.md).
 como escrito exige uma prova que ainda não foi possível produzir — importar de verdade no
 desktop, ver três agentes responderem num canal, fechar a varredura de 123 repos.
 
-Não marcamos verde por otimismo. O item 4 emite o arquivo, o teste confere byte a byte
-contra o schema lido do fonte, e ainda assim ninguém importou esse arquivo num Buzz
-Desktop rodando. Até isso acontecer, é amarelo.
+Não marcamos verde por otimismo. O item 4 ficou amarelo enquanto emitia o arquivo e o
+teste conferia byte a byte contra o schema lido do fonte — porque ninguém tinha importado
+esse arquivo num Buzz Desktop rodando. Em 2026-08-05 isso aconteceu, e só então virou
+verde ([§10.9](PROTOCOL-NOTES.md)).
+
+A conta de ter esperado: o mesmo bloco que fechou o item 4 derrubou uma afirmação que o
+site já publicava — a de que arrastar o arquivo sobre a seção Agents pulava dois cliques.
+Ela nasceu de leitura de fonte, atravessou uma revisão e só morreu quando alguém abriu o
+app. **Amarelo honesto é o que impede um verde de virar mentira.**

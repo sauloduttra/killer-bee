@@ -18,24 +18,46 @@
  * honesto e feio.
  */
 
-/** Passos reais do import, contados na UI do Buzz Desktop. */
+/**
+ * Passos reais do import, contados na UI do Buzz Desktop 0.5.5 **em execução**
+ * (não lidos no fonte): sidebar → Agents → card `+` → "Import" → seletor do SO →
+ * dialog de preview → "Import".
+ *
+ * O card não se chama "New agent": é um card `+` que abre um menu de três
+ * entradas — "Create agent", "Discover agents", "Import". Em teams o menu tem
+ * duas: "Create team" e "Import".
+ */
 export const IMPORT_STEPS = [
   "Download the file below.",
   "In Buzz Desktop, open the Agents section in the sidebar.",
-  'Click "New agent" (or "New team"), then "Import".',
+  'Click the "+" card, then "Import".',
   "Pick the file, review the preview, and confirm.",
 ] as const;
 
 /** Quatro cliques no app mais a seleção no diálogo do sistema operacional. */
 export const IMPORT_CLICK_COUNT = "4 clicks plus the OS file picker";
 
-/** Arrastar e soltar sobre a seção Agents pula dois cliques. */
+/**
+ * Não há atalho. A versão anterior desta constante prometia que arrastar o
+ * arquivo sobre a seção Agents pulava dois cliques — **é falso**, e o site
+ * chegou a publicar isso.
+ *
+ * Duas fontes independentes concordam: `desktop/src-tauri/tauri.conf.json:27`
+ * traz `"dragDropEnabled": false`, e a enumeração completa de `onDrop=` em
+ * `desktop/src` devolve dez handlers — avatar, backup, chave Nostr e composer de
+ * mensagem — nenhum na seção Agents nem em `AgentSnapshotImportDialog.tsx`.
+ * A enumeração devolveu resultados, então a ausência é confirmada, não coleta
+ * falha (D-014).
+ */
 export const IMPORT_SHORTCUT =
-  "Dragging the file onto the Agents section skips two of those clicks.";
+  "There is no drag-and-drop shortcut: the Agents section has no drop target.";
 
 /**
- * O que ainda falta depois de importar — `import.rs` grava
- * `start_on_app_launch: false`, `agent_command` vazio e `env_vars` vazio.
+ * O que ainda falta depois de importar. `import.rs:610` grava `agent_command`
+ * vazio, `:623` `env_vars` vazio e `:624` `start_on_app_launch: false` — e os
+ * três foram **conferidos no app rodando**: o painel de perfil do agente
+ * importado mostra `Status: STOPPED`, `Start on launch: No` e a aba Channels
+ * vazia, com "Add this agent to a channel".
  */
 export const AFTER_IMPORT = [
   "The agent exists but is not running yet.",
@@ -51,12 +73,32 @@ export function teamFileName(teamId: string, extension: "json" | "png"): string 
   return `${teamId}.team.${extension}`;
 }
 
+/**
+ * href de download com o basePath do deploy.
+ *
+ * O Next só prefixa `basePath` em `next/link` e nos assets que ele mesmo emite;
+ * `<a href="/downloads/...">` cru sai como está. No GitHub Pages de projeto
+ * (servido sob `/<repo>/`) isso fazia TODOS os botões de download — o único
+ * botão do site — retornarem 404. Localmente o basePath é vazio e tudo
+ * funciona, que é o que tornava a falha invisível até o deploy.
+ * Auditoria 2026-08-06, achado CONFIRMED; teste de integridade de links em
+ * rendered-html.test.mjs impede a volta.
+ */
+export function downloadHref(packName: string, fileName: string): string {
+  return `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/downloads/${packName}/${fileName}`;
+}
+
 /** Comando copiável para quem prefere gerar o arquivo a partir da fonte. */
 export function buildCommand(packName: string): string {
   return `uv run python -m killerbee build packs/${packName}`;
 }
 
-const REPO = "https://github.com/killerbee-buzz/killerbee-buzz";
+/**
+ * Remote real, criado em 2026-08-06 com autorização do Saulo — a suposição de
+ * D-020 virou fato. O valor anterior ("killerbee-buzz/killerbee-buzz") era um
+ * placeholder órfão que não apontava para conta de ninguém do projeto.
+ */
+const REPO = "https://github.com/sauloduttra/killer-bee";
 
 /** Issue pré-preenchida para submissão de pack. */
 export function submitPackUrl(): string {

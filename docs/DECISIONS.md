@@ -353,3 +353,144 @@ A técnica de chave efêmera que o web client deles usa não é atalho — é o 
 pode ser copiada do buzzdir (que tem `connect-src 'self'` e nunca abre `wss:`), e a página
 passa a depender de JS para listar — o que empurra o catálogo estático de `packs/` para
 ser o caminho primário, com o 30178 ao vivo como camada adicional, não substituta.
+
+---
+
+## D-017 — O site perde o atalho de arrastar-e-soltar, porque ele não existe
+
+**Quando:** Bloco de verificação no app real, 2026-08-05
+**O que:** removida do site e do `PROTOCOL-NOTES.md` §10.5 a afirmação de que arrastar o
+arquivo sobre a seção Agents pula dois cliques. Em lugar dela, `IMPORT_SHORTCUT` passa a
+dizer que não há atalho. Corrigido junto o rótulo do card, que é `+` e não "New agent".
+**Alternativa:** deixar como estava e verificar depois — a frase não quebra build nenhum.
+**Motivo:** é falsa. Duas fontes independentes concordam:
+`desktop/src-tauri/tauri.conf.json:27` traz `"dragDropEnabled": false`, e a enumeração
+completa de `onDrop=` em `desktop/src` devolve dez handlers, nenhum na seção Agents nem em
+`AgentSnapshotImportDialog.tsx`. A enumeração **devolveu resultado**, então é ausência
+confirmada e não coleta falha — a distinção de [D-014](#d-014--falha-de-coleta-nunca-é-reportada-como-ausência-de-dado).
+**Custo de reversão:** uma linha, se algum dia o app ganhar drop target. Um teste em
+`site/tests/rendered-html.test.mjs` falha se a promessa voltar.
+
+**O que isto custou e por que fica registrado:** a frase nasceu de leitura de fonte,
+passou por revisão de segundo leitor e **foi publicada no site**. Nenhum portão a pegou,
+porque nenhum portão executava o app. O erro é da mesma família de D-014 — uma afirmação
+plausível ocupando o lugar de um dado que ninguém tinha coletado. Todo item do DoD que
+depende de comportamento de app e não de forma de arquivo herda a mesma suspeita até que
+alguém abra o app.
+
+---
+
+## D-018 — Importar team OU personas, nunca os dois
+
+**Quando:** mesmo bloco
+**O que:** a orientação do site e do README do pack passa a ser: importe
+`crossfire-review.team.json` **ou** os três `.agent.json`, não ambos.
+**Alternativa:** não dizer nada e deixar o usuário descobrir.
+**Motivo:** o import de team não deduplica. Importar as personas avulsas e depois o team
+criou um segundo Forager e um segundo Adversary, com keypairs novos — oito agentes onde
+se esperaria seis. É consequência direta de o `TeamSnapshot` embutir o `AgentSnapshot`
+completo de cada membro (§10.2): o import materializa o que está embutido, sem procurar
+por nome. Observado no app 0.5.5, não deduzido.
+**Custo de reversão:** nulo — é uma frase de orientação. O usuário que errar apaga os
+duplicados na mão.
+
+---
+
+## D-019 — O fundo do site é favo, não quadrícula
+
+**Quando:** 2026-08-06, pedido direto do Saulo ("abelha desenha hexágono")
+**O que:** a grade de fundo do `body` em `site/app/globals.css` deixa de ser
+`repeating-linear-gradient` quadriculado (40px) e vira favo hexagonal — SVG inline em
+`data:` URI, hexágono pointy-top com √3·R = 40px (mesmo ritmo horizontal da quadrícula
+que substitui), tile 40 × 69.282.
+**Alternativa:** manter a quadrícula; ou padrão pronto de terceiro (Hero Patterns, CC-BY).
+**Motivo:** identidade — o projeto inteiro é apiário e o catálogo já usa células
+hexagonais (`--comb-clip`); a quadrícula era o único elemento que não falava a língua.
+Geometria **derivada, não copiada**, para não puxar atribuição CC-BY para dentro de um
+repo Apache-2.0: cada aresta desenhada uma vez (zigue superior, verticais em x=0/x=20,
+zigue do meio), sem aresta dupla, tinta uniforme.
+**Custo de reversão:** trivial — restaurar o bloco anterior do `background-image`.
+**Limitação assumida:** `var()` não funciona dentro de data-URI, então o hex de `--grid`
+está duplicado (claro e escuro) com comentário apontando a duplicação.
+
+---
+
+## D-020 — Atribuição: Saulo Duttra em site, README, pack e NOTICE
+
+**Quando:** 2026-08-06, pedido direto ("lembra de me citar sempre")
+**O que:** crédito com três links (GitHub `sauloduttra`, X `sauloduttra`, Nostr
+`nprofile1qqsxwact...`) no rodapé do site, seção Author no README, `author:` do
+`killerbee.yaml` (flui para `catalog.json` e páginas), e NOTICE passa a
+"Copyright 2026 Saulo Duttra and Killer Bee contributors". A licença NÃO mudou —
+Apache-2.0 intacta; só o titular nomeado.
+**⚠️ SUPOSIÇÃO embutida:** `REPO_URL` (site/app/lib/install.ts) e o default de
+`SITE_URL` (layout.tsx) agora apontam para `github.com/sauloduttra/killer-bee` e
+`sauloduttra.github.io/killer-bee`. O remote ainda não existe (criar é 🔴). Se o nome
+final for outro, são duas linhas. O valor anterior era placeholder órfão
+(`killerbee-buzz/killerbee-buzz`), que não era menos suposto — só menos útil.
+**Custo de reversão:** duas linhas + o rodapé.
+**Resolução (2026-08-06):** suposição confirmada — o Saulo autorizou e o remote foi
+criado exatamente nesse endereço, público, com Pages em modo workflow. Deixou de ser
+suposição; os valores acima são o endereço real.
+
+---
+
+## D-021 — As promessas de comportamento se qualificam pelo caminho de install
+
+**Quando:** auditoria 2026-08-06 (achados CONFIRMED das dimensões honesty)
+**O que:** toda afirmação pública sobre threshold/orquestração agora diz EM QUAL caminho
+vale: import no desktop = só menção; `require_mention = false` só existe rodando
+`buzz-acp --subscribe config --config <arquivo>` (flag corrigida — `--rules` não
+existe). O README do pack, a home do site e o hint do ProfileMeter foram reescritos; a
+inversão "nasce surda" (o default `false` casa TUDO, não nada) foi corrigida nas quatro
+ocorrências.
+**Alternativa:** remover as promessas em vez de qualificá-las.
+**Motivo:** o perfil de dois eixos é real e útil — o erro era apresentar o eixo O-QUÊ
+como se o caminho de 4 cliques o entregasse. Qualificar preserva a informação e a
+honestidade; remover jogaria fora a metade verdadeira.
+**Custo de reversão:** texto.
+
+---
+
+## D-022 — Link interno carrega basePath por construção, e um teste resolve cada um
+
+**Quando:** auditoria 2026-08-06 (achado crítico CONFIRMED)
+**O que:** `downloadHref()` prefixa `NEXT_PUBLIC_BASE_PATH` nos seis pontos de download;
+`pages.yml` passa `base_url` (origin+path) para o metadataBase; `lib/site.ts` é a única
+fonte de SITE_URL (layout, sitemap, robots). Teste novo percorre todo `.html` exportado,
+exige o prefixo quando `PAGES_BASE_PATH` está setado e resolve cada href/src interno
+contra `out/` — e o pages.yml roda os testes NESSE modo. Provado nos dois builds.
+**Alternativa:** basePath vazio para sempre (domínio próprio na raiz).
+**Custo de reversão:** o helper degrada para identidade quando o env está vazio — zero.
+
+---
+
+## D-023 — Emissor: conformidade com o import é lei, e nome de arquivo é validado
+
+**Quando:** auditoria 2026-08-06
+**O que:** (a) trim como o upstream (display_name/description/team.name); (b) `_SLUG`
+alinhado à gramática real do d-tag (`^[a-z0-9][a-z0-9_-]{0,63}$`, sem ponto); (c)
+`team.id` restrito a charset filename-safe — restrição NOSSA, mais dura que o d-tag de
+team upstream (que aceita `:`, handlers/ingest.rs:1159-1162), porque o id vira nome de
+arquivo no Windows; (d) frontmatter com paridade exata (delimitadores, limites, corpo
+byte a byte); (e) arrays vazias omitidas como o exportador de referência; (f) caps de
+5/25 MiB aplicados no build; (g) canais = "all" ou UUIDs, sem mistura.
+**Alternativa:** manter validação frouxa e deixar o app rejeitar.
+**Motivo:** um pack "válido" que o import recusa explode na mão do usuário final — a
+pior espécie de bug para um catálogo cuja promessa é "o que você baixa, importa".
+**Custo de reversão:** por regra, uma linha; o conjunto está travado por testes.
+
+---
+
+## D-024 — sha256 no catálogo e `killerbee inspect`
+
+**Quando:** auditoria 2026-08-06 (oportunidades S/alto implementadas)
+**O que:** build e catalog publicam `{name, sha256, bytes}` por artefato, serializando
+nos MESMOS bytes (helper único); o site mostra os hashes ao lado dos downloads e o
+teste de export confere hash contra arquivo servido. Novo subcomando `inspect` lê
+`.agent.json/.png` e `.team.json/.png` (inclusive de terceiro — parser de PNG
+endurecido) e imprime identidade, modelo, timeouts e o prompt com `--prompt`.
+**Motivo:** o hash é o `x` que o card de import por chat exige
+(markdownFileCard.ts:101-103) — pré-requisito da distribuição Nostr-native — e o
+`inspect` é a tese "leia antes de rodar" executável, para artefato nosso ou alheio.
+**Custo de reversão:** campos aditivos no catálogo; remover não quebra página antiga.

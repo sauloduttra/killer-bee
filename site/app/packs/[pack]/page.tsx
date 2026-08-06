@@ -9,9 +9,11 @@ import {
   IMPORT_STEPS,
   agentFileName,
   buildCommand,
+  downloadHref,
   teamFileName,
 } from "@/app/lib/install";
 import { CopyButton } from "@/app/components/CopyButton";
+import { Checksums } from "@/app/components/Checksums";
 import { ProfileMeter } from "@/app/components/ProfileMeter";
 
 export function generateStaticParams() {
@@ -30,7 +32,15 @@ export async function generateMetadata({
     title: pack.name,
     description: pack.description,
     alternates: { canonical: `./` },
-    openGraph: { title: `${pack.name} — Waggle`, description: pack.description, url: "./" },
+    // `openGraph` da página SUBSTITUI o do layout, não mescla — sem repetir
+    // type e siteName aqui, as páginas internas os perdiam (auditoria 2026-08-06).
+    openGraph: {
+      type: "website",
+      siteName: "Waggle — Killer Bee agent packs for Buzz",
+      title: `${pack.name} — Waggle`,
+      description: pack.description,
+      url: "./",
+    },
   };
 }
 
@@ -114,19 +124,20 @@ export default async function PackPage({ params }: { params: Promise<{ pack: str
               <div className="downloads">
                 <a
                   className="button"
-                  href={`/downloads/${pack.name}/${teamFileName(team.id, "json")}`}
+                  href={downloadHref(pack.name, teamFileName(team.id, "json"))}
                   download
                 >
                   {teamFileName(team.id, "json")}
                 </a>
                 <a
                   className="button button-quiet"
-                  href={`/downloads/${pack.name}/${teamFileName(team.id, "png")}`}
+                  href={downloadHref(pack.name, teamFileName(team.id, "png"))}
                   download
                 >
                   {teamFileName(team.id, "png")}
                 </a>
               </div>
+              <Checksums files={team.files} />
             </div>
           ))}
         </section>
@@ -163,14 +174,14 @@ export default async function PackPage({ params }: { params: Promise<{ pack: str
                 <div className="downloads">
                   <a
                     className="button"
-                    href={`/downloads/${pack.name}/${agentFileName(persona.name, "json")}`}
+                    href={downloadHref(pack.name, agentFileName(persona.name, "json"))}
                     download
                   >
                     {agentFileName(persona.name, "json")}
                   </a>
                   <a
                     className="button button-quiet"
-                    href={`/downloads/${pack.name}/${agentFileName(persona.name, "png")}`}
+                    href={downloadHref(pack.name, agentFileName(persona.name, "png"))}
                     download
                   >
                     {agentFileName(persona.name, "png")}
@@ -179,6 +190,7 @@ export default async function PackPage({ params }: { params: Promise<{ pack: str
                     Read the prompt
                   </Link>
                 </div>
+                <Checksums files={persona.files} />
               </li>
             );
           })}

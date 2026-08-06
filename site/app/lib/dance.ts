@@ -70,7 +70,10 @@ function lengthFromRecruitment(recruitment: number): number {
   return 0.28 + 0.72 * Math.sqrt(normalized);
 }
 
-export function danceTraces(packs: Pack[], basePath = ""): DanceTrace[] {
+// O href é consumido por next/link no WaggleField, que já aplica o basePath do
+// deploy — um parâmetro basePath aqui era peso morto que nenhum chamador
+// passava (auditoria 2026-08-06).
+export function danceTraces(packs: Pack[]): DanceTrace[] {
   const flat: { pack: Pack; persona: Persona }[] = packs.flatMap((pack) =>
     pack.personas.map((persona) => ({ pack, persona })),
   );
@@ -88,7 +91,7 @@ export function danceTraces(packs: Pack[], basePath = ""): DanceTrace[] {
     length: lengthFromRecruitment(persona.profile.recruitment),
     weight: PERSISTENCE_WEIGHT[persona.profile.persistence] ?? 2.4,
     waggles: THRESHOLD_WAGGLES[persona.profile.threshold] ?? 4,
-    href: `${basePath}/personas/${pack.name}/${persona.name}/`,
+    href: `/personas/${pack.name}/${persona.name}/`,
   }));
 }
 

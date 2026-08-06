@@ -95,3 +95,91 @@ def test_build_e_deterministico(tmp_path):
         first = (tmp_path / "a" / "crossfire-review" / name).read_bytes()
         second = (tmp_path / "b" / "crossfire-review" / name).read_bytes()
         assert first == second, f"{name} não é determinístico"
+
+
+# ---------------------------------------------------------------------------
+# sha256 no catálogo — o hash publicado TEM que bater com o arquivo emitido
+# ---------------------------------------------------------------------------
+
+
+def test_catalogo_do_build_publica_sha256_que_bate_com_o_arquivo(tmp_path):
+    import hashlib
+
+    assert main(["build", str(PACK), "--out", str(tmp_path)]) == 0
+    out = tmp_path / "crossfire-review"
+    catalog = json.loads((out / "catalog.json").read_text(encoding="utf-8"))
+    entries = [f for p in catalog["personas"] for f in p["files"]]
+    entries += [f for t in catalog["teams"] for f in t["files"]]
+    assert entries, "catálogo sem files — o hash é o que torna o download verificável"
+    for entry in entries:
+        raw = (out / entry["name"]).read_bytes()
+        assert hashlib.sha256(raw).hexdigest() == entry["sha256"], entry["name"]
+        assert len(raw) == entry["bytes"], entry["name"]
+
+
+def test_catalog_do_site_publica_o_mesmo_sha256_do_build(tmp_path):
+    """`catalog` (site) e `build` (downloads) serializam nos MESMOS bytes —
+    se divergirem, o hash na página mente sobre o arquivo baixado."""
+    import hashlib
+
+    assert main(["build", str(PACK), "--out", str(tmp_path / "dist")]) == 0
+    out_file = tmp_path / "catalog.json"
+    assert main(["catalog", "--packs", str(PACK.parent), "--out", str(out_file)]) == 0
+    site_catalog = json.loads(out_file.read_text(encoding="utf-8"))
+    dist = tmp_path / "dist" / "crossfire-review"
+    for pack in site_catalog["packs"]:
+        for persona in pack["personas"]:
+            for entry in persona["files"]:
+                raw = (dist / entry["name"]).read_bytes()
+                assert hashlib.sha256(raw).hexdigest() == entry["sha256"], entry["name"]
+
+
+def test_catalog_nao_vaza_caminho_absoluto(tmp_path):
+    out_file = tmp_path / "catalog.json"
+    assert main(["catalog", "--packs", str(PACK.parent), "--out", str(out_file)]) == 0
+    generated_from = json.loads(out_file.read_text(encoding="utf-8"))["generatedFrom"]
+    assert ":" not in generated_from and not generated_from.startswith("/"), (
+        f"generatedFrom vaza caminho da máquina: {generated_from!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# killerbee inspect — leia antes de rodar, em forma de comando
+# ---------------------------------------------------------------------------
+
+
+def test_inspect_agent_json(tmp_path, capsys):
+    assert main(["build", str(PACK), "--out", str(tmp_path)]) == 0
+    target = tmp_path / "crossfire-review" / "forager.agent.json"
+    assert main(["inspect", str(target)]) == 0
+    out = capsys.readouterr().out
+    assert "buzz-agent-snapshot" in out
+    assert "Forager" in out
+    assert "sha256:" in out
+    assert "systemPrompt:" in out
+
+
+def test_inspect_team_png_lista_membros(tmp_path, capsys):
+    """O .team.png parece imagem e carrega três agentes — inspect mostra."""
+    assert main(["build", str(PACK), "--out", str(tmp_path)]) == 0
+    target = tmp_path / "crossfire-review" / "crossfire-review.team.png"
+    assert main(["inspect", str(target)]) == 0
+    out = capsys.readouterr().out
+    assert "buzz-team-snapshot" in out
+    assert "members: 3" in out
+    assert "Adversary" in out
+
+
+def test_inspect_prompt_imprime_o_prompt_verbatim(tmp_path, capsys):
+    assert main(["build", str(PACK), "--out", str(tmp_path)]) == 0
+    target = tmp_path / "crossfire-review" / "forager.agent.json"
+    prompt = json.loads(target.read_text(encoding="utf-8"))["definition"]["systemPrompt"]
+    assert main(["inspect", str(target), "--prompt"]) == 0
+    assert prompt.splitlines()[0] in capsys.readouterr().out
+
+
+def test_inspect_arquivo_que_nao_e_snapshot_sai_um(tmp_path, capsys):
+    alien = tmp_path / "nada.agent.json"
+    alien.write_text("não sou json", encoding="utf-8")
+    assert main(["inspect", str(alien)]) == 1
+    assert "nem PNG nem JSON" in capsys.readouterr().err

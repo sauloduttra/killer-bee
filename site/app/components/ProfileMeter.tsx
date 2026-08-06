@@ -69,11 +69,17 @@ export function ProfileMeter({ profile }: { profile: ScutellataProfile }) {
         </p>
       </div>
 
+      {/* O hint anterior — "Low means it reacts to everything in its channels" —
+          prometia comportamento que o import do desktop NÃO produz: agente
+          importado responde só a menção (o runner do desktop roda buzz-acp em
+          modo mentions; require_mention=false vive só no acp-rules.toml, que o
+          import não aceita). Mesma classe do drag-and-drop (D-017); corrigido
+          na auditoria 2026-08-06 para dizer onde cada metade vale. */}
       <Steps
         levels={THRESHOLD_ORDER}
         value={profile.threshold}
         label="threshold"
-        hint="How little it takes to get a response. Low means it reacts to everything in its channels, not only to mentions."
+        hint="How little it takes to get a response. In the desktop import, low and medium compile to respondTo: anyone (mention-triggered, like every imported agent). Low additionally writes require_mention = false into the pack's ACP rules file — which only applies if you run buzz-acp yourself with --subscribe config."
       />
       <Steps
         levels={PERSISTENCE_ORDER}

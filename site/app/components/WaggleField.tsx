@@ -9,9 +9,14 @@ import { danceTraces, tracePath, traceEnd, ringRadius } from "@/app/lib/dance";
  * JS desligado, é indexável, e cada traço é um link de verdade. A alternativa
  * (canvas animado) seria mais vistosa e diria menos.
  *
- * A animação existe só no `stroke-dashoffset`, e `prefers-reduced-motion` a
- * remove por CSS — o desenho estático já carrega a informação inteira, então
- * nada se perde.
+ * Estático de propósito — NÃO há animação (um doc-comment anterior descrevia
+ * uma animação de stroke-dashoffset que nunca existiu; corrigido na auditoria
+ * 2026-08-06). O desenho parado já carrega a informação inteira.
+ *
+ * Acessibilidade: o SVG NÃO usa role="img" — role img torna os descendentes
+ * presentacionais, e aqui cada traço é um LINK que precisa ser exposto à
+ * árvore de acessibilidade. O nome do conjunto vem do figcaption via
+ * aria-labelledby no <figure>; o role="group" agrupa os links.
  */
 export function WaggleField() {
   const traces = danceTraces(packs);
@@ -26,8 +31,8 @@ export function WaggleField() {
       <svg
         viewBox={`0 0 ${size} ${size}`}
         className="waggle-svg"
-        role="img"
-        aria-label={`${traces.length} personas plotted as waggle-dance traces`}
+        role="group"
+        aria-label={`${traces.length} personas plotted as waggle-dance traces — each trace is a link`}
       >
         {/* Anéis de escala: 8, 16, 24 e 32 conversas paralelas.
             A faixa é impressa ANTES do dado — sem ela o comprimento do traço é

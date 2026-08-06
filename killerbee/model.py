@@ -16,8 +16,9 @@ THRESHOLD_VALUES = ("low", "medium", "high")
 PERSISTENCE_VALUES = ("short", "medium", "long")
 PROPAGATION_VALUES = ("low", "medium", "high")
 
-# Faixa nativa de paralelismo por agente no Buzz Desktop:
-# desktop/src-tauri/src/managed_agents/types.rs:812 (default 10, range 1..=32).
+# Faixa nativa de paralelismo por agente no Buzz Desktop
+# (desktop/src-tauri/src/managed_agents/types.rs): default em :812,
+# faixa 1..=32 validada em :967 e :974.
 RECRUITMENT_MIN = 1
 RECRUITMENT_MAX = 32
 

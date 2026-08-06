@@ -24,24 +24,19 @@ código real do block/buzz  >  docs/PROTOCOL-NOTES.md  >  AUTONOMIA.md
 
 ---
 
-## 1. 🔴 O passo zero: isto não é um repositório git
+## 1. Git: feito. Remote: criado em 2026-08-06
 
-```bash
-cd D:/EMPRESAS/buzz/killer-bee
-git init
-git config core.longpaths true      # cargo e node_modules estouram MAX_PATH
-git config core.autocrlf input      # YAML e .sh não podem virar CRLF
-```
+~~O passo zero: isto não é um repositório git.~~ **Resolvido** — e o remote também:
+**`github.com/sauloduttra/killer-bee`**, público, criado com autorização explícita do
+Saulo (a suposição de D-020 virou fato). GitHub Pages habilitado com source
+`workflow`.
 
-**Nada foi commitado.** Dois workflows de CI existem e nunca rodaram; o gate de DCO, o
-`gitleaks` e "main sempre verde" todos pressupõem git. Antes do primeiro commit, confira
-que `.gitignore` está pegando `site/data/`, `site/public/downloads/` e `dist/` — são
-gerados a partir de `packs/`, e versionar a saída cria duas verdades que divergem calado.
+Continuam verdadeiros:
 
-**Deve ser versionado:** `site/app/fonts/` (os `.woff2` e o `fonts.css`). O CI não pode
-depender de rede para produzir o site.
-
-Falta também um `.gitattributes` com `* text=auto eol=lf`.
+- `.gitignore` pega `site/data/`, `site/public/downloads/` e `dist/` — gerados a partir
+  de `packs/`; versionar a saída cria duas verdades que divergem calado.
+- `site/app/fonts/` (os `.woff2` e o `fonts.css`) é versionado de propósito: o CI não
+  depende de rede para produzir o site.
 
 ---
 
@@ -75,8 +70,16 @@ cd site && npm ci && npm run build && node --test tests/rendered-html.test.mjs
 
 ## 3. O que existe e está verificado
 
-**Tudo verde:** ruff limpo, **76 testes Python**, **13 testes de export do site**, zero
-achados de segredo, build estático em 7 páginas.
+**Tudo verde:** ruff limpo, **131 testes Python**, **20 testes de export do site**
+(rodados COM e SEM basePath), zero achados de segredo, build estático em 7 páginas +
+robots/sitemap/og-image.
+
+**Auditoria 2026-08-06** ([docs/AUDIT-2026-08-06.md](docs/AUDIT-2026-08-06.md)): 15
+agentes em 6 dimensões + verificação adversarial; 9/9 achados fortes confirmados e
+corrigidos — incluindo dois críticos que estavam PUBLICADOS (downloads 404 sob basePath;
+promessa falsa de threshold). 33 correções aplicadas; o que ficou está priorizado no
+próprio doc. Novidades: `killerbee inspect`, sha256 por artefato no catálogo e nas
+páginas, roteiro do vídeo sem credencial.
 
 ### `killerbee/` — o emissor
 
@@ -116,13 +119,17 @@ O runbook está pronto em [`docs/LOCAL-SETUP.md`](docs/LOCAL-SETUP.md). São sei
 
 ## 5. Próximos passos, em ordem
 
-1. **`git init` + primeiro commit** (§1). Sem isso o CI é decorativo.
-2. **Rodar os dois workflows** — nunca executaram. Espere ajuste no `pages.yml`.
-3. **Ler o schema de `.agent.json` gerado contra um Buzz Desktop real.** O emissor foi
-   escrito contra o fonte e tem teste de forma, mas **ninguém importou o arquivo num app
-   rodando**. É o que mantém o item 4 do DoD em 🟨 em vez de ✅.
-4. **E3/E4/E5** quando as credenciais existirem.
-5. **Vídeo de 90s** — último, depende de 3 e 4.
+1. ~~`git init` + primeiro commit~~ — **feito**, `116be6b`.
+2. ~~Importar o arquivo num Buzz Desktop rodando~~ — **feito em 2026-08-05**, app 0.5.5.
+   `.agent.json`, `.agent.png` e `.team.json` aceitos; registro em
+   [PROTOCOL-NOTES §10.9](docs/PROTOCOL-NOTES.md). Item 4 do DoD virou ✅ e derrubou uma
+   afirmação falsa que já estava publicada no site ([D-017](docs/DECISIONS.md)).
+3. **Remote + rodar os dois workflows** — nunca executaram. Espere ajuste no `pages.yml`.
+4. **E3/E4/E5** quando as credenciais existirem (🔴, §4).
+5. **Vídeo de 90s** — último, depende de 4.
+
+O import já dá material de vídeo: o preview mostra o system prompt inteiro antes de
+confirmar, e o app rotula o team de três providers como **"Mixed models"** sozinho.
 
 Só depois disso o gate do [`BACKLOG.md`](docs/BACKLOG.md) abre.
 
@@ -150,6 +157,17 @@ teste. Não a remova.
 O primeiro leitor bibliográfico apresentou "três fontes concordantes" que eram três
 superfícies do mesmo depósito da Springer. O segundo leitor pegou. Vale para código também.
 
+### Conformidade com o fonte não é comportamento de app
+
+O emissor tinha teste de forma byte a byte contra o schema lido do `agent_snapshot.rs`, e
+estava certo — o import passou de primeira nos três formatos. Mas o **mesmo** documento que
+descrevia o import corretamente afirmava um atalho de arrastar-e-soltar que o app não tem,
+e essa frase foi publicada no site.
+
+Ler o fonte prova o que o parser aceita. **Não prova o que a UI oferece.** Afirmação sobre
+comportamento de app — número de cliques, rótulo de botão, gesto disponível — só vira
+verde depois que alguém abre o app. Detalhe em [D-017](docs/DECISIONS.md).
+
 ### Verificação por segundo leitor não é cerimônia
 
 Pegou: duas afirmações bibliográficas falsas, o caminho errado do `import.rs`, e as
@@ -167,7 +185,14 @@ alegação de novidade. E o teste: **tire a biologia — ainda se sustenta?** Re
   no spec.
 - **Nenhuma ação de workflow invoca agente** (7 variantes, `schema.rs:92`). Crossfire é por
   menção, e ninguém garante que os três respondam nem em que ordem.
-- **Importado não é rodando.** Falta credencial de provider e "Add to channel".
+- **Importado não é rodando.** Falta credencial de provider e "Add to channel". **Medido
+  no app:** o agente recém-importado mostra `Status: STOPPED`, `Start on launch: No` e aba
+  Channels vazia.
+- **Não existe arrastar-e-soltar de snapshot.** A seção Agents não tem alvo de drop
+  (`tauri.conf.json:27` desliga o drop do webview; nenhum `onDrop=` na seção nem no dialog
+  de import). O site prometia o contrário e foi corrigido — [D-017](docs/DECISIONS.md).
+- **O import de team não deduplica.** Importar as personas e depois o team cria
+  duplicatas. Oriente um ou outro — [D-018](docs/DECISIONS.md).
 - Campo extra em `.persona.md` é **erro fatal**; em snapshot é **descartado em silêncio**.
   Por isso o perfil scutellata **compila** para campo nativo.
 - Não existe leitura anônima no relay: `REQ` exige NIP-42. O site precisará de keypair

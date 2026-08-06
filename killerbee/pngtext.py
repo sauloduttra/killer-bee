@@ -54,7 +54,15 @@ def build_png_with_text(
 
     # IHDR: bit depth 8, color type 6 (RGBA), compressão/filtro/entrelace 0.
     ihdr = struct.pack(">IIBBBBB", width_px, height_px, 8, 6, 0, 0, 0)
-    text_data = keyword.encode("latin-1") + b"\x00" + text.encode("latin-1")
+    try:
+        text_data = keyword.encode("latin-1") + b"\x00" + text.encode("latin-1")
+    except UnicodeEncodeError as exc:
+        # §2.3: exceção diz qual valor e por quê — UnicodeEncodeError cru não diz.
+        raise ValueError(
+            f"tEXt exige Latin-1 e o texto tem caractere fora dela na posição "
+            f"{exc.start} ({text[exc.start : exc.start + 8]!r}); payload de "
+            "snapshot é base64 (sempre ASCII), então isto indica uso errado"
+        ) from exc
     # Cada linha da imagem: 1 byte de filtro (0 = None) + pixels RGBA.
     raw_row = b"\x00" + bytes(rgba) * width_px
     idat = zlib.compress(raw_row * height_px)
@@ -76,22 +84,48 @@ def snapshot_png(keyword: str, snapshot: dict) -> bytes:
     return build_png_with_text(keyword, payload)
 
 
-# ── Leitura (para testes de round-trip; o app não precisa disto) ────────────
+# ── Leitura ─────────────────────────────────────────────────────────────────
+# Usada pelos testes de round-trip E pelo `killerbee inspect`, que aceita
+# arquivo de TERCEIRO — por isso o parser é endurecido: limites explícitos,
+# ValueError com contexto em vez de struct.error, e parada no IEND.
+
+# Teto por chunk. O import do app rejeita team PNG > 50 MiB (PROTOCOL-NOTES
+# §10.8); um length declarado acima disso é lixo ou ataque, não snapshot.
+MAX_CHUNK_BYTES = 50 * 1024 * 1024
 
 
 def iter_chunks(png: bytes):
-    """Itera (tipo, dados) validando assinatura e CRC de cada chunk."""
+    """Itera (tipo, dados) validando assinatura, limites e CRC de cada chunk.
+
+    Toda entrada malformada levanta ``ValueError`` dizendo o quê e onde —
+    nunca ``struct.error`` cru. A iteração para no ``IEND``: o formato PNG
+    termina ali, e bytes anexados depois não são chunks.
+    """
     if png[:8] != PNG_SIGNATURE:
         raise ValueError("não é PNG: assinatura errada")
     offset = 8
     while offset < len(png):
+        if offset + 8 > len(png):
+            raise ValueError(f"PNG truncado: cabeçalho de chunk incompleto no offset {offset}")
         (length,) = struct.unpack_from(">I", png, offset)
+        if length > MAX_CHUNK_BYTES:
+            raise ValueError(
+                f"chunk declara {length:,} bytes (> {MAX_CHUNK_BYTES:,}) no offset "
+                f"{offset} — acima do que qualquer snapshot legítimo teria"
+            )
+        if offset + 12 + length > len(png):
+            raise ValueError(
+                f"PNG truncado: chunk no offset {offset} declara {length} bytes "
+                f"mas o arquivo termina antes"
+            )
         chunk_type = png[offset + 4 : offset + 8]
         data = png[offset + 8 : offset + 8 + length]
         (crc,) = struct.unpack_from(">I", png, offset + 8 + length)
         if crc != zlib.crc32(chunk_type + data) & 0xFFFFFFFF:
             raise ValueError(f"CRC inválido no chunk {chunk_type!r}")
         yield chunk_type, data
+        if chunk_type == b"IEND":
+            return
         offset += 12 + length
 
 

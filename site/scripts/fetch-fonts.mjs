@@ -1,5 +1,6 @@
 /**
- * Baixa as fontes OFL e as auto-hospeda em `public/fonts/`.
+ * Baixa as fontes OFL e as auto-hospeda em `app/fonts/` (ver OUT_DIR — um
+ * cabeçalho anterior dizia `public/fonts/`, que nunca foi o destino real).
  *
  * Por que existe: o buzzdir declara `"Aptos Display"` e não embarca nada
  * (`globals.css:55-56`, sem um único `@font-face` no repositório). Quem não tem
@@ -9,8 +10,12 @@
  * O que este script faz:
  *   1. pede o CSS do Google Fonts com um User-Agent moderno — sem isso a API
  *      devolve `ttf`, não `woff2`
- *   2. extrai as URLs de `woff2` e baixa cada arquivo
- *   3. reescreve o `src` para caminho local e grava `public/fonts/fonts.css`
+ *   2. FILTRA os blocos `@font-face` pelos comentários de subset da resposta
+ *      (`/* latin *​/` etc.) — a API css2 IGNORA um parâmetro `subset=` na URL,
+ *      e uma versão anterior confiava nele: baixava e versionava também
+ *      cyrillic, cyrillic-ext e vietnamese (auditoria 2026-08-06)
+ *   3. baixa só os `woff2` dos blocos mantidos, reescreve o `src` para caminho
+ *      local e grava `app/fonts/fonts.css`
  *
  * As fontes ficam **versionadas** no repositório. Rodar isto é passo de
  * manutenção, não de build: o CI não deve depender de rede para produzir o site,
@@ -62,7 +67,28 @@ function cssUrl(family) {
   const spec = family.italic
     ? `${name}:ital,${family.axis.replace("wght@", "wght@0,").replace(/;(?=\d)/g, ";0,")};1,400`
     : `${name}:${family.axis}`;
-  return `https://fonts.googleapis.com/css2?family=${spec}&display=swap&subset=${family.subsets.join(",")}`;
+  // Sem `subset=`: a API css2 ignora o parâmetro. A seleção de subset é feita
+  // do lado de cá, filtrando os blocos da resposta (keepSubsets).
+  return `https://fonts.googleapis.com/css2?family=${spec}&display=swap`;
+}
+
+/**
+ * Mantém só os blocos `@font-face` dos subsets pedidos.
+ *
+ * A resposta da css2 anota cada bloco com um comentário `/* latin *​/` na linha
+ * anterior — é o único contrato disponível para saber de que subset o arquivo
+ * é. Bloco sem anotação é mantido (falha aberta: fonte demais é peso; fonte de
+ * menos é layout quebrado).
+ */
+function keepSubsets(css, wanted) {
+  const blocks = css.split(/(?=\/\* [a-z-]+ \*\/)/);
+  return blocks
+    .filter((block) => {
+      const marker = block.match(/^\/\* ([a-z-]+) \*\//);
+      if (!marker) return true;
+      return wanted.includes(marker[1]);
+    })
+    .join("");
 }
 
 async function fetchText(url) {
@@ -90,6 +116,7 @@ async function main() {
       process.exitCode = 1;
       continue;
     }
+    css = keepSubsets(css, family.subsets);
 
     const matches = [...css.matchAll(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+\.woff2)\)/g)];
     if (matches.length === 0) {

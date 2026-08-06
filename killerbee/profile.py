@@ -60,7 +60,8 @@ def validate_profile(profile: ScutellataProfile) -> list[str]:
     elif not RECRUITMENT_MIN <= profile.recruitment <= RECRUITMENT_MAX:
         errors.append(
             f"recruitment {profile.recruitment} fora da faixa nativa "
-            f"{RECRUITMENT_MIN}..={RECRUITMENT_MAX} (types.rs:812)"
+            f"{RECRUITMENT_MIN}..={RECRUITMENT_MAX} (default em types.rs:812; "
+            "faixa validada em types.rs:967)"
         )
     if profile.persistence not in PERSISTENCE_VALUES:
         errors.append(
@@ -98,7 +99,8 @@ def compile_acp_trigger(profile: ScutellataProfile) -> dict:
 
     - ``require_mention`` SEMPRE presente e explícito — nunca herdado do default,
       porque o `impl Default` do campo é `false` (filter.rs:122) e uma regra TOML
-      sem ele nasce surda. Ver DECISIONS D-007.
+      sem ele nasce casando TODAS as mensagens do canal, não só menções.
+      Ver DECISIONS D-007.
     - threshold ``low``  → reage a tudo no canal (``require_mention: false``)
     - ``medium``/``high`` → só menção (``require_mention: true``)
     """

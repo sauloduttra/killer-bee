@@ -27,23 +27,54 @@ There is no one-click install in Buzz today, and this pack will not pretend
 otherwise.
 
 1. Download `crossfire-review.team.json` (or the `.team.png`).
-2. Buzz Desktop → **Agents** → **New team** → **Import** → pick the file.
-   (4 clicks + the OS file picker; drag-and-drop onto the Agents section skips two.)
+2. Buzz Desktop → **Agents** → the **`+`** card under *Agent teams* → **Import** → pick
+   the file → confirm. (4 clicks + the OS file picker. There is no drag-and-drop
+   shortcut.)
 3. Imported ≠ running: each agent still needs provider credentials in the
    app's global config, and "Add to channel" is a separate action per agent.
 
+Import the team **or** the three personas, never both — the team snapshot embeds each
+member in full, and the import does not deduplicate by name.
+
+Verified in Buzz Desktop 0.5.5 on 2026-08-05: the team imports with 3 members and the app
+labels the card **"Mixed models"**, because the three run on Anthropic, OpenAI and
+OpenRouter.
+
 ## Orchestration is by mention, not by guarantee
 
-The workflow trigger posts **one message mentioning the three agents**; each
-responds because the mention filter matched. Nothing guarantees that all three
-respond, nor in what order — that is how agents work in Buzz (members, not cron
-jobs), and we would rather tell you now than have you discover it mid-demo.
+You start a round by posting **one message mentioning the three agents** —
+yourself, or from a Buzz workflow **you** wire up. **The pack does not ship a
+workflow**; nothing you download posts that message for you. Each agent
+responds because the mention matched. Nothing guarantees that all three
+respond, nor in what order — that is how agents work in Buzz (members, not
+cron jobs), and we would rather tell you now than have you discover it
+mid-demo.
 
-Adversary and Guard run with a **low threshold** (they react to every patch in
-subscribed channels, not only mentions). Put this team in a dedicated review
-channel, not in `#general`.
+## The low threshold is opt-in, and here is exactly where it lives
+
+Two of the three personas declare threshold **low** — "react to every patch,
+not only mentions". Honest scope of that claim:
+
+- **Desktop import path (the install above): mention-only.** The desktop
+  launches its agents in mention mode and the snapshot format has no trigger
+  field — nothing in a `.team.json` can change that. An imported Adversary
+  reacts to @mentions, like every other imported agent.
+- **The low threshold materializes only via `acp-rules.toml`**, which is in
+  the box but is NOT importable in the app. It applies if you run the agent
+  process yourself:
+
+  ```
+  buzz-acp --subscribe config --config acp-rules.toml
+  ```
+
+  In that mode Adversary and Guard match **every message** in their channels
+  (`require_mention = false`), so put the team in a dedicated review channel,
+  not in `#general`. (This path has not been exercised end-to-end by us yet —
+  running it needs provider credentials; tracked openly in the repo.)
 
 The generated `acp-rules.toml` sets `require_mention` **explicitly on every
-rule** — the upstream default for hand-written rules is `false`
-(`crates/buzz-acp/src/filter.rs:122`), and a rule born deaf to mentions would
-kill this preset silently.
+rule** — the upstream default for the field is `false`
+(`crates/buzz-acp/src/filter.rs:122`), so a rule that omits it is born
+matching **everything** in the channel, mentions or not. Loud excess, not
+silence — either way, not what the author meant, which is why the file never
+relies on the default.

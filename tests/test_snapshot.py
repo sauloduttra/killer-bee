@@ -70,10 +70,20 @@ def test_memory_sempre_none_e_vazia():
 
 
 def test_definition_name_recebe_display_name_como_o_emissor_upstream():
-    """agent_snapshot.rs:195-198: definition.name = display_name, não o slug."""
+    """agent_snapshot.rs:198-201: definition.name = display_name, não o slug."""
     snapshot = agent_snapshot(make_persona(name="guard", display_name="Guard 🛡"))
     assert snapshot["definition"]["name"] == "Guard 🛡"
     assert snapshot["profile"]["displayName"] == "Guard 🛡"
+
+
+def test_arrays_vazias_sao_omitidas_como_no_emissor_upstream():
+    """agent_snapshot.rs:112-115: skip_serializing_if = Vec::is_empty para
+    respondToAllowlist e namePool. Emitir `[]` divergia do exportador de
+    referência — o preview do app descartava os campos na reserialização
+    (observado em §10.9). Auditoria 2026-08-06."""
+    definition = agent_snapshot(make_persona())["definition"]
+    assert "respondToAllowlist" not in definition
+    assert "namePool" not in definition
 
 
 def test_perfil_scutellata_compila_para_campos_nativos():

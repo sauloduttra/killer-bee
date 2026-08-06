@@ -90,11 +90,17 @@ There is no one-click install in Buzz today. No `buzz install` command, no
 promises more than it delivers.
 
 1. Download the `.agent.json` (or `.agent.png`).
-2. Buzz Desktop → **Agents** → **New team** / **New agent** → **Import** → pick the file.
-   **Four clicks plus the OS file picker.** Drag-and-drop onto the Agents section saves
-   two.
+2. Buzz Desktop → **Agents** → the **`+`** card → **Import** → pick the file → confirm in
+   the preview. **Four clicks plus the OS file picker.** There is no drag-and-drop
+   shortcut — the Agents section has no drop target.
 3. **Imported is not running.** The agent still needs provider credentials from the
    app's global config, and "Add to channel" is a separate action.
+
+Import a **team** or the individual **personas**, not both: the team snapshot embeds each
+member in full, and importing it after the personas creates duplicates.
+
+Counted and confirmed in a running Buzz Desktop 0.5.5 on 2026-08-05 — including the
+correction to step 2, which said something the app does not do.
 
 ## Orchestration is by mention, not by guarantee
 
@@ -118,10 +124,13 @@ its fixed-threshold form, an individual takes on a task with probability
 P(act) = sⁿ / (sⁿ + θⁿ)
 ```
 
-where `s` is stimulus intensity and `θ` the individual's threshold. It is a logistic gate
-with a per-agent bias — nothing more exotic than that, and **no algorithmic novelty is
-claimed here.** The model is from the 1990s. What is ours is the mapping onto the fields
-Buzz's runtime actually reads:
+where `s` is stimulus intensity, `θ` the individual's threshold, and `n` the steepness
+exponent — how sharply response switches on around `θ` (the literature typically fits
+`n ≈ 2`). Technically this is a **Hill function** in `s` (equivalently, logistic in
+`log s` — an earlier revision called it a "logistic gate", which is only right in log
+space). Nothing more exotic than that, and **no algorithmic novelty is claimed here.**
+The model is from the 1990s. What is ours is the mapping onto the fields Buzz's runtime
+actually reads:
 
 | Trait | Field | Compiles to |
 |---|---|---|
@@ -130,11 +139,17 @@ Buzz's runtime actually reads:
 | pursues much further | `persistence` | idle and turn timeouts |
 | swarms more often per season | `propagation` | nothing at runtime — catalog metadata |
 
-Today's implementation is the **static** version: three discrete values chosen by the pack
-author, no continuous stimulus, no learning. The adaptive variant — where `θ` moves with
-experience, which is what actually makes division of labour self-organize — is
+To be precise about what runs: **the equation above is not computed anywhere in this
+codebase.** There is no `s`, no measured stimulus, no `P` — today's implementation is the
+degenerate case where the author picks one of three discrete `θ` levels and the gate is
+compiled away into static fields (a lookup table in `killerbee/profile.py`, locked by a
+property test: distinct profiles compile to distinct definitions, except `propagation`,
+the one axis declared inert). Saying "static version" alone would be softer than the
+truth. The adaptive variant — where `θ` moves with experience, which is what actually
+makes division of labour self-organize — is
 [B-02 in the backlog](docs/BACKLOG.md#b-02--limiar-adaptativo-no-perfil-scutellata) and is
-**not built**.
+**not built**. The timeout pairs behind `persistence` (300/600, 900/1800, 3600/7200
+seconds) are our choice, stated without a sensitivity analysis.
 
 Buzz rejects unknown keys in persona frontmatter outright, and silently discards them in
 snapshots. So the profile lives in our manifest and **compiles** to native fields. The full
@@ -164,6 +179,13 @@ valid — the format is theirs, not ours.
 `buzzdir.xyz` is a technical reference for this project's frontend. It is also
 independent community work, maintained by pavlenex, MIT-licensed. See
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
+## Author
+
+Built by **Saulo Duttra** —
+[GitHub](https://github.com/sauloduttra) ·
+[X](https://x.com/sauloduttra) ·
+[Nostr](https://primal.net/p/nprofile1qqsxwact6elv3edmvdnx88p87ug6hklxrqxzvax360j382gq8s869jsz37dga)
 
 ## License
 

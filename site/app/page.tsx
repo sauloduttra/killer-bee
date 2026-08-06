@@ -88,9 +88,10 @@ export default function Home() {
           <div>
             <h3>Teams answer by mention</h3>
             <p>
-              A workflow posts one message mentioning the agents; each replies because the
-              mention matched. Nothing guarantees all of them answer, or in what order. That is
-              how Buzz models agents — as members, not cron jobs.
+              You post one message mentioning the agents — yourself, or from a workflow you
+              wire up; the pack does not ship one. Each replies because the mention matched.
+              Nothing guarantees all of them answer, or in what order. That is how Buzz models
+              agents — as members, not cron jobs.
             </p>
           </div>
         </div>
@@ -100,8 +101,9 @@ export default function Home() {
         <div>
           <h2 id="submit-heading">Have a pack?</h2>
           <p>
-            The catalog is the repository. A pull request is the submission, a fork is the
-            governance. Packs are validated in CI — an invalid one fails the build.
+            The catalog is the repository. The button below opens an issue with the checklist;
+            a pull request lands the pack; a fork is the governance. Packs are validated in
+            CI — an invalid one fails the build.
           </p>
         </div>
         <div className="cta-comb">

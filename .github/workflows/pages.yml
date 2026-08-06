@@ -5,10 +5,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Mínimo no nível do workflow. `pages: write` e `id-token: write` moram SÓ no
+# job deploy — o job build roda `npm ci` (~400 pacotes com script de lifecycle)
+# e não tem por que carregar credencial de publicação (auditoria 2026-08-06).
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 # Uma publicação por vez, e a que está em voo não é cancelada — cancelar um
 # deploy pela metade deixa o site num estado que ninguém pediu.
@@ -16,26 +17,29 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+# Actions pinadas por SHA de commit (tag em comentário): tag é mutável e uma
+# action de terceiro comprometida entraria aqui com as permissões do job.
+# SHAs resolvidos via `gh api repos/<owner>/<repo>/commits/<tag>` em 2026-08-06.
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       # O catálogo é gerado pelo CLI Python a partir de packs/, então o job
       # precisa das duas toolchains.
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
         with:
           enable-cache: true
       - run: uv sync --locked
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22.13.0"
           cache: npm
           cache-dependency-path: site/package-lock.json
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
         id: pages
 
       - run: npm ci
@@ -47,23 +51,34 @@ jobs:
           # `configure-pages` resolve o basePath do repositório; sem isso os
           # caminhos quebram quando o site é servido em /<repo>/.
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
-          NEXT_PUBLIC_SITE_URL: ${{ steps.pages.outputs.origin }}
+          # `base_url` = origin + base_path. A versão anterior passava `origin`
+          # cru, e canonical/og:url saíam SEM o /<repo>/ — endereços que 404am
+          # (auditoria 2026-08-06, CONFIRMED). O metadataBase precisa carregar o
+          # subcaminho porque o Next não injeta basePath em URL de metadata.
+          NEXT_PUBLIC_SITE_URL: ${{ steps.pages.outputs.base_url }}
         run: npm run build
 
       - name: Test the exported HTML
         working-directory: site
+        env:
+          # O teste de integridade de links confere que todo href interno
+          # carrega o basePath do deploy — é o teste que pegaria o 404.
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
         run: node --test tests/rendered-html.test.mjs
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: site/out
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

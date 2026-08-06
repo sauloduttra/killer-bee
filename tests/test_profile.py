@@ -70,3 +70,57 @@ def test_trigger_acp_por_threshold():
     assert compile_acp_trigger(ScutellataProfile(threshold="low")) == {"require_mention": False}
     assert compile_acp_trigger(ScutellataProfile(threshold="medium")) == {"require_mention": True}
     assert compile_acp_trigger(ScutellataProfile(threshold="high")) == {"require_mention": True}
+
+
+def test_compilacao_e_injetiva_salvo_propagation():
+    """Round-trip da tabela: perfis distintos → definitions distintas, EXCETO
+    quando a diferença é só propagation (o único eixo declarado inerte,
+    PROFILE-COMPILATION.md) ou o colapso documentado low/medium→anyone do
+    respondTo. Se alguém mudar a tabela e dois perfis distintos passarem a
+    compilar igual sem estar nessas exceções, este teste acusa a perda de
+    informação. Auditoria 2026-08-06 (lacuna metodológica: o eixo threshold
+    não tinha NENHUMA propriedade travada)."""
+    from itertools import product
+
+    from killerbee.model import (
+        PERSISTENCE_VALUES,
+        PROPAGATION_VALUES,
+        THRESHOLD_VALUES,
+    )
+
+    seen: dict[tuple, tuple] = {}
+    for threshold, recruitment, persistence, propagation in product(
+        THRESHOLD_VALUES, (1, 8, 32), PERSISTENCE_VALUES, PROPAGATION_VALUES
+    ):
+        profile = ScutellataProfile(
+            threshold=threshold,
+            recruitment=recruitment,
+            persistence=persistence,
+            propagation=propagation,
+        )
+        compiled = compile_to_definition(profile)
+        trigger = compile_acp_trigger(profile)
+        key = (
+            compiled["parallelism"],
+            compiled["respondTo"],
+            compiled["idleTimeoutSeconds"],
+            compiled["maxTurnDurationSeconds"],
+            trigger["require_mention"],
+        )
+        source = (threshold, recruitment, persistence)  # sem propagation
+        if key in seen:
+            # Mesmo destino só é aceitável se a fonte (menos propagation)
+            # for a mesma — propagation é inerte por contrato.
+            assert seen[key] == source, (
+                f"perda de informação: {seen[key]} e {source} compilam idêntico"
+            )
+        seen[key] = source
+
+
+def test_threshold_low_e_medium_divergem_na_regra_acp():
+    """low e medium colapsam no respondTo (ambos anyone) mas DIVERGEM no
+    require_mention — é a regra ACP que carrega o eixo O-QUÊ. Se essa
+    divergência sumir, threshold vira um eixo de dois valores."""
+    low = compile_acp_trigger(ScutellataProfile(threshold="low"))
+    medium = compile_acp_trigger(ScutellataProfile(threshold="medium"))
+    assert low["require_mention"] != medium["require_mention"]

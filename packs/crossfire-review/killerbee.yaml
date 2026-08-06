@@ -11,7 +11,7 @@ description: >-
   Three reviewers, three providers, one patch. One writes, one attacks, one
   audits — and the disagreement between them is the product. Crossfire review
   as a team preset for any Buzz channel.
-author: Killer Bee contributors
+author: Saulo Duttra
 license: Apache-2.0
 tags: [review, code-review, security, crossfire, team]
 

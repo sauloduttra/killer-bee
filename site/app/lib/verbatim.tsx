@@ -234,8 +234,19 @@ export function VerbatimPrompt({ source, id = "prompt" }: { source: string; id?:
             >
               {/* O número é conteúdo gerado por CSS (`::before`) para não entrar
                   na seleção — copiar o prompt tem que copiar o prompt, não uma
-                  coluna de números. */}
-              <a className="vline-anchor" href={`#L${number}`} aria-label={`Line ${number}`} />
+                  coluna de números.
+
+                  tabIndex={-1}: sem isto, um prompt de 50-200 linhas injetava
+                  50-200 paradas de Tab invisíveis entre o toggle e o resto da
+                  página (auditoria 2026-08-06). A âncora continua clicável e o
+                  deep-link #Ln continua funcionando — o id está no <li>; ela
+                  só sai da ordem de tabulação. */}
+              <a
+                className="vline-anchor"
+                href={`#L${number}`}
+                aria-label={`Line ${number}`}
+                tabIndex={-1}
+              />
               <span className="vline-text">{inkLine(line, `l${number}`)}</span>
             </li>
           );
