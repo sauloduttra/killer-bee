@@ -12,6 +12,7 @@ import {
   downloadHref,
   teamFileName,
 } from "@/app/lib/install";
+import { OG_ALT } from "@/app/lib/site";
 import { CopyButton } from "@/app/components/CopyButton";
 import { Checksums } from "@/app/components/Checksums";
 import { ProfileMeter } from "@/app/components/ProfileMeter";
@@ -33,13 +34,15 @@ export async function generateMetadata({
     description: pack.description,
     alternates: { canonical: `./` },
     // `openGraph` da página SUBSTITUI o do layout, não mescla — sem repetir
-    // type e siteName aqui, as páginas internas os perdiam (auditoria 2026-08-06).
+    // type, siteName e images aqui, as páginas internas os perdiam
+    // (auditoria 2026-08-06).
     openGraph: {
       type: "website",
       siteName: "Waggle — Killer Bee agent packs for Buzz",
       title: `${pack.name} — Waggle`,
       description: pack.description,
       url: "./",
+      images: [{ url: "/og.png", width: 1200, height: 630, alt: OG_ALT }],
     },
   };
 }

@@ -11,3 +11,9 @@
 export const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://sauloduttra.github.io/killer-bee"
 ).replace(/\/$/, "");
+
+/** Alt da og:image — compartilhado entre o layout e as páginas internas, que
+ * precisam repetir `images` porque openGraph de página substitui o do layout. */
+export const OG_ALT =
+  "Waggle — Killer Bee packs for Buzz. Buzz has a persona catalog inside each " +
+  "community; Killer Bee is the catalog between them. By Saulo Duttra.";

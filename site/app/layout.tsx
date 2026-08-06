@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { REPO_URL } from "@/app/lib/install";
-import { SITE_URL } from "@/app/lib/site";
+import { OG_ALT, SITE_URL } from "@/app/lib/site";
 import "./globals.css";
 
 /**
@@ -29,6 +29,13 @@ export const metadata: Metadata = {
     title: "Waggle — Killer Bee agent packs for Buzz",
     description:
       "Persona and agent-team packs for Buzz, with every system prompt readable in full before you install.",
+    // Asset explícito em public/, NUNCA a convenção app/opengraph-image.png:
+    // a convenção compõe metadataBase (que carrega o basePath) com a rota do
+    // arquivo (que TAMBÉM recebe basePath) e o deploy real emitiu
+    // /killer-bee/killer-bee/... — 404 no preview de todo link compartilhado.
+    // Visto no ar em 2026-08-06, no primeiro deploy. URL relativa resolve
+    // contra o metadataBase uma vez só.
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: OG_ALT }],
   },
   robots: { index: true, follow: true },
 };

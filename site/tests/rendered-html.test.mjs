@@ -348,6 +348,20 @@ test("superfície de compartilhamento: og:image, favicon, robots e sitemap", asy
   // impressão desperdiçada (auditoria 2026-08-06).
   const html = await read("index.html");
   assert.ok(/property="og:image"/.test(html), "og:image ausente do <head>");
+  // Regressão vista NO AR no primeiro deploy: a convenção app/opengraph-image
+  // compunha basePath duas vezes (/killer-bee/killer-bee/...) e o preview
+  // 404ava. O asset explícito em public/og.png resolve uma vez só — e o
+  // arquivo tem que existir no export.
+  const ogUrl = /property="og:image" content="([^"]+)"/.exec(html)?.[1] ?? "";
+  assert.ok(ogUrl.endsWith("/og.png"), `og:image não aponta para /og.png: ${ogUrl}`);
+  const basePath = process.env.PAGES_BASE_PATH ?? "";
+  if (basePath) {
+    assert.ok(
+      !ogUrl.includes(`${basePath}${basePath}/`),
+      `og:image com basePath dobrado: ${ogUrl}`,
+    );
+  }
+  assert.ok(existsSync(join(OUT, "og.png")), "public/og.png não chegou ao export");
   assert.ok(/rel="icon"/.test(html), "favicon ausente do <head>");
   assert.ok(existsSync(join(OUT, "robots.txt")), "robots.txt não exportado");
   assert.ok(existsSync(join(OUT, "sitemap.xml")), "sitemap.xml não exportado");

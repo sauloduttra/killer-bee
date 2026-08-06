@@ -1,6 +1,11 @@
-// Gera site/app/opengraph-image.png (1200×630) uma única vez, para ser
-// versionado. Usa o sharp já presente em site/node_modules — o build do site
-// NÃO depende disto; é ferramenta de geração, como fetch-fonts.
+// Gera site/public/og.png (1200×630) uma única vez, para ser versionado.
+// Usa o sharp já presente em site/node_modules — o build do site NÃO depende
+// disto; é ferramenta de geração, como fetch-fonts.
+//
+// public/, NUNCA app/opengraph-image.png: a convenção de arquivo do Next
+// compõe metadataBase (que já carrega o basePath) com a rota que TAMBÉM
+// recebe basePath — o primeiro deploy real emitiu /killer-bee/killer-bee/…
+// e o preview de compartilhamento 404ava.
 import sharp from "sharp";
 import { writeFileSync } from "node:fs";
 
@@ -30,5 +35,5 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
 </svg>`;
 
 const png = await sharp(Buffer.from(svg)).png().toBuffer();
-writeFileSync("D:/EMPRESAS/buzz/killer-bee/site/app/opengraph-image.png", png);
+writeFileSync(new URL("../public/og.png", import.meta.url), png);
 console.log("og image:", png.length, "bytes");

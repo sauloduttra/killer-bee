@@ -124,10 +124,26 @@ jobs:
         with:
           fetch-depth: 0 # gitleaks precisa do histórico
 
-      - name: gitleaks
-        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+      # Binário oficial, versão E checksum pinados (checksums.txt do release),
+      # varrendo o HISTÓRICO INTEIRO a cada rodada — não o delta do push.
+      #
+      # Por que não a gitleaks-action: no primeiro push ela montou o range
+      # `<raiz>^..HEAD`, que não existe (commit raiz não tem pai), morreu em
+      # "unknown revision" e reportou "no leaks found in partial scan" tendo
+      # varrido ~0 bytes — falha de coleta vestida de resultado limpo, a
+      # anti-lição D-014 em forma de action. O repo é pequeno; o scan completo
+      # custa segundos e não depende do payload do evento.
+      - name: gitleaks (histórico completo, binário pinado)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: 8.24.3
+          SHA256: 9991e0b2903da4c8f6122b5c3186448b927a5da4deef1fe45271c3793f4ee29c
+        run: |
+          set -euo pipefail
+          curl -sSfL -o /tmp/gitleaks.tgz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz"
+          echo "${SHA256}  /tmp/gitleaks.tgz" | sha256sum -c -
+          tar -xzf /tmp/gitleaks.tgz -C /tmp gitleaks
+          /tmp/gitleaks detect --source . --redact --exit-code 1 -v
 
       - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
       - name: scanner próprio (stdlib, sem deps)
