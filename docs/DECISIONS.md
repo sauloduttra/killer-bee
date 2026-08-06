@@ -494,3 +494,25 @@ endurecido) e imprime identidade, modelo, timeouts e o prompt com `--prompt`.
 (markdownFileCard.ts:101-103) — pré-requisito da distribuição Nostr-native — e o
 `inspect` é a tese "leia antes de rodar" executável, para artefato nosso ou alheio.
 **Custo de reversão:** campos aditivos no catálogo; remover não quebra página antiga.
+
+---
+
+## D-025 — Segundo host: Cloudflare Pages, com os headers que o GitHub Pages não dá
+
+**Quando:** 2026-08-06, pedido direto do Saulo (autenticação wrangler já existia na máquina)
+**O que:** o site também vive em **https://killer-bee-4rn.pages.dev/** (projeto
+`killer-bee`; o subdomínio limpo estava tomado globalmente e o Cloudflare sufixou).
+`site/public/_headers` entrega CSP como **header HTTP real** — incluindo
+`frame-ancestors 'none'`, que em `<meta>` é inerte — mais `nosniff`, `X-Frame-Options`
+e `Referrer-Policy`. Resolve o achado #59 da auditoria. Deploy manual:
+`npm run build` (com `PAGES_BASE_PATH=""` e `NEXT_PUBLIC_SITE_URL` do pages.dev) +
+`npx wrangler pages deploy out --project-name=killer-bee`.
+**Alternativa:** migrar de vez e desligar o GitHub Pages.
+**Motivo do paralelo:** o GH Pages redeploya sozinho a cada push (CI já verde) e o
+endereço `sauloduttra.github.io/killer-bee` amarra o site ao autor; o Cloudflare tem os
+headers e domínio raiz (sem basePath). Manter os dois custa um comando por release.
+**Custo assumido:** conteúdo duplicado em dois hosts, cada um com canonical próprio —
+tolerável agora; quando houver domínio definitivo, ele vira o canonical único e o outro
+host aponta para ele (uma linha de env no build de cada lado).
+**Automação futura:** deploy do Cloudflare no CI exigiria `CLOUDFLARE_API_TOKEN` como
+secret do repo — criação/movimentação de credencial é 🔴, fica para o Saulo decidir.

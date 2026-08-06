@@ -124,7 +124,10 @@ O runbook está pronto em [`docs/LOCAL-SETUP.md`](docs/LOCAL-SETUP.md). São sei
    Registro em [PROTOCOL-NOTES §10.9](docs/PROTOCOL-NOTES.md).
 3. ~~Remote + rodar os dois workflows~~ — **feito em 2026-08-06**:
    `github.com/sauloduttra/killer-bee`, público. O site está NO AR em
-   **https://sauloduttra.github.io/killer-bee/** (deploy passou de primeira). O
+   **https://sauloduttra.github.io/killer-bee/** (deploy automático no push) e
+   também em **https://killer-bee-4rn.pages.dev/** (Cloudflare Pages, deploy
+   manual via wrangler — é o host com CSP em header real e `frame-ancestors`
+   funcional; ver D-025). O
    aviso "espere ajuste" do handoff anterior estava certo três vezes: o primeiro
    deploy real revelou og:image com basePath dobrado (convenção
    `app/opengraph-image` — banida, ver comentário em `layout.tsx`), o gitleaks
