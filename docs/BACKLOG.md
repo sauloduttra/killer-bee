@@ -71,11 +71,23 @@ auto-organiza sem ninguém mandar.
 deixa de ser constante em YAML e vira **condição inicial**. Um `Guard` que recebe 👍 em
 achado de segurança abaixa sozinho o próprio limiar para menção de segurança.
 
-**Teste mínimo:** simular 200 menções sintéticas com dois perfis e mostrar convergência
-para especialização.
-**Depende de:** nada novo — o log assinado do relay já dá o histórico de graça.
-**Reversão:** **média.** Muda o schema do pack, então **decidir antes de congelar o
-formato** — hoje `docs/PROFILE-COMPILATION.md` trata `threshold` como constante.
+**Teste mínimo:** ~~simular 200 menções sintéticas com dois perfis e mostrar convergência
+para especialização~~ — **feito em 2026-08-06, e o enunciado estava errado.** A matemática
+foi derivada, refutada adversarialmente e implementada pura em `killerbee/threshold.py`;
+o resultado está em [`THRESHOLD-DYNAMICS.md`](THRESHOLD-DYNAMICS.md).
+
+**O que mudou:** o ponto fixo `θ* = s·(ξ/φ)^(1/n)` é **repulsor**, não atrator. Não há
+convergência para especialização — há **polarização**: agente isolado satura no piso
+(responde a tudo) ou no teto (não responde). Ligar o reforço ingenuamente produziria
+exatamente isso. O que falta não é ajuste de ganho, é **acoplamento**: estímulo
+compartilhado que cai quando alguém trabalha (implementado em `simulate_colony`).
+
+**Estado:** matemática ✅ construída e validada · runtime ⛔ (exige agente vivo, série E).
+**Depende de:** ~~nada novo~~ — a matemática não dependia; **ligá-la depende de credencial**.
+**Reversão:** **média** — mas o schema do pack **NÃO foi mudado** (D-031): `threshold`
+continua constante e vira condição inicial só quando houver quem o mova. Congelar o
+formato agora, com base numa dinâmica que ninguém rodou, seria o inverso do que este
+item pedia.
 
 ---
 

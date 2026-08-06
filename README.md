@@ -151,10 +151,27 @@ degenerate case where the author picks one of three discrete `θ` levels and the
 compiled away into static fields (a lookup table in `killerbee/profile.py`, locked by a
 property test: distinct profiles compile to distinct definitions, except `propagation`,
 the one axis declared inert). Saying "static version" alone would be softer than the
-truth. The adaptive variant — where `θ` moves with experience, which is what actually
-makes division of labour self-organize — is
-[B-02 in the backlog](docs/BACKLOG.md#b-02--limiar-adaptativo-no-perfil-scutellata) and is
-**not built**. The timeout pairs behind `persistence` (300/600, 900/1800, 3600/7200
+truth. The adaptive variant — where `θ` moves with experience — now exists as **pure,
+tested mathematics** in [`killerbee/threshold.py`](killerbee/threshold.py), and it is
+**not wired to anything**: no agent's threshold moves, the manifest format is unchanged,
+and `build` never calls it. Wiring it needs a running agent, which needs credentials.
+
+Analysing it changed what we would have built. The fixed point has a closed form,
+`θ* = s·(ξ/φ)^(1/n)` with execution rate `φ/(ξ+φ)`, and it is a **repeller**: the drift
+grows with θ, so acting makes acting cheaper. An isolated agent under constant stimulus
+does not settle at `θ*` — it runs away from it and saturates. So the backlog's own
+phrasing ("convergence to specialization") was wrong: what you get is **polarization**,
+agents that answer everything or nothing.
+
+Adding the colony's coupling — a shared stimulus that drops when someone works — buys
+**regulation**, and only that: demand is met in every seed, but four *identical* agents
+split the load evenly rather than differentiating. Specialization appears when the
+starting thresholds differ: the one below the separatrix does ~55% of the work and the
+rest sit at ~1%. Which makes the `threshold` a pack author picks today not a sensitivity
+knob but **the choice of who becomes the specialist** once the dynamics are ever wired
+up. Derivation, the adversarial refutation that corrected three of its
+corollaries, and the dimensional error of ours that the property tests caught are all in
+[`docs/THRESHOLD-DYNAMICS.md`](docs/THRESHOLD-DYNAMICS.md). The timeout pairs behind `persistence` (300/600, 900/1800, 3600/7200
 seconds) are our choice — the invariant they keep (turn cap = 2× idle window, adjacent
 levels ×3–4 apart so the *ordering* is the contract), the human anchors behind them,
 and what measurement would invalidate them are declared in

@@ -618,3 +618,27 @@ TAMBÉM os arquivos de team (antes só personas). Terceira cópia do HUB no site
 decoder upstream só fala PNG), Pillow (dependência de 10 MB para 250 linhas auditáveis).
 **Custo de reversão:** remover body=... nos dois helpers de cli.py e o módulo; os PNGs
 voltam a 1×1 e os hashes do catálogo se recalculam sozinhos no mesmo build.
+
+## D-031 — B-02: a matemática entra, o schema do pack NÃO
+
+**Quando:** 2026-08-06, backlog aberto desde o vídeo
+**O que:** `killerbee/threshold.py` implementa a dinâmica de limiar reforçado como
+camada pura (número → número, seed explícita, zero I/O), com `simulate_colony` para o
+caso acoplado. `docs/THRESHOLD-DYNAMICS.md` traz a derivação. **O formato do pack fica
+como está:** `threshold` continua constante no manifesto e nada em `build` chama o
+módulo novo.
+**Alternativa:** implementar o B-02 inteiro, transformando `threshold` em condição
+inicial e mudando o schema agora.
+**Motivo:** o próprio B-02 manda "decidir antes de congelar o formato". Decidir exige
+saber como a dinâmica se comporta — e a análise mostrou que o pressuposto do item
+estava errado (o ponto fixo é REPULSOR; ligar o reforço ingenuamente produz polarização,
+não especialização). Mudar o schema com base numa dinâmica que ninguém rodou em agente
+vivo seria congelar antes de decidir. A matemática, isolada e testada, é o que dá para
+afirmar hoje sem credencial.
+**Custo de reversão:** baixo — o módulo é folha, ninguém importa dele. Deletar é uma
+linha de git. O caro seria o oposto: schema publicado e depois revertido.
+**Recibo:** 3 derivações independentes concordando em θ* = s·(ξ/φ)^(1/n), P* = φ/(ξ+φ)
+e na instabilidade (λ > 0); refutação adversarial corrigiu 3 corolários (direção do
+colapso fora do domínio, limite φ→0, bordas refletoras e não absorventes) — todos
+viraram teste. Um erro dimensional NOSSO (√Var/λ em vez de √(Var/λ)) foi pego pelos
+testes de propriedade e está travado como regressão. Suíte: 314.
