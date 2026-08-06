@@ -124,10 +124,17 @@ def test_catalog_do_site_publica_o_mesmo_sha256_do_build(tmp_path):
     arquivos de team nunca eram comparados entre as duas invocações — com o
     raster computado nos dois caminhos, era exatamente onde um bug caberia."""
     import hashlib
+    import shutil
+
+    # packs/ isolado: apontar para o do repo acoplava o teste ao número de packs
+    # versionados (quebrou ao publicar o catálogo de 9).
+    packs_root = tmp_path / "packs-root"
+    packs_root.mkdir()
+    shutil.copytree(PACK, packs_root / PACK.name)
 
     assert main(["build", str(PACK), "--out", str(tmp_path / "dist")]) == 0
     out_file = tmp_path / "catalog.json"
-    assert main(["catalog", "--packs", str(PACK.parent), "--out", str(out_file)]) == 0
+    assert main(["catalog", "--packs", str(packs_root), "--out", str(out_file)]) == 0
     site_catalog = json.loads(out_file.read_text(encoding="utf-8"))
     dist = tmp_path / "dist" / "crossfire-review"
     compared = 0
@@ -141,8 +148,13 @@ def test_catalog_do_site_publica_o_mesmo_sha256_do_build(tmp_path):
 
 
 def test_catalog_nao_vaza_caminho_absoluto(tmp_path):
+    import shutil
+
+    packs_root = tmp_path / "packs-root"
+    packs_root.mkdir()
+    shutil.copytree(PACK, packs_root / PACK.name)
     out_file = tmp_path / "catalog.json"
-    assert main(["catalog", "--packs", str(PACK.parent), "--out", str(out_file)]) == 0
+    assert main(["catalog", "--packs", str(packs_root), "--out", str(out_file)]) == 0
     generated_from = json.loads(out_file.read_text(encoding="utf-8"))["generatedFrom"]
     assert ":" not in generated_from and not generated_from.startswith("/"), (
         f"generatedFrom vaza caminho da máquina: {generated_from!r}"

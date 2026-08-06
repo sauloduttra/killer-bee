@@ -26,6 +26,14 @@ export function WaggleField() {
   const center = size / 2;
   const radius = center - 34;
 
+  // Rótulo por traço só cabe enquanto há poucos traços. Medido no navegador
+  // com o catálogo de 51 personas: 50 PARES de rótulos sobrepostos — o gráfico
+  // continuava correto e o texto virava sopa. Acima do limiar os nomes saem do
+  // desenho e passam a viver no <title> de cada link (tooltip nativo), com o
+  // aria-label intacto: some o rótulo, não a informação nem a acessibilidade.
+  const LABEL_BUDGET = 14;
+  const showLabels = traces.length <= LABEL_BUDGET;
+
   return (
     <figure className="waggle" aria-labelledby="waggle-caption">
       <svg
@@ -57,6 +65,7 @@ export function WaggleField() {
         {traces.map((trace) => (
           <g key={`${trace.packName}/${trace.personaName}`} className="waggle-trace">
             <Link href={trace.href} aria-label={`${trace.displayName} in ${trace.packName}`}>
+              <title>{`${trace.displayName} — ${trace.packName}`}</title>
               {/* Alvo de toque generoso e invisível, por cima do traço fino. */}
               <path
                 d={tracePath(trace, center, center, radius)}
@@ -68,16 +77,18 @@ export function WaggleField() {
                 className="waggle-line"
                 strokeWidth={trace.weight}
               />
-              <text
-                {...(() => {
-                  const end = traceEnd(trace, center, center, radius);
-                  return { x: end.x, y: end.y, textAnchor: end.anchor };
-                })()}
-                className="waggle-label"
-                dominantBaseline="middle"
-              >
-                {trace.displayName}
-              </text>
+              {showLabels ? (
+                <text
+                  {...(() => {
+                    const end = traceEnd(trace, center, center, radius);
+                    return { x: end.x, y: end.y, textAnchor: end.anchor };
+                  })()}
+                  className="waggle-label"
+                  dominantBaseline="middle"
+                >
+                  {trace.displayName}
+                </text>
+              ) : null}
             </Link>
           </g>
         ))}
@@ -93,6 +104,8 @@ export function WaggleField() {
         </p>
         <p className="waggle-note">
           Every value is a real field from the pack manifest. None of it is decoration.
+          {showLabels ? null : ` At ${traces.length} personas the names no longer fit on the
+          drawing — hover a trace, or open a pack below.`}
         </p>
       </figcaption>
     </figure>

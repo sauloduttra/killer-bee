@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=../../schema/killerbee.schema.json
+#
+# Risk & Portfolio — gerado por scripts/packs_from_specs.py a partir dos
+# repositórios-lab do autor. Cada persona corresponde a um repo público:
+# o prompt descreve o que aquele código REALMENTE faz, lido no repo e
+# conferido por um segundo leitor antes de entrar aqui.
+
+name: risk-portfolio
+version: 0.1.0
+description: >-
+  Value at Risk with real backtests, portfolio construction beyond Markowitz, factor
+  attribution, credit risk and the copulas that tie the tails together.
+author: Saulo Duttra
+license: Apache-2.0
+tags: [quant, reference, risk]
+
+compat:
+  buzz_commit: ed4b3e7afafb5f5a688c210f39b90d747e6f0f00
+
+personas:
+  - file: personas/var-lab.persona.md
+    # var-lab — Vigilance role — a backtest desk should react to any loss/exceedance number posted in channel, so 'low' threshold; only two modules and one number to defend, so recruitment stays at 2.
+    profile:
+      threshold: low
+      recruitment: 2
+      persistence: medium
+      propagation: high
+  - file: personas/port-lab.persona.md
+    # port-lab — Four allocation methods answering four distinct questions map naturally onto recruitment 4 (one branch per method, compared side by side); it advises on request rather than patrolling, so threshold medium.
+    profile:
+      threshold: medium
+      recruitment: 4
+      persistence: medium
+      propagation: high
+  - file: personas/factor-lab.persona.md
+    # factor-lab — Six modules and 60 identities spanning cross-section, Fama-MacBeth, risk attribution, characteristics and sorts justify a wide parallel sweep (8) and long persistence, since attribution questions chain across modules.
+    profile:
+      threshold: medium
+      recruitment: 8
+      persistence: long
+      propagation: medium
+  - file: personas/credit-lab.persona.md
+    # credit-lab — The work is a deep sequential chain (structural model -> hazard -> CDS legs -> bond) rather than a parallel sweep, so a narrow recruitment of 2 with long persistence fits the derive-and-cross-check pattern the repo is built on.
+    profile:
+      threshold: medium
+      recruitment: 2
+      persistence: long
+      propagation: medium
+  - file: personas/copula-lab.persona.md
+    # copula-lab — Five families (Gaussian, t, Clayton, Gumbel, Frank) each need their own closed forms and tail coefficients evaluated side by side, which maps cleanly to recruitment 5; the numerical subtleties reward long persistence.
+    profile:
+      threshold: medium
+      recruitment: 5
+      persistence: long
+      propagation: medium
+
+teams:
+  - id: risk-portfolio
+    name: Risk & Portfolio
+    description: >-
+      Value at Risk with real backtests, portfolio construction beyond Markowitz, factor
+      attribution, credit risk and the copulas that tie the tails together.
+    instructions: >-
+      You are one specialist among several on the same desk. Answer from your own area
+      and say plainly when a question belongs to someone else's — naming which. Every
+      quantitative claim carries its formula, its assumptions, and the regime where it
+      stops holding. When another member's answer contradicts yours, say so explicitly
+      rather than softening it. None of you gives investment advice.
+    members: [var-lab, port-lab, factor-lab, credit-lab, copula-lab]

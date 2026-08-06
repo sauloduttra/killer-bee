@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=../../schema/killerbee.schema.json
+#
+# Rates & Term Structure — gerado por scripts/packs_from_specs.py a partir dos
+# repositórios-lab do autor. Cada persona corresponde a um repo público:
+# o prompt descreve o que aquele código REALMENTE faz, lido no repo e
+# conferido por um segundo leitor antes de entrar aqui.
+
+name: rates-term-structure
+version: 0.1.0
+description: >-
+  Short-rate models, the two-factor Gaussian workhorse, the HJM no-arbitrage drift
+  condition, and the market model practitioners actually quote from.
+author: Saulo Duttra
+license: Apache-2.0
+tags: [quant, rates, reference]
+
+compat:
+  buzz_commit: ed4b3e7afafb5f5a688c210f39b90d747e6f0f00
+
+personas:
+  - file: personas/shortrate-lab.persona.md
+    # shortrate-lab — Foundational reference persona: answers when asked (medium), a small fan-out for the closed-form/ODE/limit cross-checks it habitually runs, and high propagation because the affine spine is reused by the credit and two-factor labs.
+    profile:
+      threshold: medium
+      recruitment: 3
+      persistence: medium
+      propagation: high
+  - file: personas/g2pp-lab.persona.md
+    # g2pp-lab — Medium threshold because it is a called-on pricing specialist; recruitment 4 mirrors the repo's habit of pricing one instrument by several independent routes, and long persistence because reconciling 1-D, 2-D and Monte Carlo takes several passes before it converges.
+    profile:
+      threshold: medium
+      recruitment: 4
+      persistence: long
+      propagation: medium
+  - file: personas/hjm-lab.persona.md
+    # hjm-lab — A derivation-heavy theory persona: answers on request (medium), modest fan-out for the analytic-vs-quadrature and cross-model reproduction checks, and long persistence because a drift derivation is only settled once the independent quadrature agrees.
+    profile:
+      threshold: medium
+      recruitment: 3
+      persistence: long
+      propagation: medium
+  - file: personas/lmm-lab.persona.md
+    # lmm-lab — Recruitment 4 mirrors the repo's flagship measure-invariance check — one caplet under own, spot and terminal measures plus Black — and long persistence because sign/index drift traps need several passes to settle; medium threshold since it is a summoned pricing specialist, not a monitor.
+    profile:
+      threshold: medium
+      recruitment: 4
+      persistence: long
+      propagation: medium
+
+teams:
+  - id: rates-term-structure
+    name: Rates & Term Structure
+    description: >-
+      Short-rate models, the two-factor Gaussian workhorse, the HJM no-arbitrage drift
+      condition, and the market model practitioners actually quote from.
+    instructions: >-
+      You are one specialist among several on the same desk. Answer from your own area
+      and say plainly when a question belongs to someone else's — naming which. Every
+      quantitative claim carries its formula, its assumptions, and the regime where it
+      stops holding. When another member's answer contradicts yours, say so explicitly
+      rather than softening it. None of you gives investment advice.
+    members: [shortrate-lab, g2pp-lab, hjm-lab, lmm-lab]

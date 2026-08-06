@@ -86,6 +86,22 @@ def _all_file_entries(catalog: dict) -> list[dict]:
     return entries
 
 
+def _isolated_packs_root(tmp_path: Path) -> Path:
+    """Um packs/ com SÓ o pack de teste dentro.
+
+    Apontar `--packs` para o packs/ do repo acoplava o teste ao número de packs
+    versionados: ao publicar o catálogo de 9 packs, três testes quebraram sem
+    que nada do imeta tivesse mudado. Teste que quebra quando o repo ganha
+    conteúdo estava testando a coisa errada.
+    """
+    import shutil
+
+    root = tmp_path / "packs-root"
+    root.mkdir()
+    shutil.copytree(PACK, root / PACK.name)
+    return root
+
+
 def test_catalogo_com_flag_emite_imeta_consistente(tmp_path):
     out_file = tmp_path / "catalog.json"
     assert (
@@ -93,7 +109,7 @@ def test_catalogo_com_flag_emite_imeta_consistente(tmp_path):
             [
                 "catalog",
                 "--packs",
-                str(PACK.parent),
+                str(_isolated_packs_root(tmp_path)),
                 "--out",
                 str(out_file),
                 "--imeta-base-url",
@@ -126,7 +142,7 @@ def test_imeta_x_bate_com_os_bytes_do_build(tmp_path):
             [
                 "catalog",
                 "--packs",
-                str(PACK.parent),
+                str(_isolated_packs_root(tmp_path)),
                 "--out",
                 str(out_file),
                 "--imeta-base-url",
@@ -144,7 +160,8 @@ def test_imeta_x_bate_com_os_bytes_do_build(tmp_path):
 
 def test_catalogo_sem_flag_nao_tem_imeta(tmp_path):
     out_file = tmp_path / "catalog.json"
-    assert main(["catalog", "--packs", str(PACK.parent), "--out", str(out_file)]) == 0
+    packs_root = _isolated_packs_root(tmp_path)
+    assert main(["catalog", "--packs", str(packs_root), "--out", str(out_file)]) == 0
     catalog = json.loads(out_file.read_text(encoding="utf-8"))
     for entry in _all_file_entries(catalog):
         assert "imeta" not in entry

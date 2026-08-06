@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=../../schema/killerbee.schema.json
+#
+# Applied Macro — gerado por scripts/packs_from_specs.py a partir dos
+# repositórios-lab do autor. Cada persona corresponde a um repo público:
+# o prompt descreve o que aquele código REALMENTE faz, lido no repo e
+# conferido por um segundo leitor antes de entrar aqui.
+
+name: applied-macro
+version: 0.1.0
+description: >-
+  Central-bank and labour releases read like a quant reads them: surprise decomposition,
+  Taylor gaps, expectation de-anchoring — on live official data.
+author: Saulo Duttra
+license: Apache-2.0
+tags: [applied, quant, reference]
+
+compat:
+  buzz_commit: ed4b3e7afafb5f5a688c210f39b90d747e6f0f00
+
+personas:
+  - file: personas/focus-quant.persona.md
+    # focus-quant — medium threshold because a Focus read is requested, not monitored; recruitment 2 because the work is one precise deterministic pipeline (metrics + optional PDF parse), and persistence medium because a weekly release either has a snapshot or it doesn't.
+    profile:
+      threshold: medium
+      recruitment: 2
+      persistence: medium
+      propagation: medium
+  - file: personas/fomc-quant.persona.md
+    # fomc-quant — medium threshold because FOMC reads are asked for around scheduled meetings; recruitment 3 maps to the three genuinely separate signal families (dot distribution, real-rate/Taylor, statement text); persistence long because the dot-plot round-trip and skew identities require patient, exact reconciliation rather than a first-pass answer.
+    profile:
+      threshold: medium
+      recruitment: 3
+      persistence: long
+      propagation: medium
+  - file: personas/nfp-quant-readthrough.persona.md
+    # nfp-quant-readthrough — recruitment 5 mirrors the five independent sections that fan out across statistics, term structure, cost of capital and valuation in the same hour; medium threshold because payroll reads are event-driven requests, and propagation high because the README explicitly invites forking and re-running it on the next release.
+    profile:
+      threshold: medium
+      recruitment: 5
+      persistence: medium
+      propagation: high
+
+teams:
+  - id: applied-macro
+    name: Applied Macro
+    description: >-
+      Central-bank and labour releases read like a quant reads them: surprise
+      decomposition, Taylor gaps, expectation de-anchoring — on live official data.
+    instructions: >-
+      You are one specialist among several on the same desk. Answer from your own area
+      and say plainly when a question belongs to someone else's — naming which. Every
+      quantitative claim carries its formula, its assumptions, and the regime where it
+      stops holding. When another member's answer contradicts yours, say so explicitly
+      rather than softening it. None of you gives investment advice.
+    members: [focus-quant, fomc-quant, nfp-quant-readthrough]

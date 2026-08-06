@@ -1,0 +1,125 @@
+# yaml-language-server: $schema=../../schema/killerbee.schema.json
+#
+# Systems & Computer Science — gerado por scripts/packs_from_specs.py a partir dos
+# repositórios-lab do autor. Cada persona corresponde a um repo público:
+# o prompt descreve o que aquele código REALMENTE faz, lido no repo e
+# conferido por um segundo leitor antes de entrar aqui.
+
+name: systems-cs
+version: 0.1.0
+description: >-
+  The other half of the bench: TCP, Raft, an LSM-tree, a SAT solver, a path tracer,
+  autodiff. Written from scratch, because that is how you learn them.
+author: Saulo Duttra
+license: Apache-2.0
+tags: [quant, reference, systems]
+
+compat:
+  buzz_commit: ed4b3e7afafb5f5a688c210f39b90d747e6f0f00
+
+personas:
+  - file: personas/tinytcp.persona.md
+    # tinytcp — A single well-defined protocol with a deterministic test bench — needs precision over breadth, so low parallelism, medium persistence, and mention-only activation.
+    profile:
+      threshold: medium
+      recruitment: 2
+      persistence: medium
+      propagation: medium
+  - file: personas/raft-py.persona.md
+    # raft-py — Consensus questions are multi-node and multi-scenario, so moderate parallel exploration and long persistence to chase an election or partition trace to its conclusion.
+    profile:
+      threshold: medium
+      recruitment: 4
+      persistence: long
+      propagation: medium
+  - file: personas/lsm-tree.persona.md
+    # lsm-tree — Storage questions span three layers (WAL, MemTable, SSTable) so a small parallel sweep helps, but the repo's answers are concrete and bounded — no need for long insistence.
+    profile:
+      threshold: medium
+      recruitment: 3
+      persistence: medium
+      propagation: medium
+  - file: personas/tinysat.persona.md
+    # tinysat — Search over an assignment space rewards broad parallel branching and stubbornness — highest recruitment and long persistence of the set, matching DPLL's own shape.
+    profile:
+      threshold: medium
+      recruitment: 8
+      persistence: long
+      propagation: medium
+  - file: personas/tinyspsc.persona.md
+    # tinyspsc — Memory-ordering correctness is a single-thread-of-reasoning problem where one careful specialist beats a sweep; the 150-line primitive is highly forkable, hence high propagation.
+    profile:
+      threshold: medium
+      recruitment: 1
+      persistence: medium
+      propagation: high
+  - file: personas/tinycrypt.persona.md
+    # tinycrypt — Low threshold because misuse of crypto is silent and costly — this persona should speak up whenever key handling or nonce reuse appears, even unaddressed; low propagation because a teaching-grade crypto implementation should not be casually forked.
+    profile:
+      threshold: low
+      recruitment: 2
+      persistence: medium
+      propagation: low
+  - file: personas/tinylang.persona.md
+    # tinylang — Language questions split naturally across lexer/parser/evaluator, so a small parallel sweep fits; the code is explicitly pedagogical and easy to fork, hence high propagation.
+    profile:
+      threshold: medium
+      recruitment: 3
+      persistence: medium
+      propagation: high
+  - file: personas/pathtrace.persona.md
+    # pathtrace — A single well-scoped rendering codebase answered best by one or two focused passes, engaged only when called, with normal persistence since ray-tracing questions are usually self-contained.
+    profile:
+      threshold: medium
+      recruitment: 2
+      persistence: medium
+      propagation: medium
+  - file: personas/autograd-lab.persona.md
+    # autograd-lab — A compact teaching library with two clearly separated modes — one or two passes cover any question, and its pedagogical framing makes it highly forkable.
+    profile:
+      threshold: medium
+      recruitment: 2
+      persistence: medium
+      propagation: high
+  - file: personas/nanograd.persona.md
+    # nanograd — Gradient bugs are chased down layer by layer, so this persona needs to keep digging; three parallel passes match the engine/nn/training-loop split without over-spreading.
+    profile:
+      threshold: medium
+      recruitment: 3
+      persistence: long
+      propagation: high
+  - file: personas/nanozero.persona.md
+    # nanozero — Search quality here comes from breadth of independent rollouts and matchups, so a wide recruitment with long persistence mirrors how the algorithm itself earns its answer.
+    profile:
+      threshold: medium
+      recruitment: 8
+      persistence: long
+      propagation: medium
+  - file: personas/mini-blas.persona.md
+    # mini-blas — Five variants and a layered cache/register/thread story reward several parallel passes and stubborn follow-through when a number does not reproduce.
+    profile:
+      threshold: medium
+      recruitment: 5
+      persistence: long
+      propagation: medium
+  - file: personas/scrape-arsenal.persona.md
+    # scrape-arsenal — The observability and honeypot modules make this a vigilance role that should notice blocks and traps without being addressed, and its nine independent techniques justify a wide sweep.
+    profile:
+      threshold: low
+      recruitment: 9
+      persistence: medium
+      propagation: high
+
+teams:
+  - id: systems-cs
+    name: Systems & Computer Science
+    description: >-
+      The other half of the bench: TCP, Raft, an LSM-tree, a SAT solver, a path tracer,
+      autodiff. Written from scratch, because that is how you learn them.
+    instructions: >-
+      You are one specialist among several on the same desk. Answer from your own area
+      and say plainly when a question belongs to someone else's — naming which. Every
+      quantitative claim carries its formula, its assumptions, and the regime where it
+      stops holding. When another member's answer contradicts yours, say so explicitly
+      rather than softening it. None of you gives investment advice.
+    members: [tinytcp, raft-py, lsm-tree, tinysat, tinyspsc, tinycrypt, tinylang, pathtrace, autograd-lab, nanograd, nanozero, mini-blas, scrape-arsenal]

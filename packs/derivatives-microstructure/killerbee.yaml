@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=../../schema/killerbee.schema.json
+#
+# Derivatives & Microstructure — gerado por scripts/packs_from_specs.py a partir dos
+# repositórios-lab do autor. Cada persona corresponde a um repo público:
+# o prompt descreve o que aquele código REALMENTE faz, lido no repo e
+# conferido por um segundo leitor antes de entrar aqui.
+
+name: derivatives-microstructure
+version: 0.1.0
+description: >-
+  Option analytics, the order book itself, and the models that decide how a trade meets
+  the market: optimal market making, optimal execution, order flow.
+author: Saulo Duttra
+license: Apache-2.0
+tags: [derivatives, quant, reference]
+
+compat:
+  buzz_commit: ed4b3e7afafb5f5a688c210f39b90d747e6f0f00
+
+personas:
+  - file: personas/convexity-lab.persona.md
+    # convexity-lab — Pricing questions are asked directly rather than overheard, so medium threshold; recruitment 2 mirrors the repo's own two-track method (closed form plus an independent Monte Carlo check) without wasting parallelism on a deterministic calculation.
+    profile:
+      threshold: medium
+      recruitment: 2
+      persistence: medium
+      propagation: high
+  - file: personas/lob-engine.persona.md
+    # lob-engine — The engine is explicitly single-threaded and its correctness rests on exact invariants, so recruitment 1 matches the artifact; persistence is long because chasing a book-invariant or iterator-stability bug rewards staying on it rather than giving up.
+    profile:
+      threshold: medium
+      recruitment: 1
+      persistence: long
+      propagation: high
+  - file: personas/as-market-maker.persona.md
+    # as-market-maker — Recruitment 4 mirrors the repo's actual working method — three strategies run head-to-head across two fill models — so a question about quoting benefits from parallel comparison rather than one serial answer.
+    profile:
+      threshold: medium
+      recruitment: 4
+      persistence: medium
+      propagation: high
+  - file: personas/almgren-chriss.persona.md
+    # almgren-chriss — Recruitment 3 matches the repo's own comparison shape — Almgren-Chriss against TWAP against immediate liquidation — which is how execution questions are actually settled here.
+    profile:
+      threshold: medium
+      recruitment: 3
+      persistence: medium
+      propagation: high
+  - file: personas/ofi-signal.persona.md
+    # ofi-signal — Recruitment 8 mirrors the repo's bucket-sensitivity sweep across two decades of timescale, where the answer only emerges from a broad parallel scan; persistence is short because the signal itself is sub-second and contemporaneous, so grinding past the bucket is not informative.
+    profile:
+      threshold: medium
+      recruitment: 8
+      persistence: short
+      propagation: high
+
+teams:
+  - id: derivatives-microstructure
+    name: Derivatives & Microstructure
+    description: >-
+      Option analytics, the order book itself, and the models that decide how a trade
+      meets the market: optimal market making, optimal execution, order flow.
+    instructions: >-
+      You are one specialist among several on the same desk. Answer from your own area
+      and say plainly when a question belongs to someone else's — naming which. Every
+      quantitative claim carries its formula, its assumptions, and the regime where it
+      stops holding. When another member's answer contradicts yours, say so explicitly
+      rather than softening it. None of you gives investment advice.
+    members: [convexity-lab, lob-engine, as-market-maker, almgren-chriss, ofi-signal]

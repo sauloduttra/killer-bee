@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=../../schema/killerbee.schema.json
+#
+# Time Series & Statistical Trading — gerado por scripts/packs_from_specs.py a partir dos
+# repositórios-lab do autor. Cada persona corresponde a um repo público:
+# o prompt descreve o que aquele código REALMENTE faz, lido no repo e
+# conferido por um segundo leitor antes de entrar aqui.
+
+name: timeseries-stat-trading
+version: 0.1.0
+description: >-
+  Inference from first principles, state-space filtering, cointegration for pairs,
+  self-exciting processes, and an event-driven backtester to run it on.
+author: Saulo Duttra
+license: Apache-2.0
+tags: [quant, reference, timeseries]
+
+compat:
+  buzz_commit: ed4b3e7afafb5f5a688c210f39b90d747e6f0f00
+
+personas:
+  - file: personas/tinystat.persona.md
+    # tinystat — Focused single-topic expert answering when asked (medium threshold), small recruitment because each question maps to one closed-form derivation, and high propagation because the toolkit is a broadly forkable teaching base.
+    profile:
+      threshold: medium
+      recruitment: 2
+      persistence: medium
+      propagation: high
+  - file: personas/regression-lab.persona.md
+    # regression-lab — Low threshold because this is the auditing persona — misspecification and leverage problems should be flagged whenever a regression passes through the channel — with high recruitment to run the many independent diagnostics in parallel and long persistence to chase an identity failure to its root.
+    profile:
+      threshold: low
+      recruitment: 6
+      persistence: long
+      propagation: high
+  - file: personas/kalman-lab.persona.md
+    # kalman-lab — Answers on mention (medium) because state-space questions are explicit; recruitment 2 to compare a linear and a nonlinear filter formulation side by side, and medium persistence since tuning questions converge quickly once the model is written down.
+    profile:
+      threshold: medium
+      recruitment: 2
+      persistence: medium
+      propagation: medium
+  - file: personas/cointegration-lab.persona.md
+    # cointegration-lab — Medium threshold since the test is requested explicitly; recruitment 4 because pair screening is inherently parallel across candidate pairs and regression specifications, with medium persistence as each test terminates in a single statistic.
+    profile:
+      threshold: medium
+      recruitment: 4
+      persistence: medium
+      propagation: high
+  - file: personas/hawkes-fit.persona.md
+    # hawkes-fit — A single precise estimator rather than a survey (recruitment 1), invoked on mention, with long persistence because MLE on point-process data is iterative and initial guesses often need revisiting before convergence.
+    profile:
+      threshold: medium
+      recruitment: 1
+      persistence: long
+      propagation: medium
+  - file: personas/backtest-engine.persona.md
+    # backtest-engine — Recruitment 1 because backtest questions trace a single deterministic execution path rather than fanning out; medium threshold and persistence fit a design-and-mechanics advisor, and propagation is high since a 300-line header-only core is trivially forkable.
+    profile:
+      threshold: medium
+      recruitment: 1
+      persistence: medium
+      propagation: high
+
+teams:
+  - id: timeseries-stat-trading
+    name: Time Series & Statistical Trading
+    description: >-
+      Inference from first principles, state-space filtering, cointegration for pairs,
+      self-exciting processes, and an event-driven backtester to run it on.
+    instructions: >-
+      You are one specialist among several on the same desk. Answer from your own area
+      and say plainly when a question belongs to someone else's — naming which. Every
+      quantitative claim carries its formula, its assumptions, and the regime where it
+      stops holding. When another member's answer contradicts yours, say so explicitly
+      rather than softening it. None of you gives investment advice.
+    members: [tinystat, regression-lab, kalman-lab, cointegration-lab, hawkes-fit, backtest-engine]

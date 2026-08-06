@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=../../schema/killerbee.schema.json
+#
+# Options & Volatility — gerado por scripts/packs_from_specs.py a partir dos
+# repositórios-lab do autor. Cada persona corresponde a um repo público:
+# o prompt descreve o que aquele código REALMENTE faz, lido no repo e
+# conferido por um segundo leitor antes de entrar aqui.
+
+name: options-volatility
+version: 0.1.0
+description: >-
+  Four independent routes to an option price — PDE, Monte Carlo, lattices, least-squares
+  MC — plus the volatility models the price feeds on.
+author: Saulo Duttra
+license: Apache-2.0
+tags: [options, quant, reference]
+
+compat:
+  buzz_commit: ed4b3e7afafb5f5a688c210f39b90d747e6f0f00
+
+personas:
+  - file: personas/pde-lab.persona.md
+    # pde-lab — Single-topic numerical specialist that answers when called (medium threshold), needs only a small parallel fan-out to compare two or three schemes (recruitment 2), and must persist through iterative solvers and convergence studies (long).
+    profile:
+      threshold: medium
+      recruitment: 2
+      persistence: long
+      propagation: medium
+  - file: personas/monte-carlo-lab.persona.md
+    # monte-carlo-lab — The repo is itself about independent replications and variance across estimators, so a wide fan-out (8) matches its nature; it is a foundational toolkit that other repos consume, hence high propagation.
+    profile:
+      threshold: medium
+      recruitment: 8
+      persistence: medium
+      propagation: high
+  - file: personas/lattice-lab.persona.md
+    # lattice-lab — Four-way fan-out matches the natural comparison across CRR / Jarrow-Rudd / Tian / Leisen-Reimer parameterizations; a widely forked teaching-grade lattice implementation justifies high propagation.
+    profile:
+      threshold: medium
+      recruitment: 4
+      persistence: medium
+      propagation: high
+  - file: personas/lsmc-lab.persona.md
+    # lsmc-lab — Path batches and regression bases are naturally parallel (4), and the backward-induction plus convergence-to-the-bound argument requires sustained effort before answering (long persistence).
+    profile:
+      threshold: medium
+      recruitment: 4
+      persistence: long
+      propagation: medium
+  - file: personas/vol-lab.persona.md
+    # vol-lab — Three parallel branches map onto the model family actually shipped (GARCH / GJR / EWMA-IGARCH); it answers when called rather than watching a channel, so medium threshold.
+    profile:
+      threshold: medium
+      recruitment: 3
+      persistence: medium
+      propagation: medium
+  - file: personas/smile-lab.persona.md
+    # smile-lab — A narrow, high-precision formula specialist needs little fan-out (2) but must persist through calibration round-trips and validity-regime checks (long persistence).
+    profile:
+      threshold: medium
+      recruitment: 2
+      persistence: long
+      propagation: medium
+
+teams:
+  - id: options-volatility
+    name: Options & Volatility
+    description: >-
+      Four independent routes to an option price — PDE, Monte Carlo, lattices,
+      least-squares MC — plus the volatility models the price feeds on.
+    instructions: >-
+      You are one specialist among several on the same desk. Answer from your own area
+      and say plainly when a question belongs to someone else's — naming which. Every
+      quantitative claim carries its formula, its assumptions, and the regime where it
+      stops holding. When another member's answer contradicts yours, say so explicitly
+      rather than softening it. None of you gives investment advice.
+    members: [pde-lab, monte-carlo-lab, lattice-lab, lsmc-lab, vol-lab, smile-lab]
