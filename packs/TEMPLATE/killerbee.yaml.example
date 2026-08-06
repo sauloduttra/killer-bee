@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=../../schema/killerbee.schema.json
+#
+# Killer Bee pack manifest — TEMPLATE.
+#
+# This file is named `.example` ON PURPOSE: a pack is a directory that
+# contains a `killerbee.yaml`, and every tool in this repo (CLI catalog,
+# site build, CI) applies that one rule. While the suffix is here, the
+# template is invisible to all of them. Renaming it is the moment your
+# pack becomes real.
+#
+# The 10-minute path is in this directory's README.md. The one rule that
+# saves you an hour: everything Killer Bee-specific lives HERE — never in
+# the .persona.md files. Their frontmatter is parsed upstream with
+# deny_unknown_fields (buzz-persona persona.rs:174-176) and one extra key
+# is a fatal error there.
+
+# Slug: ^[a-z0-9][a-z0-9_-]{0,63}$ — becomes the directory, file and
+# d-tag name. Rename the pack directory to match.
+name: my-pack
+
+# Semver, and bump it when the pack changes: importers compare by eye.
+version: 0.1.0
+
+description: >-
+  One or two sentences saying what the pack does and when someone would
+  want it in their channel. This text is the catalog card.
+
+author: Your Name
+license: Apache-2.0
+tags: [example]
+
+compat:
+  # Full commit of block/buzz you verified your personas against.
+  # `git -C <your buzz clone> rev-parse HEAD`
+  buzz_commit: ed4b3e7afafb5f5a688c210f39b90d747e6f0f00
+
+personas:
+  - file: personas/scout.persona.md
+    profile:
+      # threshold  — how much stimulus triggers the agent
+      #              low = reacts to everything in the channel,
+      #              medium/high = mention only
+      # recruitment — parallel fan-out, native range 1..=32
+      # persistence — how long it insists: short | medium | long
+      # propagation — catalog metadata only; compiles to NO runtime field
+      threshold: medium
+      recruitment: 2
+      persistence: medium
+      propagation: medium
+    # channels: omit for "all", or list channel UUIDs. Never mix.
+
+# Optional. A team snapshot EMBEDS every member in full — tell users to
+# import the team OR the personas, never both (duplicates otherwise).
+teams:
+  - id: my-pack
+    name: My Pack
+    description: >-
+      What the team is for, in one sentence.
+    instructions: >-
+      Shared instructions every member receives on top of its own prompt.
+    members: [scout]

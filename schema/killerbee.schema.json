@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/sauloduttra/killer-bee/main/schema/killerbee.schema.json",
+  "title": "Killer Bee pack manifest (killerbee.yaml)",
+  "description": "Editor-time contract for the L1 manifest. The runtime authority is `killerbee validate` (killerbee/validate.py) — this schema exists so a contributor's editor flags mistakes before the CLI does. Deliberate divergences, all STRICTER than the loader: (1) unknown keys are rejected everywhere to catch typos, while the loader ignores unknown manifest keys; (2) channels accept only the canonical dashed UUID form, while the loader accepts every form Python's uuid.UUID parses. What no schema can check: that persona files exist, that their frontmatter parses, that team members name real personas, and that names are unique — run `uv run python -m killerbee validate packs/<name>` for the full contract.",
+  "type": "object",
+  "required": ["name", "version", "license", "personas"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "description": "Pack slug. Grammar of the persona d-tag on the relay (buzz-relay handlers/ingest.rs:1130-1148 @ ed4b3e7a); also becomes directory and file names, so Windows reserved device names are refused.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+      "not": { "pattern": "^(con|prn|aux|nul|com[1-9]|lpt[1-9])$" }
+    },
+    "version": {
+      "description": "Pack version, semver X.Y.Z with optional pre-release suffix.",
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$"
+    },
+    "description": { "type": "string" },
+    "author": { "type": "string" },
+    "license": {
+      "description": "SPDX identifier. A pack without a license is not distributable.",
+      "type": "string",
+      "minLength": 1
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "compat": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "buzz_commit": {
+          "description": "Full 40-hex commit of block/buzz every citation and format in the pack was verified against.",
+          "type": "string"
+        }
+      }
+    },
+    "personas": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["file"],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "description": "Path to the .persona.md, relative to the pack directory. Native Buzz format: YAML frontmatter + markdown body; the body IS the system prompt. Keep Killer Bee keys OUT of it — the upstream frontmatter parser is deny_unknown_fields (buzz-persona persona.rs:174-176) and one extra key is a fatal error there.",
+            "type": "string",
+            "minLength": 1
+          },
+          "profile": {
+            "description": "Scutellata response-threshold profile. Compiles to native snapshot fields (docs/PROFILE-COMPILATION.md); it never travels inside .persona.md or the snapshot.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "threshold": { "enum": ["low", "medium", "high"] },
+              "recruitment": {
+                "description": "Fan-out. Native parallelism range 1..=32 (desktop managed_agents/types.rs:967).",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 32
+              },
+              "persistence": { "enum": ["short", "medium", "long"] },
+              "propagation": {
+                "description": "Catalog metadata only — compiles to no runtime field, and the docs say so out loud.",
+                "enum": ["low", "medium", "high"]
+              }
+            }
+          },
+          "channels": {
+            "description": "Either exactly [\"all\"] (or omit the key entirely — same meaning) or a list of channel UUIDs. An empty list is refused as ambiguous, and mixing \"all\" with UUIDs is refused.",
+            "oneOf": [
+              {
+                "type": "array",
+                "const": ["all"]
+              },
+              {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "teams": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "members"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "description": "Becomes {id}.team.json / {id}.team.png file names. Stricter than the upstream team d-tag on purpose: ':' is legal upstream but illegal in Windows file names (DECISIONS D-023).",
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+            "not": { "pattern": "^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\\..*)?$" }
+          },
+          "name": { "type": "string", "minLength": 1 },
+          "description": { "type": "string" },
+          "instructions": { "type": "string" },
+          "members": {
+            "description": "Persona names (the frontmatter `name`, not the file path). Each must exist among this pack's personas — a cross-reference the schema cannot check; `killerbee validate` does.",
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

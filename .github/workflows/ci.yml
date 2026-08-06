@@ -36,13 +36,16 @@ jobs:
         run: uv run pytest -q
 
       # Todo pack versionado tem que validar. É o item de DoD: CI falha em pack
-      # inválido.
+      # inválido. Pack = diretório com killerbee.yaml — a MESMA regra de
+      # cmd_catalog (cli.py) e prepare-data.mjs; packs/TEMPLATE/ traz
+      # killerbee.yaml.example de propósito e fica fora dos três.
       - name: Validate every pack
         run: |
           set -euo pipefail
           shopt -s nullglob
           found=0
           for pack in packs/*/; do
+            [ -f "$pack/killerbee.yaml" ] || continue
             found=1
             echo "::group::validate $pack"
             uv run python -m killerbee validate "$pack"
@@ -58,6 +61,7 @@ jobs:
           set -euo pipefail
           shopt -s nullglob
           for pack in packs/*/; do
+            [ -f "$pack/killerbee.yaml" ] || continue
             uv run python -m killerbee build "$pack"
           done
 

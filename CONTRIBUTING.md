@@ -121,6 +121,10 @@ Python only, `uv` only. No bare `pip install`, no poetry, no conda, no hand-writ
 
 ## Adding a pack
 
+Start from the template — [`packs/TEMPLATE/README.md`](packs/TEMPLATE/README.md) is the
+10-minute path: copy the directory, rename `killerbee.yaml.example` to `killerbee.yaml`,
+edit, validate. The layout:
+
 ```
 packs/<name>/
   killerbee.yaml           # manifest: metadata, scutellata profiles, teams
@@ -129,14 +133,18 @@ packs/<name>/
   CHANGELOG.md
 ```
 
-Then:
+The manifest's first line points yaml-language-server at
+[`schema/killerbee.schema.json`](schema/killerbee.schema.json), so any LSP-based editor
+flags mistakes as you type. The authority is still the CLI:
 
 ```bash
 uv run python -m killerbee validate packs/<name>
 uv run python -m killerbee build packs/<name>
 ```
 
-Both run in CI; an invalid pack fails the build.
+Both run in CI; an invalid pack fails the build. What the maintainer will check on your
+PR is written down in [`docs/PACK-REVIEW.md`](docs/PACK-REVIEW.md) — reading it first is
+the fastest way to pass it.
 
 **Keep `.persona.md` files free of Killer Bee keys.** Their frontmatter is parsed with
 `deny_unknown_fields` upstream (`crates/buzz-persona/src/persona.rs:174-176`) — one extra
