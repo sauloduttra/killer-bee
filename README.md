@@ -51,7 +51,13 @@ Killer Bee fills that gap in three independent layers:
    native format the app accepts today. This is the layer that makes a persona **run**.
 3. **L3 — publish as signed events.** Personas as kind 30175 `shared`, teams as kind
    30178, on a relay of your own. This is the layer that makes the catalog **public and
-   verifiable** instead of a list on a website.
+   verifiable** instead of a list on a website. Today's honest state: upstream defines
+   only the envelope — the 30178 *content* schema is explicitly left to the publishing
+   client, so we published ours:
+   [`schema/kind-30178-content.schema.json`](schema/kind-30178-content.schema.json)
+   defines the member projection (the emitted snapshot minus what NIP-AP orders
+   sanitized), and `killerbee event` emits the **unsigned** event ready for a signer.
+   Signing and publishing require a key, and keys stay in human hands.
 
 ### A note on how this project corrects itself
 

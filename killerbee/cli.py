@@ -29,6 +29,7 @@ from pathlib import Path
 
 from . import AGENT_PNG_KEYWORD, AGENT_SNAPSHOT_FORMAT, TEAM_PNG_KEYWORD, __version__
 from .acp_rules import rules_file
+from .event30178 import unsigned_event
 from .imeta import imeta_tag, mime_for
 from .loader import PackLoadError, load_pack
 from .pngtext import read_snapshot_from_png, snapshot_png
@@ -448,6 +449,38 @@ def cmd_inspect(path: Path, *, show_prompt: bool) -> int:
     return 0
 
 
+def cmd_event(pack_dir: Path, out_dir: Path, *, shared: bool, created_at: int) -> int:
+    """Emite o kind 30178 NÃO ASSINADO por team, em ``<out>/<pack>/<id>.30178.json``.
+
+    Valida o pack inteiro antes — um evento de pack inválido seria lixo
+    assinável. Assinar e publicar ficam fora por decisão, não por falta:
+    exigem chave (🔴). O desenho da projeção está em event30178.py e o
+    schema publicado em schema/kind-30178-content.schema.json (D-029).
+    """
+    try:
+        manifest = load_pack(pack_dir)
+    except PackLoadError as exc:
+        return _fail([str(exc)])
+    errors = validate_pack(manifest)
+    if errors:
+        return _fail(errors)
+    if not manifest.teams:
+        return _fail([f"pack '{manifest.name}' não tem teams — o 30178 é projeção de team"])
+
+    target = out_dir / manifest.name
+    target.mkdir(parents=True, exist_ok=True)
+    for team in manifest.teams:
+        event = unsigned_event(team, manifest, shared=shared, created_at=created_at)
+        out_file = target / f"{team.id}.30178.json"
+        out_file.write_text(
+            json.dumps(event, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+        content_bytes = len(event["content"].encode("utf-8"))
+        state = "shared" if shared else "unshared"
+        print(f"event: {team.id} → {out_file} (content {content_bytes:,} B, {state}, NÃO ASSINADO)")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     _stdio_utf8()
     parser = argparse.ArgumentParser(prog="killerbee", description=__doc__)
@@ -471,6 +504,23 @@ def main(argv: list[str] | None = None) -> int:
         "catálogo ganha o bloco imeta pronto para colar num canal Buzz",
     )
 
+    p_event = sub.add_parser(
+        "event", help="emite o kind 30178 NÃO ASSINADO por team (camada L3, offline)"
+    )
+    p_event.add_argument("pack", type=Path)
+    p_event.add_argument("--out", type=Path, default=Path("dist"))
+    p_event.add_argument(
+        "--unshared",
+        action="store_true",
+        help="omite a tag ['shared','true'] — o evento fica autor-somente no relay",
+    )
+    p_event.add_argument(
+        "--created-at",
+        type=int,
+        default=0,
+        help="unix seconds; default 0 = template não assinado, quem assina carimba",
+    )
+
     p_inspect = sub.add_parser(
         "inspect", help="mostra o conteúdo de um .agent.json/.png ou .team.json/.png"
     )
@@ -486,4 +536,6 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_catalog(args.packs, args.out, imeta_base_url=args.imeta_base_url)
     if args.command == "inspect":
         return cmd_inspect(args.file, show_prompt=args.prompt)
+    if args.command == "event":
+        return cmd_event(args.pack, args.out, shared=not args.unshared, created_at=args.created_at)
     return cmd_build(args.pack, args.out)

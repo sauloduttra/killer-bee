@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/sauloduttra/killer-bee/main/schema/kind-30178-content.schema.json",
+  "title": "Killer Bee content schema for Nostr kind 30178 (team catalog projection)",
+  "description": "The parsed `content` body of a kind:30178 event as PUBLISHED BY KILLER BEE. Upstream deliberately leaves this open — 'The content schema is defined by the client that publishes it' (buzz docs/nips/NIP-AP.md:223 @ ed4b3e7a) — and the only body the upstream's own tests bless is {\"v\":1,\"name\":...,\"members\":[]} with members always empty (e2e_team_catalog.rs:35, ingest.rs:4111). This schema is that shape with the member projection defined: each member is the buzz-agent-snapshot the Killer Bee emitter produces, minus the fields NIP-AP.md:242 orders sanitized (no respond_to allowlist pubkeys — and respondTo goes with it, since the enum without its list asserts a policy a reader cannot reconstruct; env vars, paths and local ids were never emitted). Everything else keeps the snapshot shape ON PURPOSE: write a member as a .agent.json file and the Buzz desktop imports it without translation — every field the import parse requires is present, and the stripped ones carry serde defaults upstream. Envelope rules (d tag, shared tag, 256 KiB) are the relay's, not this schema's.",
+  "type": "object",
+  "required": ["v", "name", "members"],
+  "additionalProperties": false,
+  "properties": {
+    "v": { "const": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "description": { "type": "string" },
+    "instructions": { "type": "string" },
+    "members": {
+      "description": "Ordered, embedded member projections — the order is the team's order.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/memberProjection" }
+    }
+  },
+  "$defs": {
+    "memberProjection": {
+      "type": "object",
+      "required": ["format", "version", "definition", "profile", "memory"],
+      "additionalProperties": false,
+      "properties": {
+        "format": { "const": "buzz-agent-snapshot" },
+        "version": { "const": 1 },
+        "definition": {
+          "type": "object",
+          "required": ["name", "systemPrompt", "parallelism"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string", "minLength": 1 },
+            "sourceIsBuiltIn": { "type": "boolean" },
+            "systemPrompt": {
+              "description": "The full prompt, verbatim. Sharing a team makes every member's instructions community-readable plaintext — NIP-AP says so and so do we.",
+              "type": "string"
+            },
+            "runtime": { "type": "string" },
+            "model": { "type": "string" },
+            "provider": { "type": "string" },
+            "parallelism": { "type": "integer", "minimum": 1, "maximum": 32 },
+            "namePool": { "type": "array", "items": { "type": "string" } },
+            "idleTimeoutSeconds": { "type": "integer", "minimum": 1 },
+            "maxTurnDurationSeconds": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "profile": {
+          "type": "object",
+          "required": ["displayName"],
+          "additionalProperties": false,
+          "properties": {
+            "displayName": { "type": "string", "minLength": 1 },
+            "about": { "type": "string" }
+          }
+        },
+        "memory": {
+          "description": "A catalog projection carries nobody's memory: level is 'none' and entries stay empty, always.",
+          "type": "object",
+          "required": ["level"],
+          "additionalProperties": false,
+          "properties": {
+            "level": { "const": "none" },
+            "entries": { "type": "array", "maxItems": 0 }
+          }
+        }
+      }
+    }
+  }
+}

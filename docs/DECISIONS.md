@@ -561,3 +561,36 @@ markdownFileCard.ts:101-103).
 Buzz sem tocar em chave: o usuário cola o link markdown + imeta; assinar/publicar o
 evento continua 🔴.
 **Custo de reversão:** remover flag + módulo + 10 testes; catálogo volta byte a byte.
+
+## D-028 — Dependabot: três recusas viram regra permanente
+
+**Quando:** 2026-08-06, primeira leva de PRs do remote público (10 PRs)
+**O que:** 7 merged (5 actions + react/react-dom pareados na ordem certa). Três
+recusados com `@dependabot ignore` + justificativa pública no PR:
+typescript **7.0.x** (typescript-eslint aborta em TS 7.0; suporte planejado ≥ 7.1 —
+ignore de MINOR, 7.1 chega como PR novo), eslint **10.x** (eslint-plugin-react dentro
+do eslint-config-next chama `getFilename` removida; destrava via bump futuro do Next),
+@types/node **26.x** (CI roda Node 22; types 4 majors à frente deixam o tsc abençoar
+API que não existe no runtime — types acompanham o major do runtime).
+**Custo de reversão:** um comentário `@dependabot unignore` por item.
+**Regra que fica:** bump de types segue o runtime; major bloqueado por ecossistema é
+recusado COM o link do bloqueio, nunca deixado apodrecer aberto.
+
+## D-029 — Projeção de membro do 30178: snapshot menos o sanitizado, e nada mais
+
+**Quando:** 2026-08-06, trilha D (contribuição ao ecossistema)
+**O que:** o upstream delega o schema do corpo do 30178 ao cliente publicador
+(NIP-AP.md:223; a única forma nos testes deles tem `members` VAZIO). O Killer Bee
+publicou o seu: corpo `{v:1, name, description?, instructions?, members[]}` e projeção
+de membro = **AgentSnapshot emitido menos {respondTo, respondToAllowlist}** —
+NIP-AP.md:242 bane os pubkeys da allowlist; o enum sem a lista afirmaria política
+irreconstruível. Forma do snapshot mantida DE PROPÓSITO: leitor grava a projeção como
+`.agent.json` e o desktop importa sem tradução (os 8 obrigatórios presentes; os
+removidos têm serde default). `killerbee event` emite o evento NÃO ASSINADO
+(`created_at: 0` = template; quem assina carimba — emissor não lê relógio), valida
+d-tag (≤64, sem ws/ctrl) e content ≤ 256 KiB ANTES do relay reclamar. Schema travado
+por teste: corpo com respondTo NÃO valida.
+**Alternativa:** inventar forma nova de membro (leitor precisaria de tradutor), ou
+manter respondTo sem a lista (mentira estrutural).
+**Custo de reversão:** o schema é versionado (`v: 1`); forma nova = `v: 2` + módulo.
+Assinar/publicar continua 🔴 — este bloco para exatamente na fronteira.
