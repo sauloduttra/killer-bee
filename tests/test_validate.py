@@ -14,8 +14,8 @@ from pathlib import Path
 # primeiro — rodar este arquivo sozinho falhava na coleção.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from killerbee.model import PackManifest, Persona, Team  # noqa: E402
-from killerbee.validate import validate_pack  # noqa: E402
+from killerbee.model import PackManifest, Persona, Team
+from killerbee.validate import validate_pack
 
 
 def make_persona(name: str = "bot", **overrides) -> Persona:

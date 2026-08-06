@@ -134,8 +134,7 @@ def _mapping_of(value: object, *, source: str, key: str) -> dict:
         return {}
     if not isinstance(value, dict):
         raise PackLoadError(
-            f"{source}: '{key}' deve ser um mapeamento, veio "
-            f"{type(value).__name__} ({value!r})"
+            f"{source}: '{key}' deve ser um mapeamento, veio {type(value).__name__} ({value!r})"
         )
     return value
 

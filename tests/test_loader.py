@@ -22,7 +22,7 @@ import pytest
 # que depende da ordem de execução não é teste.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from killerbee.loader import (  # noqa: E402
+from killerbee.loader import (
     MAX_BODY_BYTES,
     PackLoadError,
     load_pack,
