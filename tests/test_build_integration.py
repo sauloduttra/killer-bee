@@ -1,0 +1,97 @@
+"""Integração: o pack real do repo valida, builda, e o que sai é o que o
+desktop importaria. Único teste que toca disco — e só em tmp_path e no pack
+versionado (leitura).
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+import tomllib
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from killerbee.cli import main  # noqa: E402
+from killerbee.pngtext import read_snapshot_from_png  # noqa: E402
+from killerbee.validate import EVENT_CONTENT_MAX_BYTES  # noqa: E402
+
+PACK = ROOT / "packs" / "crossfire-review"
+
+
+def test_validate_do_pack_real_sai_zero(capsys):
+    assert main(["validate", str(PACK)]) == 0
+    assert "OK: crossfire-review" in capsys.readouterr().out
+
+
+def test_validate_de_pack_quebrado_sai_um(tmp_path, capsys):
+    """O DoD pede o CI falhando em pack inválido — este é o contrato."""
+    broken = tmp_path / "broken"
+    broken.mkdir()
+    (broken / "killerbee.yaml").write_text(
+        "name: Broken Name\nversion: not-semver\npersonas: []\n", encoding="utf-8"
+    )
+    assert main(["validate", str(broken)]) == 1
+    err = capsys.readouterr().err
+    assert "slug" in err and "semver" in err and "licença" in err.lower()
+
+
+def test_build_emite_tudo_e_no_formato_do_desktop(tmp_path):
+    assert main(["build", str(PACK), "--out", str(tmp_path)]) == 0
+    out = tmp_path / "crossfire-review"
+
+    # ── agent.json de cada persona ───────────────────────────────────────
+    for name in ("forager", "adversary", "guard"):
+        agent = json.loads((out / f"{name}.agent.json").read_text(encoding="utf-8"))
+        assert agent["format"] == "buzz-agent-snapshot"
+        assert agent["version"] == 1
+        assert agent["definition"]["systemPrompt"].strip()
+        assert 1 <= agent["definition"]["parallelism"] <= 32
+        # PNG carrega o MESMO snapshot
+        png = (out / f"{name}.agent.png").read_bytes()
+        assert read_snapshot_from_png(png, "buzz_agent_snapshot") == agent
+
+    # ── team embute os três, na ordem do manifesto ───────────────────────
+    team = json.loads((out / "crossfire-review.team.json").read_text(encoding="utf-8"))
+    assert team["format"] == "buzz-team-snapshot"
+    assert [m["definition"]["name"] for m in team["members"]] == [
+        "Forager",
+        "Adversary",
+        "Guard",
+    ]
+
+    # ── três providers DISTINTOS — a tese do crossfire ───────────────────
+    providers = {m["definition"]["provider"] for m in team["members"]}
+    assert len(providers) == 3, f"crossfire degenerou em eco: {providers}"
+
+    # ── regras ACP: menção explícita em toda regra ───────────────────────
+    rules = tomllib.loads((out / "acp-rules.toml").read_text(encoding="utf-8"))
+    assert len(rules["rules"]) == 3
+    assert all("require_mention" in rule for rule in rules["rules"])
+
+    # ── catálogo para o site, com prompt na íntegra ──────────────────────
+    catalog = json.loads((out / "catalog.json").read_text(encoding="utf-8"))
+    assert len(catalog["personas"]) == 3
+    for entry in catalog["personas"]:
+        assert entry["systemPrompt"].strip()  # transparência é o produto
+
+
+def test_team_real_cabe_em_um_evento_30178(tmp_path):
+    """Q-006 respondida por medição, não por esperança."""
+    main(["build", str(PACK), "--out", str(tmp_path)])
+    raw = (tmp_path / "crossfire-review" / "crossfire-review.team.json").read_bytes()
+    assert len(raw) <= EVENT_CONTENT_MAX_BYTES, (
+        f"team snapshot com {len(raw):,} bytes estoura o corpo de evento "
+        f"({EVENT_CONTENT_MAX_BYTES:,}); a projeção L3 precisa encolher"
+    )
+
+
+def test_build_e_deterministico(tmp_path):
+    """Mesmo pack, mesmos bytes. Sem relógio, sem aleatoriedade no emissor."""
+    main(["build", str(PACK), "--out", str(tmp_path / "a")])
+    main(["build", str(PACK), "--out", str(tmp_path / "b")])
+    for name in ("forager.agent.json", "crossfire-review.team.json", "acp-rules.toml"):
+        first = (tmp_path / "a" / "crossfire-review" / name).read_bytes()
+        second = (tmp_path / "b" / "crossfire-review" / name).read_bytes()
+        assert first == second, f"{name} não é determinístico"

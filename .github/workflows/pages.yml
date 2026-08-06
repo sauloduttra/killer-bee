@@ -1,0 +1,69 @@
+name: Deploy Waggle to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Uma publicação por vez, e a que está em voo não é cancelada — cancelar um
+# deploy pela metade deixa o site num estado que ninguém pediu.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # O catálogo é gerado pelo CLI Python a partir de packs/, então o job
+      # precisa das duas toolchains.
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - uses: actions/configure-pages@v5
+        id: pages
+
+      - run: npm ci
+        working-directory: site
+
+      - name: Build
+        working-directory: site
+        env:
+          # `configure-pages` resolve o basePath do repositório; sem isso os
+          # caminhos quebram quando o site é servido em /<repo>/.
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          NEXT_PUBLIC_SITE_URL: ${{ steps.pages.outputs.origin }}
+        run: npm run build
+
+      - name: Test the exported HTML
+        working-directory: site
+        run: node --test tests/rendered-html.test.mjs
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

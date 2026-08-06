@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "waggle",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "out", "-l", "4173", "--no-clipboard"],
+      "port": 4173,
+      "cwd": "site"
+    }
+  ]
+}

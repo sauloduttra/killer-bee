@@ -1,0 +1,31 @@
+# Os clones do upstream vivem FORA da raiz do projeto, em D:\EMPRESAS\buzz\_upstream\.
+# Esta entrada existe como rede de segurança: se alguém reclonar aqui dentro por engano,
+# não vai versionar — e, mais importante, o .claude/skills/ e o CLAUDE.md do upstream
+# não devem ser carregados na sessão de quem trabalha neste projeto.
+.upstream/
+_upstream/
+
+node_modules/
+.next/
+out/
+dist/
+target/
+
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.venv/
+
+# Artefatos gerados a partir de packs/ — o repositório é a fonte da verdade, e
+# versionar a saída criaria duas verdades que divergem em silêncio.
+site/data/catalog.json
+site/public/downloads/
+
+.env
+.env.*
+!.env.example
+*.nsec
+*.key
+
+.DS_Store
+Thumbs.db

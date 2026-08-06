@@ -1,0 +1,64 @@
+# Killer Bee Pack — manifesto (camada L1).
+#
+# Tudo que é específico do Killer Bee mora AQUI, nunca no .persona.md: o parser
+# de frontmatter do Buzz rejeita chave desconhecida com erro fatal
+# (crates/buzz-persona/src/persona.rs:174-176 @ ed4b3e7a). Os arquivos de
+# persona permanecem 100% compatíveis com o formato nativo.
+
+name: crossfire-review
+version: 0.1.0
+description: >-
+  Three reviewers, three providers, one patch. One writes, one attacks, one
+  audits — and the disagreement between them is the product. Crossfire review
+  as a team preset for any Buzz channel.
+author: Killer Bee contributors
+license: Apache-2.0
+tags: [review, code-review, security, crossfire, team]
+
+compat:
+  # Commit de block/buzz contra o qual cada citação e formato foi verificado.
+  buzz_commit: ed4b3e7afafb5f5a688c210f39b90d747e6f0f00
+
+personas:
+  - file: personas/forager.persona.md
+    profile:
+      # Forager escreve o patch: responde quando chamada, fan-out moderado.
+      threshold: medium
+      recruitment: 4
+      persistence: medium
+      propagation: high
+
+  - file: personas/adversary.persona.md
+    profile:
+      # Adversary caça falha: limiar baixo (reage a todo patch no canal),
+      # persegue longe. É a scutellata do time.
+      threshold: low
+      recruitment: 8
+      persistence: long
+      propagation: high
+
+  - file: personas/guard.persona.md
+    profile:
+      # Guard audita segurança: limiar baixo, mas UM guarda, preciso —
+      # recruitment 1 é deliberado.
+      threshold: low
+      recruitment: 1
+      persistence: long
+      propagation: high
+
+teams:
+  - id: crossfire-review
+    name: Crossfire Review
+    description: >-
+      A three-model review team. Forager drafts, Adversary attacks, Guard
+      audits. Each runs on a different provider so their blind spots do not
+      overlap.
+    instructions: >-
+      You are one of three reviewers working the same patch from different
+      angles, on different models. Disagreement between reviewers is signal,
+      not noise: when another reviewer's finding contradicts yours, say so
+      explicitly and explain why. Never soften a finding to agree with the
+      room. Keep every claim anchored to a file and line. If you have nothing
+      to add beyond what was already said, say "no additional findings" —
+      repetition buries signal.
+    members: [forager, adversary, guard]

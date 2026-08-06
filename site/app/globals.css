@@ -1,0 +1,1348 @@
+@import "./fonts/fonts.css";
+
+/* ============================================================================
+   WAGGLE — REGISTRO
+   ----------------------------------------------------------------------------
+   Conceito: o site é um registrador de gráfico. Papel de escala pré-impresso em
+   uma tinta, traço queimado pelo estilete em outra. Nenhum número aparece nu:
+   toda grandeza é uma leitura desenhada sobre a sua faixa declarada — e onde a
+   fonte não declara faixa, o instrumento mostra o buraco.
+
+   Por que não é "dashboard escuro de dev tool": não existe uma cor de acento.
+   Existe substrato, tinta de escala, um pigmento em densidades, anotação e
+   fora-de-faixa. Sem "a cor de destaque", não há onde o default entrar.
+
+   Contrastes recalculados, não estimados. Cada par abaixo tem a razão medida.
+   ========================================================================= */
+
+:root {
+  color-scheme: light dark;
+
+  /* --- Substrato ------------------------------------------------------
+     Estoque de instrumento, não papel de livro. Pálido, industrial, e —
+     decisivo — NÃO é creme: creme lê editorial e é metade do default de IA.
+     OKLCH L .925 C .0131 H 130,8. A prova de que o viés frio é real e não
+     retórica: o creme do buzzdir está em H 91,5; 40° de separação de matiz é
+     número, "parece mais frio" não é. */
+  --stock: #e3e8df;
+  --panel: #dee4da; /* poço: bloco de código, campo de busca */
+  --wash: #dedfd3; /* lavagem da linha citada — 6%, não 12% (ver contraste) */
+
+  /* --- Tinta de escala (impressa ANTES do dado) -----------------------
+     Em papel de barógrafo a grade vem em tinta diferente do estilete, para
+     você distinguir ESCALA de SINAL num relance. É o argumento de
+     transparência virado cor: a faixa existe antes do dado. 5,48:1.
+     REGRA DURA: nunca em nada clicável, nunca em botão, nunca em área grande. */
+  --grid: #43605f;
+  /* 1,35:1 — graticula intermediária APENAS, e só onde os extremos já estão
+     impressos como TEXTO em --grid sólido. Nunca carrega informação sozinha. */
+  --grid-faint: color-mix(in srgb, var(--grid) 22%, transparent);
+  --hair: color-mix(in srgb, var(--grid) 30%, transparent);
+
+  /* --- O pigmento: UM só, em densidades -------------------------------
+     Não é "um acento sobre um fundo" — é queima em papel térmico: mais
+     energia, mais densidade. Como não existe "a cor de destaque", o default
+     de dev tool não tem por onde entrar.
+
+     Dupla derivação: papel térmico escaldado percorre ocre → sépia → carvão,
+     que é independentemente a coloração real da scutellata — menor, mais
+     escura, ocre, não amarelo-neon de emoji.
+
+     #87581D é o MÍNIMO da rampa e já passa 4,90:1. Como a rampa é monotônica
+     em luminância, TODA ela passa AA e 1.4.11 **por construção** — uma
+     garantia auditável no lugar de sete regras de uso que a terceira pessoa a
+     mexer no componente violaria. Custo assumido: perdemos o âmbar claro. */
+  --burn: #87581d;
+
+  /* --- Texto ----------------------------------------------------------
+     Se o traço é queima, o texto é a mesma substância na densidade máxima —
+     não um preto de UI importado de outro sistema. 13,44:1. */
+  --char: #221d16;
+  --char-muted: #5d564b; /* 5,82:1 medido — legenda, meta */
+
+  /* A rampa inteira numa expressão. `--t` = magnitude normalizada 0..1.
+     A MESMA fórmula produz as duas direções nos dois temas, porque no escuro
+     --char é claro e --burn é escuro: queima no claro, exposição no escuro. */
+  --ramp-1: color-mix(in oklab, var(--char) 30%, var(--burn)); /* 6,83:1 */
+  --ramp-2: color-mix(in oklab, var(--char) 60%, var(--burn)); /* 9,7:1 */
+
+  /* --- Anotação do operador -------------------------------------------
+     Caneta azul sobre o traço marrom: convenção de caderno de laboratório.
+     A única coisa da página que não é nem escala nem dado. 7,80:1.
+     Contra --char dá 1,72:1 e reprova 1.4.1 — por isso TODO link é
+     sublinhado, sempre. Nenhum hex conserta sem quebrar o fundo. */
+  --annot: #2a3d8f;
+
+  /* --- O buraco --------------------------------------------------------
+     Uma cor, e o valor dela vem da escassez. 5,73:1. Nunca comunica sozinha:
+     sempre acompanhada de hachura e do carimbo em texto. */
+  --redline: #a8232e;
+
+  /* --- Ritmo -----------------------------------------------------------
+     Fluid puro. Breakpoint reorganiza LAYOUT, nunca tamanho de texto. */
+  --gutter: clamp(18px, 5vw, 72px);
+  --section-y: clamp(48px, 8vw, 112px);
+  --measure: 68ch;
+
+  /* --- Tipografia ------------------------------------------------------
+     Archivo variável para rótulo e estrutura, Spectral para leitura longa,
+     Azeret Mono para dígito e identificador. As três OFL, auto-hospedadas.
+
+     A pilha de fallback usa size-adjust para que a troca não desloque o
+     layout enquanto a fonte carrega — é o que `font-display: swap` sozinho
+     não resolve. */
+  --font-label: Archivo, "Archivo Fallback", system-ui, sans-serif;
+  --font-read: Spectral, "Spectral Fallback", Georgia, serif;
+  --font-mono: "Azeret Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --step--1: clamp(0.78rem, 0.75rem + 0.15vw, 0.86rem);
+  --step-0: clamp(1rem, 0.96rem + 0.2vw, 1.09rem);
+  --step-1: clamp(1.2rem, 1.12rem + 0.4vw, 1.45rem);
+  --step-2: clamp(1.45rem, 1.3rem + 0.75vw, 1.95rem);
+  --step-3: clamp(1.8rem, 1.5rem + 1.5vw, 2.9rem);
+  --step-4: clamp(2.2rem, 1.6rem + 3vw, 4.2rem);
+
+  /* Hexágono regular: 2/√3. A proporção, não uma aproximação. */
+  --comb-ratio: 1.1547;
+  --comb-clip: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+}
+
+/* Métricas do fallback ajustadas às famílias reais: sem isto o texto "pula"
+   quando a webfont chega, e o pulo é pior que a espera. */
+@font-face {
+  font-family: "Archivo Fallback";
+  src: local("Arial");
+  size-adjust: 96%;
+  ascent-override: 92%;
+  descent-override: 24%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Spectral Fallback";
+  src: local("Georgia");
+  size-adjust: 104%;
+  ascent-override: 90%;
+  descent-override: 26%;
+  line-gap-override: 0%;
+}
+
+/* Modo escuro: muda o MEIO DE REGISTRO, não a paleta.
+   Claro = papel térmico, o estilete queima escuro. Escuro = oscilógrafo
+   fotográfico, o feixe expõe claro. A mesma expressão `color-mix` produz as
+   duas direções sozinha, porque --char e --burn trocam de lado.
+
+   NÃO É CIANÓTIPO — de propósito. Duas de três direções independentes
+   chegaram em cianótipo, o que é a definição operacional de default: em 2026,
+   azul-planta virou o "escuro que não é o escuro genérico". Aqui é emulsão
+   marrom-esverdeada, a menos de 9° de matiz do próprio estoque claro. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --stock: #1a1e19;
+    --panel: #222a26;
+    --wash: color-mix(in srgb, var(--burn) 10%, var(--stock));
+    --grid: #7fa3a0; /* 6,15:1 */
+    /* A MESMA cor proibida como texto no claro (2,52:1) é segura aqui
+       (5,57:1). A regra muda porque o meio mudou — não porque afrouxamos. */
+    --burn: #c08a33;
+    --char: #dcddd4; /* 12,33:1 */
+    --char-muted: #9a9a90; /* 5,95:1 medido */
+    --annot: #8fa3e8; /* 6,89:1 */
+    --redline: #e0656e; /* 5,03:1 */
+  }
+}
+
+/* ============================================================================
+   Reset mínimo
+   ========================================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--stock);
+  color: var(--char);
+  font-family: var(--font-read);
+  font-size: var(--step-0);
+  line-height: 1.62;
+  font-variant-numeric: tabular-nums;
+  /* A grade do papel: linhas finas de escala, quase no limiar. Não é textura
+     decorativa — é o que faz o substrato ler como papel de instrumento. */
+  background-image: repeating-linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--grid) 6%, transparent) 0 1px,
+      transparent 1px 40px
+    ),
+    repeating-linear-gradient(
+      to right,
+      color-mix(in oklab, var(--grid) 4%, transparent) 0 1px,
+      transparent 1px 40px
+    );
+}
+
+/* A LEI: Archivo é o INVÓLUCRO (nome próprio de objeto do catálogo) ·
+   Azeret Mono é o que o instrumento IMPRIME (escala, rótulo, numeral) ·
+   Spectral é o DOCUMENTO que ele carrega. Nenhuma invade a outra.
+
+   O eixo `wdth` do Archivo foi cortado inteiro: grotesca variável esticada em
+   caixa-alta é a assinatura corrente de landing de protocolo — o nicho de onde
+   este público vem — e condensada-caps-11px é o eyebrow label de todo SaaS
+   pós-2021. Cortar o gesto clichê também corta 60–80% do arquivo. */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-label);
+  font-weight: 500;
+  line-height: 1.12;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+  margin: 0 0 0.4em;
+}
+
+p {
+  text-wrap: pretty;
+  margin: 0 0 1em;
+}
+
+/* TODO link é sublinhado, SEMPRE. --annot contra --char dá 1,72:1 no claro e
+   1,79:1 no escuro: reprova WCAG 1.4.1 nos dois, e nenhum hex conserta sem
+   quebrar o contraste contra o fundo. O sublinhado é o único conserto — e, por
+   acaso, é a convenção de anotação a caneta que a direção já usa. */
+a {
+  color: var(--annot);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+code,
+pre,
+kbd {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+:focus-visible {
+  outline: 3px solid var(--annot);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.skip {
+  position: absolute;
+  inset-inline-start: -9999px;
+  z-index: 10;
+}
+.skip:focus {
+  inset-inline-start: var(--gutter);
+  inset-block-start: 12px;
+  background: var(--stock);
+  padding: 10px 16px;
+  border: 2px solid var(--annot);
+}
+
+/* ============================================================================
+   Estrutura
+   ========================================================================= */
+
+.masthead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: clamp(16px, 3vw, 28px) var(--gutter);
+  border-block-end: 1px solid var(--grid-faint);
+}
+
+.wordmark {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: inherit;
+  text-decoration: none;
+}
+.wordmark-name {
+  font-family: var(--font-label);
+  /* Peso alto em largura NORMAL. Grotesca esticada em caixa-alta virou a
+     assinatura de landing de protocolo — aqui seria o oposto de diferenciar. */
+  font-weight: 700;
+  font-size: var(--step-1);
+  letter-spacing: -0.02em;
+}
+.wordmark-sub {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--char-muted);
+}
+
+.masthead nav {
+  display: flex;
+  gap: clamp(14px, 3vw, 28px);
+  font-family: var(--font-label);
+  font-size: var(--step--1);
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+}
+
+section,
+.page {
+  padding: var(--section-y) var(--gutter);
+}
+
+.page {
+  max-inline-size: 1180px;
+  margin-inline: auto;
+  inline-size: 100%;
+}
+
+.section-heading {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--grid);
+  padding-block-end: 8px;
+  border-block-end: 1px solid var(--grid-faint);
+  margin-block-end: clamp(20px, 3vw, 36px);
+}
+
+.lede {
+  font-size: var(--step-1);
+  max-inline-size: var(--measure);
+  color: var(--char);
+}
+
+/* ============================================================================
+   Hero
+   ========================================================================= */
+
+.hero {
+  display: grid;
+  gap: clamp(28px, 5vw, 64px);
+  align-items: center;
+  grid-template-columns: 1fr;
+  border-block-end: 1px solid var(--grid-faint);
+}
+
+@media (min-width: 900px) {
+  .hero {
+    grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  }
+}
+
+.hero h1 {
+  font-size: var(--step-4);
+  max-inline-size: 18ch;
+}
+.hero h1 em {
+  font-style: normal;
+  color: var(--ramp-1);
+}
+
+.hero-meta {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--char-muted);
+}
+
+/* --- A signature: o campo de dança ------------------------------------- */
+
+.waggle {
+  margin: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.waggle-svg {
+  inline-size: 100%;
+  block-size: auto;
+  overflow: visible;
+}
+
+.waggle-ring {
+  fill: none;
+  stroke: var(--grid-faint);
+  stroke-width: 0.6;
+  stroke-dasharray: 2 4;
+}
+
+.waggle-hub {
+  fill: none;
+  stroke: var(--grid);
+  stroke-width: 1;
+}
+
+.waggle-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-linecap: round;
+}
+
+.waggle-line {
+  fill: none;
+  stroke: var(--burn);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 120ms ease;
+}
+
+.waggle-label {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  fill: var(--char-muted);
+  transition: fill 120ms ease;
+}
+
+.waggle-trace a {
+  text-decoration: none;
+}
+
+.waggle-trace:hover .waggle-line,
+.waggle-trace:focus-within .waggle-line {
+  stroke: var(--char);
+}
+.waggle-trace:hover .waggle-label,
+.waggle-trace:focus-within .waggle-label {
+  fill: var(--char);
+  font-weight: 500;
+}
+
+.waggle-caption {
+  font-size: var(--step--1);
+  color: var(--char-muted);
+  max-inline-size: 52ch;
+}
+.waggle-caption strong {
+  color: var(--char);
+  font-weight: 600;
+}
+.waggle-note {
+  font-family: var(--font-mono);
+  color: var(--grid);
+  margin: 0;
+}
+
+/* ============================================================================
+   Ferramentas do catálogo
+   ========================================================================= */
+
+.tools {
+  display: grid;
+  gap: 14px;
+  margin-block-end: 18px;
+}
+
+.search input {
+  inline-size: 100%;
+  min-block-size: 46px; /* alvo de toque */
+  padding: 10px 14px;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: var(--step-0);
+  color: var(--char);
+  background: var(--panel);
+  border: 1px solid var(--grid-faint);
+  border-radius: 2px;
+}
+.search input::placeholder {
+  color: var(--char-muted);
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-block-end: 2px;
+  /* O fade diz "tem mais para o lado" sem precisar de seta nem de texto. */
+  mask-image: linear-gradient(90deg, #000 0 calc(100% - 44px), transparent);
+}
+.filters::-webkit-scrollbar {
+  display: none;
+}
+
+.filters button,
+.linklike {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  min-block-size: 38px;
+  padding: 6px 14px;
+  white-space: nowrap;
+  color: var(--char-muted);
+  background: transparent;
+  border: 1px solid var(--grid-faint);
+  border-radius: 2px;
+  cursor: pointer;
+}
+.filters button[data-on] {
+  color: var(--stock);
+  background: var(--grid);
+  border-color: var(--grid);
+}
+
+.linklike {
+  border: 0;
+  padding: 0;
+  min-block-size: 0;
+  color: var(--annot);
+  text-decoration: underline;
+}
+
+.results {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--grid);
+  margin-block-end: 24px;
+}
+
+.empty {
+  padding: clamp(28px, 6vw, 56px);
+  border: 1px dashed var(--grid-faint);
+  text-align: center;
+  color: var(--char-muted);
+}
+
+/* ============================================================================
+   O favo: células hexagonais
+   ----------------------------------------------------------------------------
+   `clip-path` não aceita `border`. A célula tem fundo de tinta e um ::before
+   com o MESMO clip recuado 2px, pintado com o substrato — a diferença de 2px
+   é a borda. Reimplementado a partir da técnica, não copiado.
+   ========================================================================= */
+
+.comb {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: clamp(10px, 1.6vw, 18px);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+}
+
+.cell {
+  position: relative;
+  aspect-ratio: var(--comb-ratio);
+  clip-path: var(--comb-clip);
+  background: var(--grid-faint);
+  /* Virtualização de graça: o navegador pula layout e paint fora da tela. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 230px;
+  /* container-type habilita a container query de verdade abaixo — o buzzdir usa
+     unidades cqi SEM regra @container, que é a metade do truque. */
+  container-type: inline-size;
+}
+
+.cell::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  clip-path: var(--comb-clip);
+  background: var(--stock);
+  z-index: 0;
+}
+
+.cell:target::before {
+  background: color-mix(in oklab, var(--burn) 18%, var(--stock));
+}
+
+.cell-inner {
+  position: relative;
+  z-index: 1;
+  block-size: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 12% 18%;
+  overflow: clip;
+}
+
+.cell-title {
+  font-family: var(--font-mono);
+  /* O texto escala com a CÉLULA, não com a viewport — por isso o card nunca
+     quebra quando a grade muda de colunas. */
+  font-size: clamp(15px, 9cqi, 21px);
+  font-weight: 500;
+  margin: 0;
+}
+
+.cell-hit {
+  color: var(--char);
+  text-decoration: none;
+}
+/* Padrão hitbox: o link cobre a célula inteira; conteúdo interno não captura
+   ponteiro. Evita <a> dentro de <a>, que é HTML inválido. */
+.cell-hit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.cell-desc,
+.cell-meta,
+.tags {
+  pointer-events: none;
+}
+
+.cell-desc {
+  font-size: clamp(11px, 5.4cqi, 13px);
+  line-height: 1.4;
+  color: var(--char-muted);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: clip;
+}
+
+.cell-meta {
+  display: flex;
+  gap: clamp(8px, 4cqi, 16px);
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: clamp(9px, 4.2cqi, 11px);
+}
+.cell-meta dt {
+  color: var(--grid);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.cell-meta dd {
+  margin: 0;
+  color: var(--char);
+  font-weight: 500;
+}
+
+.tags {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: clamp(8px, 3.8cqi, 10px);
+  color: var(--grid);
+}
+
+.cell:hover {
+  background: var(--burn);
+}
+
+@container (min-width: 260px) {
+  .cell-inner {
+    gap: 8px;
+  }
+}
+
+/* ============================================================================
+   O instrumento: perfil scutellata
+   ========================================================================= */
+
+.profile {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  padding: 18px 0;
+}
+
+.axis-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+}
+.axis-name {
+  color: var(--grid);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.axis-value {
+  color: var(--char);
+  font-weight: 500;
+}
+.axis-unit {
+  color: var(--char-muted);
+  font-weight: 400;
+}
+
+.axis-bar {
+  block-size: 10px;
+  margin-block: 6px;
+  background: var(--panel);
+  /* A escala vem impressa ANTES do traço: ticks a cada 8 de 32. */
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--grid-faint) 0 1px,
+    transparent 1px 25%
+  );
+  border: 1px solid var(--grid-faint);
+  position: relative;
+}
+
+.axis-fill {
+  display: block;
+  block-size: 100%;
+  background: var(--burn);
+}
+
+.axis-steps {
+  display: flex;
+  gap: 3px;
+  margin-block: 8px;
+}
+.step {
+  block-size: 10px;
+  flex: 1;
+  background: var(--panel);
+  border: 1px solid var(--grid-faint);
+}
+.step[data-on] {
+  background: var(--burn);
+  border-color: var(--ramp-1);
+}
+
+.axis-hint {
+  font-size: var(--step--1);
+  color: var(--char-muted);
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* ============================================================================
+   O prompt verbatim
+   ----------------------------------------------------------------------------
+   Nenhum caractere é apagado — só a tinta muda. `.syn` é a marcação markdown,
+   apagada mas presente.
+   ========================================================================= */
+
+.prompt-head {
+  display: flex;
+  gap: 16px;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.prompt-note {
+  font-size: var(--step--1);
+  color: var(--char-muted);
+  max-inline-size: var(--measure);
+}
+.prompt-note-quiet {
+  font-family: var(--font-mono);
+  color: var(--grid);
+}
+
+.verbatim {
+  margin-block: 20px;
+  background: var(--panel);
+  border: 1px solid var(--grid-faint);
+  /* `clip` e não `hidden`: `hidden` cria contexto de rolagem e mata o sticky
+     de ancestrais. */
+  overflow: clip;
+}
+
+.verbatim-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-block-end: 1px solid var(--grid-faint);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--grid);
+}
+.verbatim-tools label {
+  cursor: pointer;
+  min-block-size: 38px;
+  display: flex;
+  align-items: center;
+}
+
+/* Leitura: Spectral, quebra natural, sem número. O prompt é prosa e o autor
+   escreveu para ser lido — a estrutura de linha do arquivo continua preservada,
+   só não é enumerada aqui. */
+.verbatim-lines {
+  list-style: none;
+  margin: 0;
+  padding: 16px 0;
+  counter-reset: line;
+  font-family: var(--font-read);
+  font-size: var(--step-0);
+  line-height: 1.66;
+  max-inline-size: var(--measure);
+}
+
+/* Bruta: a linha é real. Mono, sem quebra, número visível, âncora útil. */
+.verbatim:has(.raw-toggle:checked) .verbatim-lines {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  line-height: 1.72;
+  max-inline-size: none;
+  overflow-x: auto;
+}
+.verbatim:has(.raw-toggle:checked) .vline {
+  white-space: pre;
+  padding-inline-start: 4.2em;
+}
+.verbatim:has(.raw-toggle:checked) .vline::before {
+  content: counter(line);
+}
+
+.vline {
+  counter-increment: line;
+  position: relative;
+  padding-inline: 1.4em 1.2em;
+  white-space: pre-wrap;
+  /* Linha em branco não carrega caractere nenhum — a altura vem daqui. Injetar
+     um espaço não-quebrável faria o "copiar prompt" trazer um caractere que não
+     está na fonte. */
+  min-block-size: 1.72em;
+  /* Quebra visual de linha longa fica indentada, para não se confundir com uma
+     linha nova do documento. */
+  text-indent: -0.001px hanging;
+}
+
+.vline::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  inline-size: 3.4em;
+  text-align: end;
+  color: var(--grid-faint);
+  /* Fora da seleção: copiar o prompt tem que copiar o prompt, não uma coluna
+     de números. */
+  user-select: none;
+}
+
+.vline:target,
+.vline:hover {
+  background: color-mix(in oklab, var(--burn) 10%, transparent);
+}
+.vline:target::before {
+  color: var(--ramp-1);
+  font-weight: 500;
+}
+
+.vline-anchor {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: 3.4em;
+}
+
+.vline[data-kind="heading"] .head-text {
+  font-weight: 600;
+  color: var(--char);
+}
+.vline[data-kind="heading"][data-level="1"] .head-text,
+.vline[data-kind="heading"][data-level="2"] .head-text {
+  font-size: 1.12em;
+}
+
+.vline[data-kind="code"] .tok-raw,
+.vline[data-kind="fence"] .tok-raw {
+  color: var(--grid);
+}
+
+.vline[data-kind="quote"] {
+  color: var(--char-muted);
+}
+
+/* A marcação continua visível — só perde tinta. É a regra da página. */
+.syn {
+  color: var(--grid-faint);
+}
+.marker {
+  color: var(--ramp-1);
+}
+.tok-code code {
+  color: var(--annot);
+}
+
+/* ============================================================================
+   Páginas internas
+   ========================================================================= */
+
+.crumbs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--char-muted);
+  margin-block-end: 20px;
+}
+
+.page-head {
+  margin-block-end: var(--section-y);
+}
+.page-head h1 {
+  font-size: var(--step-3);
+}
+
+.factsheet {
+  display: grid;
+  gap: 14px 28px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), auto));
+  margin: 24px 0 0;
+  padding-block-start: 18px;
+  border-block-start: 1px solid var(--grid-faint);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+}
+.factsheet dt {
+  color: var(--grid);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.factsheet dd {
+  margin: 2px 0 0;
+  color: var(--char);
+}
+
+.persona-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 28px;
+}
+
+.persona-row {
+  padding-block-end: 28px;
+  border-block-end: 1px solid var(--grid-faint);
+}
+.persona-row:last-child {
+  border-block-end: 0;
+}
+.persona-row h3 {
+  font-size: var(--step-2);
+  margin-block-end: 4px;
+}
+.persona-row h3 a {
+  color: var(--char);
+  text-decoration: none;
+}
+.persona-row h3 a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--burn);
+}
+.persona-row-desc {
+  color: var(--char-muted);
+  max-inline-size: var(--measure);
+  margin-block-end: 8px;
+}
+
+.persona-row-model {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+}
+
+.chip {
+  padding: 3px 9px;
+  border: 1px solid var(--ramp-1);
+  color: var(--ramp-1);
+  border-radius: 2px;
+}
+.chip-quiet {
+  border-color: var(--grid-faint);
+  color: var(--char-muted);
+}
+
+.team {
+  padding-block-end: 24px;
+  margin-block-end: 24px;
+  border-block-end: 1px solid var(--grid-faint);
+}
+.team h3 {
+  font-size: var(--step-2);
+}
+.team-members {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+}
+
+.disclosure {
+  margin-block: 12px;
+  border-inline-start: 2px solid var(--grid-faint);
+  padding-inline-start: 14px;
+}
+.disclosure summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--grid);
+  min-block-size: 38px;
+  display: flex;
+  align-items: center;
+}
+
+.prose {
+  max-inline-size: var(--measure);
+}
+
+/* ============================================================================
+   Instalação — a parte honesta
+   ========================================================================= */
+
+.install-count {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--char-muted);
+}
+.install-count strong {
+  color: var(--char);
+}
+
+.steps {
+  max-inline-size: var(--measure);
+  padding-inline-start: 1.4em;
+}
+.steps li {
+  margin-block-end: 6px;
+}
+
+.callout {
+  margin-block: 24px;
+  padding: 18px 20px;
+  background: var(--panel);
+  /* Uma barra vermelha, e o valor dela vem da escassez: é o único lugar da
+     página que sinaliza "atenção, isto não é o que você esperava". */
+  border-inline-start: 3px solid var(--redline);
+}
+.callout h3 {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--redline);
+  margin-block-end: 8px;
+}
+.callout ul {
+  margin: 0;
+  padding-inline-start: 1.2em;
+  font-size: var(--step--1);
+  color: var(--char-muted);
+}
+
+.subhead {
+  font-size: var(--step-1);
+  margin-block-start: 32px;
+}
+
+.downloads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-block-start: 14px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 46px;
+  padding: 10px 18px;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--stock);
+  background: var(--char);
+  border: 1px solid var(--char);
+  border-radius: 2px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.button:hover {
+  background: var(--ramp-1);
+  border-color: var(--ramp-1);
+}
+.button-quiet {
+  color: var(--char);
+  background: transparent;
+  border-color: var(--grid-faint);
+}
+.button-quiet:hover {
+  color: var(--char);
+  background: color-mix(in oklab, var(--burn) 16%, transparent);
+  border-color: var(--ramp-1);
+}
+
+.command {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--grid-faint);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  overflow-x: auto;
+}
+.command code {
+  color: var(--char);
+  white-space: nowrap;
+}
+
+.copy {
+  margin-inline-start: auto;
+  min-block-size: 38px;
+  padding: 6px 14px;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--char);
+  background: transparent;
+  border: 1px solid var(--grid-faint);
+  border-radius: 2px;
+  cursor: pointer;
+}
+.copy[data-copied] {
+  color: var(--stock);
+  background: var(--grid);
+  border-color: var(--grid);
+}
+
+/* ============================================================================
+   Manifesto e rodapé
+   ========================================================================= */
+
+.manifesto {
+  background: var(--panel);
+  border-block: 1px solid var(--grid-faint);
+}
+.section-index {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--ramp-1);
+  margin: 0 0 4px;
+}
+.manifesto h2 {
+  font-size: var(--step-2);
+}
+.manifesto-lede {
+  max-inline-size: var(--measure);
+  color: var(--char-muted);
+  margin-block-end: 32px;
+}
+.manifesto-grid {
+  display: grid;
+  gap: clamp(20px, 3vw, 36px);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+}
+.manifesto-grid h3 {
+  font-family: var(--font-mono);
+  font-size: var(--step-0);
+  font-weight: 500;
+  color: var(--grid);
+  margin-block-end: 6px;
+}
+.manifesto-grid p {
+  font-size: var(--step--1);
+  color: var(--char-muted);
+  margin: 0;
+}
+
+.list-hive {
+  display: grid;
+  gap: 28px;
+  align-items: center;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 780px) {
+  .list-hive {
+    grid-template-columns: 1.4fr auto;
+  }
+}
+.list-hive p {
+  max-inline-size: var(--measure);
+  color: var(--char-muted);
+}
+.cta-comb {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.colophon {
+  padding: var(--section-y) var(--gutter);
+  border-block-start: 1px solid var(--grid-faint);
+  font-size: var(--step--1);
+  color: var(--char-muted);
+}
+.colophon p {
+  max-inline-size: 62ch;
+}
+.colophon-meta {
+  font-family: var(--font-mono);
+  color: var(--grid);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+table {
+  border-collapse: collapse;
+  font-size: var(--step--1);
+}
+th,
+td {
+  text-align: start;
+  padding: 6px 12px;
+  border-block-end: 1px solid var(--grid-faint);
+}
+th {
+  font-family: var(--font-mono);
+  color: var(--grid);
+  font-weight: 500;
+}
+
+/* ============================================================================
+   Toque, movimento, impressão
+   ========================================================================= */
+
+/* Em touch o hover "gruda": o estado fica preso depois do toque. Desligamos
+   tudo e damos :active, que é o feedback que o dedo espera. */
+@media (hover: none) {
+  .cell:hover {
+    background: var(--grid-faint);
+  }
+  .button:hover,
+  .button-quiet:hover {
+    background: inherit;
+  }
+  .vline:hover {
+    background: transparent;
+  }
+  .cell:active {
+    background: var(--burn);
+    transition: background 90ms ease;
+  }
+}
+
+@media (max-width: 620px) {
+  /* `display: contents` dissolve o wrapper para a busca poder grudar no
+     container do diretório em vez de num pai com overflow. */
+  .tools {
+    display: contents;
+  }
+  .search {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 3;
+    display: block;
+    padding-block: 10px;
+    background: var(--stock);
+  }
+  .filters {
+    margin-block: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .masthead nav,
+  .tools,
+  .downloads,
+  .copy,
+  .waggle {
+    display: none;
+  }
+  .verbatim {
+    border: 1px solid #999;
+  }
+}
+
+
+/* ============================================================================
+   O numeral
+   ----------------------------------------------------------------------------
+   O maior elemento de cada página é uma GRANDEZA MEDIDA, não o nome do produto.
+   Numa placa de instrumento o número é o maior elemento e a marca é serigrafia
+   pequena — e isso resolve dois problemas de uma vez: mata o wordmark em
+   grotesca expandida (clichê de landing de protocolo) e faz a primeira coisa
+   que a pessoa lê ser um fato verificável sobre o catálogo.
+   ========================================================================= */
+
+.tally {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-block-start: clamp(20px, 4vw, 40px);
+}
+
+.tally-value {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: clamp(3rem, 1.5rem + 7vw, 7rem);
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  color: var(--char);
+  font-variant-numeric: tabular-nums;
+}
+
+.tally-unit {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--grid);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.tally-note {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--char-muted);
+  margin: 6px 0 0;
+  max-inline-size: 46ch;
+}

@@ -1,0 +1,164 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: lint + tests + pack build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Format check
+        run: uv run ruff format --check .
+
+      - name: Tests
+        run: uv run pytest -q
+
+      # Todo pack versionado tem que validar. É o item de DoD: CI falha em pack
+      # inválido.
+      - name: Validate every pack
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          found=0
+          for pack in packs/*/; do
+            found=1
+            echo "::group::validate $pack"
+            uv run python -m killerbee validate "$pack"
+            echo "::endgroup::"
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "nenhum pack em packs/ — o repo perdeu seu conteúdo?" >&2
+            exit 1
+          fi
+
+      - name: Build every pack
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for pack in packs/*/; do
+            uv run python -m killerbee build "$pack"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packs-dist
+          path: dist/
+          if-no-files-found: error
+
+  invalid-pack-is-rejected:
+    name: validate rejects a broken pack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+
+      # Um gate que só falha quando deve é um gate não testado. Este job prova
+      # que o validador REJEITA — se ele passar a aceitar lixo, o CI quebra aqui.
+      - name: A broken pack must exit non-zero
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/broken-pack
+          printf 'name: Broken Name\nversion: not-semver\npersonas: []\n' \
+            > /tmp/broken-pack/killerbee.yaml
+          if uv run python -m killerbee validate /tmp/broken-pack; then
+            echo "FALHA: o validador aceitou um pack inválido" >&2
+            exit 1
+          fi
+          echo "OK: pack inválido rejeitado, como esperado"
+
+  site:
+    name: site — build estático + testes do HTML exportado
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+        working-directory: site
+      - run: npm run lint
+        working-directory: site
+      - run: npm run build
+        working-directory: site
+      # Os testes rodam sobre out/, não sobre o fonte: é o que prova que o export
+      # estático realmente contém o catálogo e os prompts na íntegra.
+      - run: node --test tests/rendered-html.test.mjs
+        working-directory: site
+
+  secrets:
+    name: gitleaks + scanner próprio
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # gitleaks precisa do histórico
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: astral-sh/setup-uv@v5
+      - name: scanner próprio (stdlib, sem deps)
+        run: uv run --no-project scripts/scan_secrets.py .
+
+  dco:
+    name: DCO sign-off
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Every commit in the PR must be signed off
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          missing=0
+          while read -r sha; do
+            [ -z "$sha" ] && continue
+            if ! git log -1 --format=%B "$sha" | grep -qi '^Signed-off-by: .\+ <.\+@.\+>'; then
+              echo "sem DCO: $sha $(git log -1 --format=%s "$sha")" >&2
+              missing=1
+            fi
+          done < <(git rev-list "$BASE..$HEAD")
+          if [ "$missing" -eq 1 ]; then
+            echo "" >&2
+            echo "Corrija com: git commit --amend -s  (ou git rebase --signoff main)" >&2
+            exit 1
+          fi
+          echo "OK: todos os commits assinados"

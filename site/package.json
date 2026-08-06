@@ -1,0 +1,33 @@
+{
+  "name": "waggle",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "//data": "Gera o catálogo e os snapshots baixáveis a partir de packs/. O --out do build aponta para public/downloads porque é exatamente a URL que as páginas linkam.",
+    "data": "node scripts/prepare-data.mjs",
+    "dev": "npm run data && next dev",
+    "prebuild": "npm run data",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "npm run build && node --test tests/rendered-html.test.mjs"
+  },
+  "dependencies": {
+    "next": "16.2.12",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.6",
+    "@types/node": "22.15.3",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.1",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.12",
+    "typescript": "5.9.3"
+  }
+}

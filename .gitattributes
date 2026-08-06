@@ -1,0 +1,23 @@
+# Normaliza fim de linha na entrada e serve LF no checkout.
+#
+# Sem isto, um clone no Windows converte YAML e shell para CRLF, e aí:
+#   - `.persona.md` muda de bytes, o que altera o system prompt que o agente
+#     recebe e quebra o teste verbatim do site, que compara caractere a caractere
+#   - `run.sh` e hooks param de executar em container Linux
+* text=auto eol=lf
+
+# Binário: nunca normalizar, nunca tentar diff textual.
+*.woff2 binary
+*.png    binary
+*.ico    binary
+*.pdf    binary
+
+# Gerados a partir de packs/ — colapsa o diff no code review, porque revisar a
+# saída em vez da fonte é como o revisor perde tempo e deixa passar o que importa.
+site/app/fonts/fonts.css linguist-generated=true
+uv.lock                  linguist-generated=true
+site/package-lock.json   linguist-generated=true
+
+# O prompt de persona é o produto, não "documentação" — conta como fonte na
+# estatística de linguagem do repositório.
+packs/**/*.persona.md linguist-detectable=true

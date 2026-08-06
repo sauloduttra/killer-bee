@@ -1,0 +1,95 @@
+import Link from "next/link";
+import { packs } from "@/app/lib/catalog";
+import { danceTraces, tracePath, traceEnd, ringRadius } from "@/app/lib/dance";
+
+/**
+ * O hero: cada persona do catálogo plotada como um traço de dança.
+ *
+ * SVG server-rendered — sem JavaScript, sem canvas, sem biblioteca. Funciona com
+ * JS desligado, é indexável, e cada traço é um link de verdade. A alternativa
+ * (canvas animado) seria mais vistosa e diria menos.
+ *
+ * A animação existe só no `stroke-dashoffset`, e `prefers-reduced-motion` a
+ * remove por CSS — o desenho estático já carrega a informação inteira, então
+ * nada se perde.
+ */
+export function WaggleField() {
+  const traces = danceTraces(packs);
+  if (traces.length === 0) return null;
+
+  const size = 320;
+  const center = size / 2;
+  const radius = center - 34;
+
+  return (
+    <figure className="waggle" aria-labelledby="waggle-caption">
+      <svg
+        viewBox={`0 0 ${size} ${size}`}
+        className="waggle-svg"
+        role="img"
+        aria-label={`${traces.length} personas plotted as waggle-dance traces`}
+      >
+        {/* Anéis de escala: 8, 16, 24 e 32 conversas paralelas.
+            A faixa é impressa ANTES do dado — sem ela o comprimento do traço é
+            um comprimento, não uma grandeza.
+
+            O raio usa exatamente a mesma função que o traço
+            (`lengthFromRecruitment`), senão a escala mentiria sobre o próprio
+            desenho — que é o pecado que este site inteiro existe para não
+            cometer. */}
+        {[8, 16, 24, 32].map((mark) => (
+          <circle
+            key={mark}
+            cx={center}
+            cy={center}
+            r={ringRadius(mark, radius)}
+            className="waggle-ring"
+          />
+        ))}
+
+        <circle cx={center} cy={center} r={radius * 0.18} className="waggle-hub" />
+
+        {traces.map((trace) => (
+          <g key={`${trace.packName}/${trace.personaName}`} className="waggle-trace">
+            <Link href={trace.href} aria-label={`${trace.displayName} in ${trace.packName}`}>
+              {/* Alvo de toque generoso e invisível, por cima do traço fino. */}
+              <path
+                d={tracePath(trace, center, center, radius)}
+                className="waggle-hit"
+                strokeWidth={16}
+              />
+              <path
+                d={tracePath(trace, center, center, radius)}
+                className="waggle-line"
+                strokeWidth={trace.weight}
+              />
+              <text
+                {...(() => {
+                  const end = traceEnd(trace, center, center, radius);
+                  return { x: end.x, y: end.y, textAnchor: end.anchor };
+                })()}
+                className="waggle-label"
+                dominantBaseline="middle"
+              >
+                {trace.displayName}
+              </text>
+            </Link>
+          </g>
+        ))}
+      </svg>
+
+      <figcaption id="waggle-caption" className="waggle-caption">
+        <p>
+          Every persona in the catalog, plotted the way a forager reports a find. Angle
+          separates personas; <strong>length is recruitment</strong> — how many conversations
+          the agent holds at once, 1 to 32. <strong>Thickness is persistence</strong>, how long
+          it keeps at a task. <strong>Waggle count is threshold</strong>, how little it takes to
+          get a response.
+        </p>
+        <p className="waggle-note">
+          Every value is a real field from the pack manifest. None of it is decoration.
+        </p>
+      </figcaption>
+    </figure>
+  );
+}
