@@ -119,7 +119,10 @@ def test_catalogo_do_build_publica_sha256_que_bate_com_o_arquivo(tmp_path):
 
 def test_catalog_do_site_publica_o_mesmo_sha256_do_build(tmp_path):
     """`catalog` (site) e `build` (downloads) serializam nos MESMOS bytes —
-    se divergirem, o hash na página mente sobre o arquivo baixado."""
+    se divergirem, o hash na página mente sobre o arquivo baixado. Cobre
+    personas E teams: o segundo leitor da rodada da assinatura flagrou que os
+    arquivos de team nunca eram comparados entre as duas invocações — com o
+    raster computado nos dois caminhos, era exatamente onde um bug caberia."""
     import hashlib
 
     assert main(["build", str(PACK), "--out", str(tmp_path / "dist")]) == 0
@@ -127,11 +130,14 @@ def test_catalog_do_site_publica_o_mesmo_sha256_do_build(tmp_path):
     assert main(["catalog", "--packs", str(PACK.parent), "--out", str(out_file)]) == 0
     site_catalog = json.loads(out_file.read_text(encoding="utf-8"))
     dist = tmp_path / "dist" / "crossfire-review"
+    compared = 0
     for pack in site_catalog["packs"]:
-        for persona in pack["personas"]:
-            for entry in persona["files"]:
+        for item in pack["personas"] + pack["teams"]:
+            for entry in item["files"]:
                 raw = (dist / entry["name"]).read_bytes()
                 assert hashlib.sha256(raw).hexdigest() == entry["sha256"], entry["name"]
+                compared += 1
+    assert compared == 8, f"esperava 8 artefatos (3 personas + 1 team, x2), comparei {compared}"
 
 
 def test_catalog_nao_vaza_caminho_absoluto(tmp_path):

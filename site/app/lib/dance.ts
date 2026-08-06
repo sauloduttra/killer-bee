@@ -46,8 +46,11 @@ const THRESHOLD_WAGGLES: Record<string, number> = { high: 2, medium: 4, low: 7 }
 const RECRUITMENT_MIN = 1;
 const RECRUITMENT_MAX = 32;
 
-/** Raio interno do disco central, em fração do raio total. */
-const HUB = 0.18;
+/** Raio interno do disco central, em fração do raio total. Exportado para o
+ * WaggleField desenhar o hub com A MESMA constante (uma cópia hardcoded 0.18
+ * viveu lá até 2026-08-06) — e espelhado em killerbee/signature.py, que
+ * rasteriza este mesmo desenho no corpo dos .agent.png/.team.png. */
+export const HUB = 0.18;
 
 /**
  * Raio do anel de escala para um valor de `recruitment`.

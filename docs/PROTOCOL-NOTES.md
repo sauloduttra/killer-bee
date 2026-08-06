@@ -725,6 +725,24 @@ Chunk **`tEXt`** (não `iTXt`, não `zTXt`) — o encoder usa `add_text_chunk`
 **Gerável com qualquer biblioteca PNG.** O `.agent.png` é o formato mais interessante para
 o Waggle: é o único artefato instalável que já tem URL pública hoje (via Blossom, §5.2).
 
+**Adendo 2026-08-06 (segunda rodada de leitura, verificada por segundo leitor):**
+
+- **O corpo do PNG é ADOTADO como avatar do agente no import** quando o manifesto não
+  traz `avatar_data_url` inline: `parse_snapshot_payload_from_bytes` decodifica o corpo
+  e o injeta como avatar (`import.rs:242-261` — "The PNG image body is the portable
+  avatar"). Limites dessa adoção em `snapshot_avatar.rs:5-7`:
+  `MAX_AVATAR_DIMENSION = 2048` (lado maior **falha o import**, propagação com `?`),
+  `MAX_AVATAR_INLINE_BYTES = 2 MiB`, `MAX_AVATAR_DECODE_ALLOC = 32 MiB`.
+  ⚠️ Leitura de fonte — adoção como avatar ainda NÃO vista no app rodando (D-017).
+- Há um TERCEIRO produtor de corpo de `.agent.png` no upstream além do export
+  (avatar) e do fallback 1×1: o fluxo de **Agent Trading Cards** (`card.rs`), que gera
+  arte 2:3 por IA como corpo, com o avatar real inline no manifesto.
+- O corpo aparece no app em pelo menos quatro superfícies: thumb 36×36 do card de
+  chat; viewer de card (~448 px, `AgentCardViewerDialog.tsx:170-179`); tiles da
+  galeria; e como avatar do agente importado.
+- O sanitizador de PNG preserva o chunk de snapshot
+  (`media_snapshot_png.rs:87+`, `test_sanitizer_preserves_agent_snapshot_text_chunk`).
+
 ### 10.5 Quantos cliques — o número que vai no site
 
 > **Corrigido em 2026-08-05 contra o app rodando (0.5.5).** Ver [§10.9](#109-verificação-no-app-real--2026-08-05).

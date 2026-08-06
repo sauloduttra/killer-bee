@@ -594,3 +594,27 @@ por teste: corpo com respondTo NÃO valida.
 manter respondTo sem a lista (mentira estrutural).
 **Custo de reversão:** o schema é versionado (`v: 1`); forma nova = `v: 2` + módulo.
 Assinar/publicar continua 🔴 — este bloco para exatamente na fronteira.
+
+## D-030 — Assinatura de dança rasterizada como corpo dos PNGs
+
+**Quando:** 2026-08-06, trilha D-iii (fechando a trilha D da sessão pós-vídeo)
+**O que:** o corpo dos `.agent.png`/`.team.png` deixa de ser 1×1 transparente e passa a
+ser o campo de dança rasterizado (512×512 RGBA, fundo transparente) —
+`killerbee/signature.py`, puro, sem Pillow. Constantes que carregam informação são as
+de `site/app/lib/dance.ts`, espelhadas byte a byte e travadas por teste (inclusive os
+fallbacks `?? 2.4`/`?? 4`). O CAMPO muda de escopo: o site plota o catálogo inteiro; o
+artefato só conhece o próprio pack — `.agent.png` desenha o traço da persona no ângulo
+que ela ocupa no pack, `.team.png` desenha todos os membros. Trig própria (Taylor,
+redução a [-π/2, π/2], erro < 1e-7) porque libm varia por plataforma no último bit e um
+bit muda o sha256 publicado; golden do RASTER CRU (não do PNG — zlib não é contrato).
+**Consequência descoberta pelo segundo leitor:** sem avatar inline no manifesto, o
+corpo é ADOTADO como avatar no import (`import.rs:242-261`); limites de adoção
+2048 px / 2 MiB / 32 MiB (`snapshot_avatar.rs:5-7`) travados por teste — lado > 2048
+FALHARIA o import. ⚠️ adoção como avatar ainda não vista no app rodando (D-017).
+Lacuna de teste fechada na mesma rodada: determinismo build×catálogo agora compara
+TAMBÉM os arquivos de team (antes só personas). Terceira cópia do HUB no site
+(WaggleField hardcodava 0.18) eliminada — dance.ts exporta a constante.
+**Alternativa:** copiar o corpo do upstream (avatar — não temos), SVG embutido (o
+decoder upstream só fala PNG), Pillow (dependência de 10 MB para 250 linhas auditáveis).
+**Custo de reversão:** remover body=... nos dois helpers de cli.py e o módulo; os PNGs
+voltam a 1×1 e os hashes do catálogo se recalculam sozinhos no mesmo build.

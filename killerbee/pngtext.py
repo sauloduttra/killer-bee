@@ -40,17 +40,26 @@ def build_png_with_text(
     width_px: int = 1,
     height_px: int = 1,
     rgba: tuple[int, int, int, int] = (0, 0, 0, 0),
+    pixels: bytes | None = None,
 ) -> bytes:
-    """PNG RGBA sólido com um chunk tEXt entre IHDR e IDAT.
+    """PNG RGBA com um chunk tEXt entre IHDR e IDAT.
 
-    O upstream usa 1x1 transparente como corpo do `.team.png`; o default aqui é
-    o mesmo. keyword segue a regra do PNG: 1 a 79 bytes, Latin-1. O texto também
-    precisa ser Latin-1 — base64 é ASCII, então sempre passa.
+    Sem ``pixels``, o corpo é cor sólida — o default 1x1 transparente é o que
+    o upstream usa como fallback de `.team.png`. Com ``pixels`` (RGBA flat,
+    ``width_px*height_px*4`` bytes), o corpo é o raster dado — é como a
+    assinatura de dança entra (killerbee/signature.py). keyword segue a regra
+    do PNG: 1 a 79 bytes, Latin-1. O texto também precisa ser Latin-1 —
+    base64 é ASCII, então sempre passa.
     """
     if not 1 <= len(keyword) <= 79:
         raise ValueError(f"keyword tEXt deve ter 1..=79 bytes; '{keyword}' tem {len(keyword)}")
     if width_px < 1 or height_px < 1:
         raise ValueError(f"dimensões inválidas: {width_px}x{height_px}")
+    if pixels is not None and len(pixels) != width_px * height_px * 4:
+        raise ValueError(
+            f"raster de {len(pixels):,} bytes não casa com {width_px}x{height_px} RGBA "
+            f"({width_px * height_px * 4:,} bytes esperados)"
+        )
 
     # IHDR: bit depth 8, color type 6 (RGBA), compressão/filtro/entrelace 0.
     ihdr = struct.pack(">IIBBBBB", width_px, height_px, 8, 6, 0, 0, 0)
@@ -64,8 +73,14 @@ def build_png_with_text(
             "snapshot é base64 (sempre ASCII), então isto indica uso errado"
         ) from exc
     # Cada linha da imagem: 1 byte de filtro (0 = None) + pixels RGBA.
-    raw_row = b"\x00" + bytes(rgba) * width_px
-    idat = zlib.compress(raw_row * height_px)
+    if pixels is None:
+        raw = (b"\x00" + bytes(rgba) * width_px) * height_px
+    else:
+        stride = width_px * 4
+        raw = b"".join(
+            b"\x00" + pixels[row * stride : (row + 1) * stride] for row in range(height_px)
+        )
+    idat = zlib.compress(raw)
 
     return (
         PNG_SIGNATURE
@@ -76,12 +91,19 @@ def build_png_with_text(
     )
 
 
-def snapshot_png(keyword: str, snapshot: dict) -> bytes:
-    """Embala um snapshot (dict JSON) num PNG portátil, como o app faz."""
+def snapshot_png(keyword: str, snapshot: dict, body: tuple[int, int, bytes] | None = None) -> bytes:
+    """Embala um snapshot (dict JSON) num PNG portátil, como o app faz.
+
+    ``body`` = (width, height, pixels RGBA) — o corpo visível do arquivo; sem
+    ele, 1x1 transparente como antes.
+    """
     payload = base64.standard_b64encode(
         json.dumps(snapshot, ensure_ascii=False).encode("utf-8")
     ).decode("ascii")
-    return build_png_with_text(keyword, payload)
+    if body is None:
+        return build_png_with_text(keyword, payload)
+    width_px, height_px, pixels = body
+    return build_png_with_text(keyword, payload, width_px, height_px, pixels=pixels)
 
 
 # ── Leitura ─────────────────────────────────────────────────────────────────

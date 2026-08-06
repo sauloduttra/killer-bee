@@ -33,6 +33,7 @@ from .event30178 import unsigned_event
 from .imeta import imeta_tag, mime_for
 from .loader import PackLoadError, load_pack
 from .pngtext import read_snapshot_from_png, snapshot_png
+from .signature import field_raster
 from .snapshot import agent_snapshot, team_snapshot
 from .validate import (
     AGENT_JSON_MAX_BYTES,
@@ -82,6 +83,26 @@ def _file_entry(name: str, raw: bytes) -> dict:
         "sha256": hashlib.sha256(raw).hexdigest(),
         "bytes": len(raw),
     }
+
+
+# Lado do raster da assinatura de dança no corpo dos PNGs (D-030). build e
+# catalog passam OBRIGATORIAMENTE por estes helpers: se cada um desenhasse por
+# si, o sha256 publicado no site poderia divergir do arquivo baixado.
+SIGNATURE_PX = 512
+
+
+def _agent_body(manifest, persona_index: int) -> tuple[int, int, bytes]:
+    """Corpo do .agent.png: o traço da persona, no campo do próprio pack."""
+    profiles = [p.profile for p in manifest.personas]
+    raster = field_raster(profiles, draw_indices=[persona_index], size=SIGNATURE_PX)
+    return (SIGNATURE_PX, SIGNATURE_PX, raster)
+
+
+def _team_body(manifest, team) -> tuple[int, int, bytes]:
+    """Corpo do .team.png: os traços de TODOS os membros, campo do team."""
+    profiles = [manifest.persona_by_name(name).profile for name in team.members]
+    raster = field_raster(profiles, size=SIGNATURE_PX)
+    return (SIGNATURE_PX, SIGNATURE_PX, raster)
 
 
 def _fail(messages: list[str]) -> int:
@@ -140,7 +161,7 @@ def cmd_build(pack_dir: Path, out_root: Path) -> int:
     }
 
     build_errors: list[str] = []
-    for persona in manifest.personas:
+    for persona_index, persona in enumerate(manifest.personas):
         snapshot = agent_snapshot(persona)
         raw = write_json(f"{persona.name}.agent.json", snapshot)
         if len(raw) > AGENT_JSON_MAX_BYTES:
@@ -148,7 +169,7 @@ def cmd_build(pack_dir: Path, out_root: Path) -> int:
                 f"persona '{persona.name}': .agent.json com {len(raw):,} bytes excede "
                 f"o cap de import do desktop ({AGENT_JSON_MAX_BYTES:,}, PROTOCOL-NOTES §10.8)"
             )
-        png = snapshot_png(AGENT_PNG_KEYWORD, snapshot)
+        png = snapshot_png(AGENT_PNG_KEYWORD, snapshot, body=_agent_body(manifest, persona_index))
         (out_dir / f"{persona.name}.agent.png").write_bytes(png)
         emitted.append(f"{persona.name}.agent.png")
         catalog["personas"].append(
@@ -182,7 +203,7 @@ def cmd_build(pack_dir: Path, out_root: Path) -> int:
                 f"team '{team.id}': .team.json com {len(raw):,} bytes excede o cap "
                 f"de import do desktop ({TEAM_JSON_MAX_BYTES:,}, PROTOCOL-NOTES §10.8)"
             )
-        png = snapshot_png(TEAM_PNG_KEYWORD, snapshot)
+        png = snapshot_png(TEAM_PNG_KEYWORD, snapshot, body=_team_body(manifest, team))
         (out_dir / f"{team.id}.team.png").write_bytes(png)
         emitted.append(f"{team.id}.team.png")
         # Q-006: cabe num corpo de evento 30178? Mede a forma COMPACTA.
@@ -240,10 +261,10 @@ def pack_catalog_entry(manifest, *, imeta_base_url: str | None = None) -> dict:
     apontando para si mesmo; o hash não muda de host para host.
     """
     personas = []
-    for p in manifest.personas:
+    for persona_index, p in enumerate(manifest.personas):
         snapshot = agent_snapshot(p)
         raw = _serialize_json(snapshot)
-        png = snapshot_png(AGENT_PNG_KEYWORD, snapshot)
+        png = snapshot_png(AGENT_PNG_KEYWORD, snapshot, body=_agent_body(manifest, persona_index))
         personas.append(
             {
                 "name": p.name,
@@ -269,7 +290,7 @@ def pack_catalog_entry(manifest, *, imeta_base_url: str | None = None) -> dict:
     for t in manifest.teams:
         snapshot = team_snapshot(t, manifest)
         raw = _serialize_json(snapshot)
-        png = snapshot_png(TEAM_PNG_KEYWORD, snapshot)
+        png = snapshot_png(TEAM_PNG_KEYWORD, snapshot, body=_team_body(manifest, t))
         teams.append(
             {
                 "id": t.id,

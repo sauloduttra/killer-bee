@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { packs } from "@/app/lib/catalog";
-import { danceTraces, tracePath, traceEnd, ringRadius } from "@/app/lib/dance";
+import { HUB, danceTraces, tracePath, traceEnd, ringRadius } from "@/app/lib/dance";
 
 /**
  * O hero: cada persona do catálogo plotada como um traço de dança.
@@ -52,7 +52,7 @@ export function WaggleField() {
           />
         ))}
 
-        <circle cx={center} cy={center} r={radius * 0.18} className="waggle-hub" />
+        <circle cx={center} cy={center} r={radius * HUB} className="waggle-hub" />
 
         {traces.map((trace) => (
           <g key={`${trace.packName}/${trace.personaName}`} className="waggle-trace">
