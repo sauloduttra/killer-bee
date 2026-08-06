@@ -371,3 +371,24 @@ def test_colonia_sem_agentes_e_erro():
             stimulus_floor=0.05,
             seed=1,
         )
+
+
+def test_criterio_de_separacao_de_niveis_para_uma_escala_futura():
+    """Requisito de desenho, derivado e não escolhido: qualquer escala numérica
+    futura para `threshold` precisa pôr os níveis FORA da janela onde o ruído
+    decide. Dentro dela, o nível não prevê o comportamento — é indeterminação
+    com cara de configuração. O teste demonstra o critério nos dois sentidos.
+    """
+    halfwidth = noise_dominated_halfwidth(**CASE)
+    theta_star = equilibrium_threshold(**CASE)
+
+    ruim = theta_star + halfwidth * 0.5  # nível dentro da janela
+    bom_baixo = theta_star - halfwidth * 2.0
+    bom_alto = theta_star + halfwidth * 2.0
+
+    assert abs(ruim - theta_star) < halfwidth, "o caso 'ruim' precisa cair DENTRO"
+    for nivel in (bom_baixo, bom_alto):
+        assert abs(nivel - theta_star) > halfwidth
+    # E os níveis bem colocados têm bacias OPOSTAS — que é o ponto de existirem.
+    assert basin_of(bom_baixo, **CASE) == "floor"
+    assert basin_of(bom_alto, **CASE) == "ceiling"

@@ -106,6 +106,26 @@ vira o especialista** quando a dinâmica ligar.
   agentes reais respondendo a menções reais. A medida que falsificaria a utilidade dos
   eixos está descrita no README (*What would falsify this*) e depende da mesma série E.
 
+## Um requisito de desenho que cai de graça
+
+Hoje `threshold` é um enum (`low`/`medium`/`high`) que compila para `respondTo` e para a
+flag de menção; **não existe escala numérica**, e este documento não inventa uma. Mas a
+dinâmica impõe uma condição a qualquer escala futura, e vale registrá-la antes de
+alguém escolher números:
+
+> **Os níveis precisam cair FORA da janela de indeterminação** — isto é,
+> `|θ_nível − θ*| > √(Var/λ)` para cada um.
+
+O motivo é direto: dentro da janela o destino do agente é decidido por sorteio, não pelo
+nível. Um nível intermediário posicionado ali seria, literalmente, "não sei o que este
+agente vai fazer" com cara de configuração. Com os ganhos de exemplo deste documento
+(ξ=0,02, φ=0,01, n=2, s=1) a janela vai de 1,269 a 1,560 em torno de θ\*=1,414 — larga o
+bastante para engolir um nível médio mal colocado.
+
+Como a janela é `√((ξ+φ)·θ*/n)`, há duas alavancas: **reforço mais fino** (ξ, φ menores)
+a estreita com a raiz da escala, e **n maior** (Hill mais abrupta) também. Isso torna a
+escolha de ξ e φ um problema de desenho com critério — não um chute.
+
 ## Parâmetros, para quando houver runtime
 
 O par (ξ, φ) tem uma leitura direta que o torna escolhível em vez de chutável:
