@@ -29,3 +29,6 @@ site/public/downloads/
 
 .DS_Store
 Thumbs.db
+
+# Producao de video (artefatos pesados; scripts ficam em site/scripts/)
+/media/

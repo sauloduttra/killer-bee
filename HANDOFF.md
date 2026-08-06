@@ -133,11 +133,17 @@ O runbook está pronto em [`docs/LOCAL-SETUP.md`](docs/LOCAL-SETUP.md). São sei
    e o job de site do ci.yml herdava basePath implícito de `GITHUB_REPOSITORY`
    (agora explícito nos dois passos). Nada disso era visível localmente.
 4. **E3/E4/E5** quando as credenciais existirem (🔴, §4).
-5. **Vídeo de 90s** — roteiro sem credencial pronto em
-   [AUDIT-2026-08-06](docs/AUDIT-2026-08-06.md).
+5. ~~Vídeo de 90s~~ — **produzido em 2026-08-06**: `media/waggle-90s.mp4`
+   (90.000s, 1080p30, 4,6 MB, sem áudio — desenhado para autoplay mudo). Corte
+   credential-free do roteiro da auditoria, só telas reais: site no ar + Buzz
+   Desktop 0.5.5 (o preview de import foi refeito e CANCELADO — zero duplicatas
+   novas). Pipeline reproduzível: capturas headless do Chrome em 2x +
+   `grab` DPI-aware da tela + `site/scripts/video-compose.mjs` + ffmpeg xfade
+   com beats nos tempos exatos do roteiro (10/18/25/33/40/48/55/63/70/85/90).
+   `media/` é gitignored (artefato pesado); o script de composição é versionado.
 
-O import já dá material de vídeo: o preview mostra o system prompt inteiro antes de
-confirmar, e o app rotula o team de três providers como **"Mixed models"** sozinho.
+Com o 15 fechado, **o gate do BACKLOG abre** — condicionado à aprovação do corte
+pelo Saulo (ver nota no DOD).
 
 Só depois disso o gate do [`BACKLOG.md`](docs/BACKLOG.md) abre.
 

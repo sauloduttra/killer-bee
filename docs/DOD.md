@@ -20,9 +20,13 @@ funcionando".
 | 12 | `docs/LICENSE-AUDIT.md` completo | ✅ **123 repos, zero falhas, duas fontes concordando** — 48 MIT, 1 ausente, 0 contribuidores externos |
 | 13 | README com missão nova e nota de premissa corrigida | ✅ |
 | 14 | `gitleaks` no CI, zero chave versionada | ✅ gitleaks + scanner próprio, ambos no CI |
-| 15 | Vídeo de 90s | ⛔ depende de 5, 9 e 10 |
+| 15 | Vídeo de 90s | ✅ **produzido em 2026-08-06** (`media/waggle-90s.mp4`, 90.000s, 1080p30): o corte credential-free do roteiro em [AUDIT-2026-08-06](AUDIT-2026-08-06.md) — só telas REAIS (site no ar + Buzz Desktop 0.5.5), beats nos tempos exatos. O plano "3 agentes respondendo" ficou fora do corte de propósito; pipeline reproduzível em `site/scripts/video-compose.mjs`. A dependência de 5/9 era do roteiro antigo, não da técnica |
 
-**Placar: 11 ✅ · 1 🟨 · 3 ⛔**
+**Placar: 12 ✅ · 1 🟨 · 2 ⛔**
+
+> O item 15 fechado abre o gate do [`BACKLOG.md`](BACKLOG.md) — com uma ressalva de
+> processo: o corte é do executor; se o Saulo pedir refação após assistir, o gate
+> espera a versão aprovada.
 
 ## O site, em detalhe
 
