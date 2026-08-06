@@ -543,3 +543,21 @@ schema/template/docs = deletar arquivos. Tudo barato.
 3 imprecisões em citações e 1 contradição interna em PROTOCOL-NOTES:719 (provider/model
 viajam no snapshot, import.rs:620-621; da config global vem a chave) — corrigida no
 próprio doc com nota datada.
+
+## D-027 — imeta pronto por artefato, com URL do próprio host
+
+**Quando:** 2026-08-06, trilha D da sessão pós-vídeo
+**O que:** `killerbee catalog --imeta-base-url <url>` faz cada entrada de arquivo do
+catálogo carregar a tag imeta completa na forma do e2e upstream
+(`agent-snapshot-recipient.spec.ts:118-126`): `["imeta","url …","m …","x <sha256>",
+"size …","filename …"]`. O site passa `NEXT_PUBLIC_SITE_URL` no build
+(prepare-data.mjs), então CADA host publica imeta apontando para os próprios
+`downloads/` — GH Pages para si, Cloudflare para si — e o `x` é o mesmo sha256 nos
+dois. Camada pura em `killerbee/imeta.py`; sem flag, catálogo idêntico ao anterior.
+**Alternativa:** URL única canônica (acopla o emissor a um host; D-025 mantém dois),
+ou imeta sem url (inútil — o card exige a tag completa e recusa `x` fora de 64 hex,
+markdownFileCard.ts:101-103).
+**Motivo:** é o que torna um pack POSTÁVEL como card importável em qualquer canal
+Buzz sem tocar em chave: o usuário cola o link markdown + imeta; assinar/publicar o
+evento continua 🔴.
+**Custo de reversão:** remover flag + módulo + 10 testes; catálogo volta byte a byte.

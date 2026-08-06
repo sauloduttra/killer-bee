@@ -29,6 +29,7 @@ from pathlib import Path
 
 from . import AGENT_PNG_KEYWORD, AGENT_SNAPSHOT_FORMAT, TEAM_PNG_KEYWORD, __version__
 from .acp_rules import rules_file
+from .imeta import imeta_tag, mime_for
 from .loader import PackLoadError, load_pack
 from .pngtext import read_snapshot_from_png, snapshot_png
 from .snapshot import agent_snapshot, team_snapshot
@@ -220,7 +221,7 @@ def cmd_build(pack_dir: Path, out_root: Path) -> int:
     return 0
 
 
-def pack_catalog_entry(manifest) -> dict:
+def pack_catalog_entry(manifest, *, imeta_base_url: str | None = None) -> dict:
     """Projeção de um pack para o catálogo do site. Pura.
 
     O `systemPrompt` vai **inteiro**. Transparência é o produto: o visitante lê o
@@ -230,6 +231,12 @@ def pack_catalog_entry(manifest) -> dict:
     MESMOS bytes que `build` grava (`_serialize_json` / `snapshot_png` são
     determinísticos) — o site publica o hash ao lado do botão de download e o
     teste de export confere o hash contra o arquivo servido.
+
+    Com ``imeta_base_url``, cada entrada de arquivo ganha também o bloco imeta
+    PRONTO (ver killerbee/imeta.py): a URL aponta para
+    ``{base}/downloads/{pack}/{arquivo}`` — o caminho onde o próprio site serve
+    o artefato — e o ``x`` é o mesmo sha256 da entrada. Cada host publica imeta
+    apontando para si mesmo; o hash não muda de host para host.
     """
     personas = []
     for p in manifest.personas:
@@ -277,6 +284,19 @@ def pack_catalog_entry(manifest) -> dict:
             }
         )
 
+    if imeta_base_url is not None:
+        base = imeta_base_url.rstrip("/")
+        for group in (personas, teams):
+            for item in group:
+                for entry in item["files"]:
+                    entry["imeta"] = imeta_tag(
+                        url=f"{base}/downloads/{manifest.name}/{entry['name']}",
+                        mime=mime_for(entry["name"]),
+                        sha256_hex=entry["sha256"],
+                        size_bytes=entry["bytes"],
+                        filename=entry["name"],
+                    )
+
     return {
         "name": manifest.name,
         "version": manifest.version,
@@ -290,7 +310,7 @@ def pack_catalog_entry(manifest) -> dict:
     }
 
 
-def cmd_catalog(packs_root: Path, out_file: Path) -> int:
+def cmd_catalog(packs_root: Path, out_file: Path, imeta_base_url: str | None = None) -> int:
     """Agrega todos os packs num catálogo único para o site consumir no build."""
     if not packs_root.is_dir():
         return _fail([f"diretório de packs não existe: {packs_root}"])
@@ -310,7 +330,7 @@ def cmd_catalog(packs_root: Path, out_file: Path) -> int:
         if pack_errors:
             errors.extend(f"{pack_dir.name}: {e}" for e in pack_errors)
             continue
-        entries.append(pack_catalog_entry(manifest))
+        entries.append(pack_catalog_entry(manifest, imeta_base_url=imeta_base_url))
 
     if errors:
         return _fail(errors)
@@ -444,6 +464,12 @@ def main(argv: list[str] | None = None) -> int:
     p_catalog = sub.add_parser("catalog", help="agrega todos os packs num JSON para o site")
     p_catalog.add_argument("--packs", type=Path, default=Path("packs"))
     p_catalog.add_argument("--out", type=Path, default=Path("site/data/catalog.json"))
+    p_catalog.add_argument(
+        "--imeta-base-url",
+        default=None,
+        help="URL pública que serve downloads/ — com ela, cada arquivo do "
+        "catálogo ganha o bloco imeta pronto para colar num canal Buzz",
+    )
 
     p_inspect = sub.add_parser(
         "inspect", help="mostra o conteúdo de um .agent.json/.png ou .team.json/.png"
@@ -457,7 +483,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "validate":
         return cmd_validate(args.pack)
     if args.command == "catalog":
-        return cmd_catalog(args.packs, args.out)
+        return cmd_catalog(args.packs, args.out, imeta_base_url=args.imeta_base_url)
     if args.command == "inspect":
         return cmd_inspect(args.file, show_prompt=args.prompt)
     return cmd_build(args.pack, args.out)

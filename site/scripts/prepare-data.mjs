@@ -46,7 +46,15 @@ if (!existsSync(packsDir)) {
   process.exit(1);
 }
 
-run(["catalog", "--packs", "packs", "--out", "site/data/catalog.json"]);
+// Com NEXT_PUBLIC_SITE_URL (setada nos builds de deploy; ausente em dev), o
+// catálogo carrega o bloco imeta pronto por artefato — cada host publica
+// imeta apontando para os PRÓPRIOS downloads; o sha256 é o mesmo em todos.
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
+const catalogArgs = ["catalog", "--packs", "packs", "--out", "site/data/catalog.json"];
+if (siteUrl) {
+  catalogArgs.push("--imeta-base-url", siteUrl);
+}
+run(catalogArgs);
 
 const packNames = readdirSync(packsDir, { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && existsSync(join(packsDir, entry.name, "killerbee.yaml")))
