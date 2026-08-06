@@ -538,3 +538,28 @@ test("célula isolada não anima e diz por quê", async () => {
     "a célula isolada tem que explicar em TEXTO por que está sozinha",
   );
 });
+
+test("o CSS desliga o ponteiro exatamente onde o alvo deixa de cumprir 24 px", async () => {
+  // O número vive em dois lugares porque CSS não lê JSON: no gerador (que o
+  // calcula a partir da geometria real) e na @container. Divergir em silêncio
+  // significaria ou células intocáveis onde dava para tocar, ou alvos de 20 px
+  // se passando por conformes. Este teste é a costura entre os dois.
+  const css = await readFile("app/globals.css", "utf8");
+  const regra = css.match(/@container \(max-width:\s*(\d+)px\)/);
+  assert.ok(regra, "a @container que desliga o ponteiro sumiu do CSS");
+  const limiteCss = Number(regra[1]);
+  const limiteGerador = graph.meta.minInteractiveWidthPx;
+  assert.equal(
+    limiteCss,
+    limiteGerador - 1,
+    `a @container corta em ${limiteCss}px e o gerador calcula ${limiteGerador}px ` +
+      "como a menor largura ainda conforme (max-width é inclusivo, por isso -1)",
+  );
+  // E a regra tem que de fato desligar o ponteiro nas células.
+  const bloco = css.slice(css.indexOf(regra[0]));
+  assert.match(
+    bloco.slice(0, 400),
+    /\.ncd-node a\s*\{[^}]*pointer-events:\s*none/,
+    "a @container existe mas não desliga o ponteiro das células",
+  );
+});

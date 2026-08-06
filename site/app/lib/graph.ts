@@ -37,6 +37,9 @@ export interface GraphMeta {
   plateY: number;
   minClearance: number;
   hitPad: number;
+  /** Largura de figura (px CSS) a partir da qual a MENOR célula cumpre 24 px.
+   *  Espelhado na `@container` de globals.css; teste do site pina os dois. */
+  minInteractiveWidthPx: number;
   lastBeatMs: number;
 }
 

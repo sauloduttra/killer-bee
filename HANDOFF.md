@@ -261,9 +261,12 @@ reconhecendo — não fui eu que os posicionei.
   nascem perto) e testei `separate()` isolada em vez de provar que `relax` a usa. As
   versões atuais matam as duas mutações; o canário do alvo de toque mede 7,0 de folga
   com o passe e 4,93 sem.
-- **Limitação escrita, não subentendida:** alvo de toque 16 px no mobile (WCAG 2.5.8
-  pede 24). Não é regressão (o antigo dava ~17) e vale a exceção de controle
-  equivalente — a lista do catálogo, logo abaixo, tem o link inteiro.
+- **Alvo de toque, resolvido:** o padding subiu para 6,5 (menor célula: 27,7 px a
+  1280) e uma `@container (max-width: 387px)` desliga o ponteiro quando a FIGURA
+  fica pequena demais — limiar calculado pelo gerador, com teste pinando CSS e
+  gerador. A premissa "é problema de mobile" estava errada: em duas colunas a
+  figura é menor que em coluna única (448 px a 1280 contra 703 px a 820), então o
+  caso apertado é o laptop. Teclado continua alcançando tudo.
 
 ### `site/` — o Waggle
 

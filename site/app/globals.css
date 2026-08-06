@@ -405,6 +405,11 @@ section,
   margin: 0;
   display: grid;
   gap: 16px;
+  /* Contexto para a @container abaixo: o que decide se as células podem ser
+     tocadas é a largura DA FIGURA, não a da janela. Chutar viewport erraria —
+     em duas colunas a figura fica MENOR num monitor de 900 px do que numa
+     coluna só num telefone de 375. */
+  container-type: inline-size;
 }
 
 .ncd-svg {
@@ -558,6 +563,37 @@ section,
 .ncd-caption strong {
   color: var(--char);
   font-weight: 600;
+}
+
+/* --- Quando a figura é pequena demais para ser tocada ---------------------
+   O padding do alvo é constante e o raio vem de `recruitment`, então a menor
+   célula é a que manda: abaixo de 388 px de figura ela não alcança os 24 px do
+   WCAG 2.5.8 (o número sai do gerador, meta.minInteractiveWidthPx, e um teste
+   do site falha se estes dois divergirem).
+
+   Alvo miúdo e colado não é "difícil de acertar": é acertar OUTRA persona. Um
+   link que abre a página errada é pior que link nenhum, então o ponteiro é
+   desligado e a lista do catálogo — logo abaixo, na mesma página — vira o
+   caminho único, que é a exceção de controle equivalente do próprio critério.
+
+   O TECLADO CONTINUA FUNCIONANDO. `pointer-events` não afeta foco nem Enter, e
+   isso é de propósito: quem navega por teclado ou leitor de tela não erra de
+   alvo por precisão do dedo, então não há motivo para tirar a função dele.
+   Retirar seria reduzir acessibilidade em nome de um critério de ponteiro. */
+.ncd-touch-note {
+  display: none;
+}
+
+@container (max-width: 387px) {
+  .ncd-node a {
+    pointer-events: none;
+  }
+  .ncd-touch-note {
+    display: block;
+    font-family: var(--font-mono);
+    color: var(--grid);
+    margin: 0;
+  }
 }
 /* O defeito conhecido, em texto de tamanho normal e legível por leitor de tela
    — a faixa dentro do SVG é aria-hidden e sai a 7,8 px num telefone. */

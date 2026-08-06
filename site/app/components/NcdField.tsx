@@ -37,15 +37,21 @@ import { formatNcd, graph } from "@/app/lib/graph";
  * `aria-label` num `<a>` suprime o `<title>` irmão, então um rótulo curto
  * deixaria quem usa leitor de tela sem o conteúdo da figura.
  *
- * Alvo de toque: o padding é constante (3,5) e o raio varia com `recruitment`,
- * então o alvo vai de **22,3 a 27,3 px no desktop** (SVG a 516 px) e de
- * **14,6 a 17,9 px no mobile** (338 px). O mínimo dos 24 px do WCAG 2.5.8 não é
- * alcançado no mobile, nem pelas seis células de `recruitment` 1 no desktop.
- * Não dá para resolver por geometria — 48 alvos de 24 px não cabem em 338 px, e
- * o hero anterior tinha o mesmo limite (~17 px) com 48 traços. O critério é
- * atendido pela exceção de **controle equivalente**: toda persona aqui tem um
- * link de tamanho normal na lista do catálogo, logo abaixo, na mesma página. A
- * figura é caminho suplementar; a lista é o caminho.
+ * Alvo de toque, resolvido em duas frentes (o desenho declarava cumprir 24 px
+ * e não cumpria — a revisão adversarial mediu 22,3 px nas seis células de
+ * `recruitment` 1):
+ *
+ * 1. **Onde cabe, o alvo cresce.** O padding subiu de 3,5 para 6,5, o que leva
+ *    a menor célula a 27,7 px num laptop de 1280. O layout aceitou a folga extra
+ *    sem perder os aglomerados.
+ * 2. **Onde não cabe, o ponteiro desliga.** Abaixo de 388 px de figura — número
+ *    calculado pelo gerador, não estimado — uma `@container` remove
+ *    `pointer-events` das células. Alvo miúdo e colado não é difícil de
+ *    acertar: é acertar a persona errada, e abrir a página errada é pior que
+ *    não abrir nenhuma. A lista do catálogo, na mesma página, é o caminho —
+ *    que é a exceção de controle equivalente do próprio critério. O teclado
+ *    continua alcançando as células, porque quem navega por teclado não erra
+ *    por precisão de dedo.
  *
  * Animação: a ordem é a única coisa que o tempo codifica — as arestas se
  * ligam do par mais próximo ao mais distante, que é a ordem em que o
@@ -201,6 +207,14 @@ export function NcdField() {
             than two colleagues designed to disagree. Kept, with the number, under D-036.
           </p>
         ) : null}
+        {/* Só aparece quando a figura é estreita demais para o alvo de 24 px —
+            a mesma @container que desliga o ponteiro. Sem JS, e sem afirmar
+            "no celular", que seria falso numa janela estreita de desktop. */}
+        <p className="ncd-touch-note">
+          This drawing is too small here for reliable tapping, so the cells are not
+          tappable at this width — mis-hitting a neighbour would open the wrong persona.
+          Use the catalog below; every persona is there. (Keyboard still reaches them.)
+        </p>
         <p className="ncd-note">
           Cell size is recruitment; border weight is persistence. Amber lines stay inside a
           pack, paler ones cross packs. The layout relaxes from the old waggle field over

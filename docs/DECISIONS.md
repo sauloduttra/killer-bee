@@ -874,9 +874,28 @@ tentando refutá-lo): 22 confirmados, 10 derrubados.** Os que mais valeram:
   docstring dizendo que a posição inicial era cópia coordenada a coordenada do
   hero antigo (é a mesma forma reescalada); comentário prometendo um teste de
   cobertura que não existia.
-**Limitação declarada:** alvo de toque de 16 px no mobile (24,9 px no desktop),
-abaixo dos 24 px do WCAG 2.5.8. Não é regressão — o hero antigo dava ~17 px — e
-o critério é atendido pela exceção de controle equivalente: toda persona tem um
-link de tamanho normal na lista do catálogo, na mesma página. Está escrito no
-doc-comment do componente, não subentendido.
+**Alvo de toque (resolvido em 2026-08-06, a pedido do Saulo — "deixa não
+clicável" no mobile):** duas frentes, e a medição derrubou a premissa.
+
+*A premissa errada era "mobile".* Em duas colunas a figura é MENOR que em
+coluna única — 448 px num viewport de 1280 contra 703 px em 820. O caso
+apertado é o **laptop**, não o telefone.
+
+1. **Onde cabe, o alvo cresceu:** padding de 3,5 → 6,5, o que leva a menor
+   célula de 22,3 px para 27,7 px a 1280. Custo medido no que importa (os
+   aglomerados, que são o sentido do desenho): aresta média sai de 28,8% para
+   30,2% da distância média entre pares. A 8,0 iria a 32,1% e começaria a se
+   soltar — por isso 6,5 e não mais.
+2. **Onde não cabe, o ponteiro desliga:** `@container (max-width: 387px)` sobre
+   a própria figura, não sobre o viewport — o número (388) sai do gerador, que
+   o calcula da geometria real, e um teste do site falha se CSS e gerador
+   divergirem. Medido no navegador: 1150 px de janela → alvo 24,8 px, clicável;
+   1050 px → 22,6 px, desligado. A travessia é o cruzamento dos 24 px.
+
+**O teclado continua alcançando as células** — `pointer-events` não afeta foco
+nem Enter, e tirar isso reduziria acessibilidade em nome de um critério de
+ponteiro. Quando desligado, um aviso em texto (visível pela mesma container
+query) manda o leitor para a lista do catálogo. O motivo escrito não é "é
+pequeno": é que **alvo miúdo e colado abre a persona errada**, e link que abre
+a página errada é pior que link nenhum.
 **Suíte:** 451 Python (+24) · 26 do site (+5).

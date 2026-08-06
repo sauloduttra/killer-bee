@@ -68,7 +68,20 @@ FRAME_RADIUS = 118.0
 # ── nó ───────────────────────────────────────────────────────────────────────
 R_MIN = 3.4
 R_MAX = 8.0
-HIT_PAD = 3.5
+# Folga do alvo de toque por lado. Era 3,5, e a 3,5 as seis células de
+# `recruitment` 1 ficavam em 22,3 px no desktop — abaixo do mínimo, num desenho
+# que declarava cumpri-lo.
+#
+# 6,5 saiu de medir, não de estimar. O que decide não é o telefone: em duas
+# colunas a figura é MENOR (448 px num viewport de 1280) do que em coluna única
+# (703 px em 820), então o laptop comum é o caso apertado. A 6,5 o alvo dá
+# 27,7 px a 1280 e o ponteiro só desliga abaixo de 388 px de figura. Custo
+# medido nos aglomerados, que são o SENTIDO do desenho: aresta média sai de 28,8%
+# para 30,2% da distância média entre pares — dentro do ruído. A 8,0 já seria
+# 32,1% e o desenho começaria a se soltar.
+HIT_PAD = 6.5
+# WCAG 2.5.8 (AA): alvo de ponteiro de 24 x 24 px CSS.
+MIN_TOUCH_TARGET_PX = 24.0
 STROKE_BY_PERSISTENCE = {"short": 0.7, "medium": 1.2, "long": 1.8}
 
 # ── aresta ───────────────────────────────────────────────────────────────────
@@ -595,6 +608,17 @@ def build_graph(packs_root: Path, catalog_path: Path) -> dict:
             "plateY": PLATE_Y,
             "minClearance": round(clearance, 2),
             "hitPad": round(hit_pad, 2),
+            # Largura RENDERIZADA (px CSS) a partir da qual até a MENOR célula
+            # cumpre o alvo de 24 px do WCAG 2.5.8. Abaixo disso o CSS desliga o
+            # ponteiro na figura inteira: alvo miúdo e colado erra de persona, e
+            # errar de link é pior que não ter link — a lista do catálogo, na
+            # mesma página, continua sendo o caminho.
+            #
+            # O número está espelhado numa @container em globals.css (CSS não lê
+            # JSON) e um teste do site falha se os dois divergirem.
+            "minInteractiveWidthPx": math.ceil(
+                MIN_TOUCH_TARGET_PX * VIEWBOX_W / (2.0 * min(radii) + 2.0 * hit_pad)
+            ),
             "lastBeatMs": (
                 EDGE_DELAY_BASE + EDGE_DELAY_STEP * max(0, len(drawn) - 1) if drawn else 0
             ),
