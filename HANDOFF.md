@@ -103,8 +103,32 @@ a base real era 130; a contagem atual foi verificada por stash/pop em 2026-08-06
   teste; ver no app rodando pende — D-017). Trilha D completa.
 - **Bug real corrigido:** CLI crashava em Windows com stdout em pipe (cp1252 × '→');
   regressão com PYTHONIOENCODING=cp1252 roda em qualquer plataforma.
-- Chips de follow-up deixados na sessão: expor o imeta na página do site; loader
-  rejeitar escalar falsy onde vai mapeamento.
+- Os dois chips de follow-up foram **fechados na mesma sessão** (ver abaixo).
+
+### Sessão 2026-08-06 (noite) — B-02 e os dois chips
+
+- **Chips fechados:** loader rejeita escalar falsy onde vai mapeamento (a divergência
+  nº 3 do schema deixou de existir); **"Post as a chat card"** nas páginas de persona e
+  team — o imeta que o catálogo carrega desde D-027 agora é copiável, e some inteiro
+  quando o build não tem `NEXT_PUBLIC_SITE_URL` (URL de localhost em canal alheio é pior
+  que atalho nenhum). Verificado no navegador. Site: 21 testes.
+- **Bônus achado no caminho:** `test_loader.py` e `test_validate.py` não inseriam
+  `sys.path` e só passavam se outro arquivo importasse antes — os 13 arquivos rodam
+  isolados agora.
+- **B-02 (limiar adaptativo) — o bloco grande.** A matemática está construída, pura e
+  testada em `killerbee/threshold.py`; a análise está em
+  [`docs/THRESHOLD-DYNAMICS.md`](docs/THRESHOLD-DYNAMICS.md). **O enunciado do backlog
+  estava errado:** o ponto fixo θ* = s(ξ/φ)^(1/n) é **repulsor**, então não há
+  "convergência para especialização" — há polarização. Acoplamento compra **regulação**
+  (demanda atendida em 20 seeds); **especialização exige heterogeneidade inicial** — e a
+  heterogeneidade é o `threshold` que o autor do pack já escolhe.
+  **O schema do pack NÃO mudou** ([D-031](docs/DECISIONS.md)): o próprio B-02 mandava
+  decidir antes de congelar o formato.
+- **Método que pagou:** 3 derivações cegas independentes (3/3 concordando), refutação
+  adversarial corrigindo 3 corolários, e a simulação derrubando uma afirmação MINHA
+  ("os limiares se separam") antes de virar doc publicado. Um erro dimensional próprio
+  (√Var/λ em vez de √(Var/λ)) foi pego pelos testes de propriedade.
+- Suíte: **326 testes Python** · 21 do site.
 
 **Auditoria 2026-08-06** ([docs/AUDIT-2026-08-06.md](docs/AUDIT-2026-08-06.md)): 15
 agentes em 6 dimensões + verificação adversarial; 9/9 achados fortes confirmados e
