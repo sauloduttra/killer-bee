@@ -105,6 +105,44 @@ a base real era 130; a contagem atual foi verificada por stash/pop em 2026-08-06
   regressão com PYTHONIOENCODING=cp1252 roda em qualquer plataforma.
 - Os dois chips de follow-up foram **fechados na mesma sessão** (ver abaixo).
 
+### Sessão 2026-08-06 (madrugada) — O CATÁLOGO DEIXOU DE SER VAZIO
+
+**A crítica que mudou a prioridade, e o Saulo estava certo:** todas as sessões
+anteriores construíram a prateleira (emissor, schema, site, governança, matemática)
+e o catálogo tinha **3 personas**. Um catálogo entre comunidades com 3 personas é
+uma prateleira vazia — enquanto 48 especialistas verificáveis estavam parados em
+repos públicos dele.
+
+- **3 → 51 personas, em 9 packs por pilar.** Os 48 repos-lab (35 quant + 13
+  sistemas) viraram personas. 16 agentes leram os repos em paralelo (README, árvore,
+  fonte) e 8 segundos leitores conferiram cada persona contra o repo que ela alega
+  descrever.
+- **14 problemas achados, todos reais**, e o pior era um repo apresentando **curva
+  de juros estipulada como reação de mercado observada** (nfp-quant-readthrough),
+  além de citar 4 repos irmãos como imports quando toda primitiva é cópia inline.
+  Também: `var-lab` prometendo ES de três jeitos quando só VaR tem três; "pure
+  Python/NumPy" num repo que importa scipy; `pde-lab` citando número de um script de
+  convergência **que não existe na árvore**; `tinysat` citando header DIMACS que o
+  próprio arquivo contradiz.
+- **Um achado NÃO foi corrigido, de propósito:** no `pathtrace` a persona diz que a
+  BVH rotaciona eixos, que é o que o código faz — quem diverge é o README do repo. A
+  persona segue o fonte.
+- **`scripts/packs_from_specs.py` (14 testes):** repo novo → persona nova sem
+  trabalho manual. Ele NÃO escreve prompt (isso é leitura verificada); materializa,
+  e a parte mecânica tem dentes — frontmatter só com chave nativa, prompt verbatim,
+  `model` omitido para ninguém bater em erro de credencial, spec inválida não escreve
+  nada.
+- **Medição que importava:** todos os 9 team snapshots cabem no evento de 256 KB. O
+  maior (13 membros) usa **15%**.
+- **O navegador achou um defeito real:** 51 traços davam **50 pares de rótulos
+  sobrepostos** no hero. Acima de um orçamento declarado de 14, os nomes saem do
+  desenho e vão para o `<title>` de cada link; aria-labels intactos. Zero
+  sobreposições depois.
+- **Três testes estavam acoplados a `packs/` ter exatamente um pack** e quebraram no
+  nono. Agora montam um packs root isolado — teste que quebra quando o repo ganha
+  conteúdo testava a coisa errada.
+- Suíte: **405 testes Python** · 21 do site. Os dois hosts servem as 51.
+
 ### Sessão 2026-08-06 (noite) — B-02 e os dois chips
 
 - **Chips fechados:** loader rejeita escalar falsy onde vai mapeamento (a divergência
