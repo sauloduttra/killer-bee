@@ -121,12 +121,20 @@ O runbook está pronto em [`docs/LOCAL-SETUP.md`](docs/LOCAL-SETUP.md). São sei
 
 1. ~~`git init` + primeiro commit~~ — **feito**, `116be6b`.
 2. ~~Importar o arquivo num Buzz Desktop rodando~~ — **feito em 2026-08-05**, app 0.5.5.
-   `.agent.json`, `.agent.png` e `.team.json` aceitos; registro em
-   [PROTOCOL-NOTES §10.9](docs/PROTOCOL-NOTES.md). Item 4 do DoD virou ✅ e derrubou uma
-   afirmação falsa que já estava publicada no site ([D-017](docs/DECISIONS.md)).
-3. **Remote + rodar os dois workflows** — nunca executaram. Espere ajuste no `pages.yml`.
+   Registro em [PROTOCOL-NOTES §10.9](docs/PROTOCOL-NOTES.md).
+3. ~~Remote + rodar os dois workflows~~ — **feito em 2026-08-06**:
+   `github.com/sauloduttra/killer-bee`, público. O site está NO AR em
+   **https://sauloduttra.github.io/killer-bee/** (deploy passou de primeira). O
+   aviso "espere ajuste" do handoff anterior estava certo três vezes: o primeiro
+   deploy real revelou og:image com basePath dobrado (convenção
+   `app/opengraph-image` — banida, ver comentário em `layout.tsx`), o gitleaks
+   de histórico completo flagrou as fixtures sintéticas (resolvido com
+   `gitleaks:allow` + `.gitleaksignore` por fingerprint para blobs históricos),
+   e o job de site do ci.yml herdava basePath implícito de `GITHUB_REPOSITORY`
+   (agora explícito nos dois passos). Nada disso era visível localmente.
 4. **E3/E4/E5** quando as credenciais existirem (🔴, §4).
-5. **Vídeo de 90s** — último, depende de 4.
+5. **Vídeo de 90s** — roteiro sem credencial pronto em
+   [AUDIT-2026-08-06](docs/AUDIT-2026-08-06.md).
 
 O import já dá material de vídeo: o preview mostra o system prompt inteiro antes de
 confirmar, e o app rotula o team de três providers como **"Mixed models"** sozinho.
