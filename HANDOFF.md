@@ -70,9 +70,36 @@ cd site && npm ci && npm run build && node --test tests/rendered-html.test.mjs
 
 ## 3. O que existe e está verificado
 
-**Tudo verde:** ruff limpo, **131 testes Python**, **20 testes de export do site**
+**Tudo verde:** ruff limpo, **186 testes Python**, **20 testes de export do site**
 (rodados COM e SEM basePath), zero achados de segredo, build estático em 7 páginas +
-robots/sitemap/og-image.
+robots/sitemap/og-image. (O "131" que este arquivo dizia antes estava um a mais —
+a base real era 130; a contagem atual foi verificada por stash/pop em 2026-08-06.)
+
+### Sessão 2026-08-06 (tarde) — pós-vídeo, primeira reação ao público
+
+- **Trilha A zerada:** os 10 PRs do Dependabot resolvidos — 7 merged (rebase primeiro:
+  as branches precediam os fixes de CI), 3 recusados com justificativa pública e
+  `@dependabot ignore` (política em [D-028](docs/DECISIONS.md)). Fila de PRs: vazia.
+- **Governança (trilha B):** `SECURITY.md` (modelo de ameaça em 3 fatos verificados) +
+  `docs/PACK-REVIEW.md` (adversários A1-A5, checklist CI/R) + **private vulnerability
+  reporting HABILITADO** + ISSUE/PR templates + `packs/TEMPLATE/` (caminho de 10 min) +
+  `schema/killerbee.schema.json` com teste de concordância de 13 mutações ([D-026](docs/DECISIONS.md)).
+  Regra nova aplicada no ci.yml: pack = diretório com killerbee.yaml.
+- **Ciência honesta (trilha C, completa):** seção "What would falsify this" no README
+  (uma medida de falha por eixo), justificativa estrutural dos pares de timeout em
+  PROFILE-COMPILATION, **sumário executivo em inglês** no topo do PROTOCOL-NOTES,
+  `CITATION.cff`. Correção flagrada por segundo leitor: PROTOCOL-NOTES §10.6 dizia que
+  provider/model vinham da config global — viajam no snapshot; da config vem a CHAVE.
+- **Trilha D:** (i) **imeta pronto por artefato** — `killerbee catalog --imeta-base-url`;
+  cada host publica imeta apontando para os próprios downloads ([D-027](docs/DECISIONS.md));
+  (ii) **emissor L3 offline** — `killerbee event` emite o kind 30178 NÃO ASSINADO;
+  projeção de membro DEFINIDA e publicada em `schema/kind-30178-content.schema.json`
+  (snapshot menos {respondTo, respondToAllowlist}, [D-029](docs/DECISIONS.md)). Assinar
+  continua 🔴. Falta (iii): rasterizar a assinatura de dança no .agent.png.
+- **Bug real corrigido:** CLI crashava em Windows com stdout em pipe (cp1252 × '→');
+  regressão com PYTHONIOENCODING=cp1252 roda em qualquer plataforma.
+- Chips de follow-up deixados na sessão: expor o imeta na página do site; loader
+  rejeitar escalar falsy onde vai mapeamento.
 
 **Auditoria 2026-08-06** ([docs/AUDIT-2026-08-06.md](docs/AUDIT-2026-08-06.md)): 15
 agentes em 6 dimensões + verificação adversarial; 9/9 achados fortes confirmados e
