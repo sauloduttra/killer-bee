@@ -95,7 +95,12 @@ a base real era 130; a contagem atual foi verificada por stash/pop em 2026-08-06
   (ii) **emissor L3 offline** — `killerbee event` emite o kind 30178 NÃO ASSINADO;
   projeção de membro DEFINIDA e publicada em `schema/kind-30178-content.schema.json`
   (snapshot menos {respondTo, respondToAllowlist}, [D-029](docs/DECISIONS.md)). Assinar
-  continua 🔴. Falta (iii): rasterizar a assinatura de dança no .agent.png.
+  continua 🔴; (iii) **assinatura de dança rasterizada** como corpo dos
+  .agent.png/.team.png ([D-030](docs/DECISIONS.md)) — constantes espelhadas de dance.ts
+  travadas por teste, trig própria para determinismo multiplataforma (golden do raster
+  cru; CI Linux verde = prova), e a descoberta do segundo leitor: **o corpo vira o
+  avatar do agente no import** (import.rs:242-261; limites 2048px/2MiB travados por
+  teste; ver no app rodando pende — D-017). Trilha D completa.
 - **Bug real corrigido:** CLI crashava em Windows com stdout em pipe (cp1252 × '→');
   regressão com PYTHONIOENCODING=cp1252 roda em qualquer plataforma.
 - Chips de follow-up deixados na sessão: expor o imeta na página do site; loader
