@@ -99,6 +99,30 @@ O snapshot define os **campos**; a semântica de curto/médio/longo é decisão 
 Bee, documentada aqui e ajustável sem quebrar formato. Se os números mudarem, mudam
 nesta tabela e em `_PERSISTENCE_SECONDS` no mesmo commit.
 
+**Por que ESTES números.** Os pares não saíram de medição — não há medição ainda
+(E-series, bloqueada em credencial) — e afirmar o contrário seria o pecado que este
+projeto existe para não cometer. O que os pares têm de defensável é estrutura, e ela
+está declarada:
+
+1. **Invariante do par:** `maxTurnDurationSeconds = 2 × idleTimeoutSeconds` em todos
+   os níveis. Um turno que sobreviva a dois períodos inteiros de idle é runaway, não
+   persistência — o teto acompanha a janela.
+2. **Separação entre níveis:** idle salta ×3 e ×4 (300 → 900 → 3600). Níveis
+   adjacentes ficam além de qualquer ruído plausível de medição de vida de sessão —
+   o contrato observável é a **ordem**, não o valor absoluto, e é a ordem que o teste
+   de propriedade trava (perfis distintos ⇒ definições distintas).
+3. **Âncoras humanas:** 5 min = uma troca; 15 min = uma sessão de trabalho; 60 min =
+   postura de vigia. Teto absoluto de 7200 s: um turno desgovernado morre em 2 h na
+   conta do importador, não em 24.
+
+**Sensibilidade, na forma que dá para afirmar sem medir:** qualquer tripla monótona
+com razão ≥ 2 entre níveis adjacentes e o invariante 1:2 do par produz a mesma ordem
+observável — os valores exatos são âncoras declaradas, não constantes descobertas.
+**O que derrubaria a escolha:** vidas de sessão medidas que não separem níveis
+adjacentes (a medida está definida na seção *What would falsify this* do README).
+Nesse dia, os números mudam aqui e em `_PERSISTENCE_SECONDS`, no mesmo commit, com a
+medição citada.
+
 ### A honestidade sobre `threshold`
 
 `threshold` é biologicamente "quanto estímulo dispara a resposta". O runtime do Buzz

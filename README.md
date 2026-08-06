@@ -149,7 +149,10 @@ truth. The adaptive variant — where `θ` moves with experience, which is what 
 makes division of labour self-organize — is
 [B-02 in the backlog](docs/BACKLOG.md#b-02--limiar-adaptativo-no-perfil-scutellata) and is
 **not built**. The timeout pairs behind `persistence` (300/600, 900/1800, 3600/7200
-seconds) are our choice, stated without a sensitivity analysis.
+seconds) are our choice — the invariant they keep (turn cap = 2× idle window, adjacent
+levels ×3–4 apart so the *ordering* is the contract), the human anchors behind them,
+and what measurement would invalidate them are declared in
+[`docs/PROFILE-COMPILATION.md`](docs/PROFILE-COMPILATION.md).
 
 Buzz rejects unknown keys in persona frontmatter outright, and silently discards them in
 snapshots. So the profile lives in our manifest and **compiles** to native fields. The full
@@ -161,6 +164,26 @@ fields, with declared ranges. The biology stays because it explains *why* three 
 not five — never as the argument that it works. That rule is written down in
 [`CONTRIBUTING.md`](CONTRIBUTING.md#biological-metaphor-comes-with-its-receipts) and
 applies to every metaphor this project ever uses.
+
+### What would falsify this
+
+The profile's claim is narrow: the three live axes produce **behavior an importer can
+observe**. That is testable without trusting us, because each axis compiles to a field
+with a measurable consequence. Import two personas identical except for one axis into
+the same channel, drive them with the same message stream, and measure:
+
+| Axis | Measure | The claim fails if… |
+|---|---|---|
+| `threshold` | response rate to **unmentioned** messages | `low` (mention flag off) and `medium` (on) respond at indistinguishable rates |
+| `recruitment` | concurrent responses in flight | `parallelism: 1` and `parallelism: 8` produce the same concurrency distribution |
+| `persistence` | session lifetime after last activity | adjacent levels (5 → 15 → 60 min idle) yield lifetimes that do not separate |
+
+If any row's distributions are indistinguishable, that axis is decoration and this
+section says so — the way `propagation` already does (compiles to nothing at runtime,
+stated in the table above). Running this protocol needs live agents with credentials,
+which is exactly the E-series work in [`docs/DOD.md`](docs/DOD.md); until it runs,
+what you are reading is a promise of a measurement, not a measurement. The falsifiable
+statement is published **before** the result, on purpose.
 
 ## Not affiliated
 

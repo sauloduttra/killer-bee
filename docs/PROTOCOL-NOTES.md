@@ -1,5 +1,54 @@
 # PROTOCOL-NOTES — Fase 0 (reconhecimento verificado)
 
+## Executive summary (English)
+
+*The rest of this document is in Brazilian Portuguese; this summary exists so an
+upstream engineer can audit its claims without translating 40 KB. The citations are
+the point — every `file:line` below is against the pinned commits in the table that
+follows, and was re-opened by an independent second reader before publication.*
+
+**What this document is.** The verified reconnaissance of Buzz internals that the
+Killer Bee project is built on. Nothing here is quoted from documentation on faith:
+every claim was read in the source, carries `file:line`, and anything we could not
+confirm sits quarantined in the **⚠️ Não verificado** section and did not become a
+design decision. Where a conclusion was later checked against the running desktop app
+(0.5.5), the live observation is recorded separately (§10.9) — reading the parser
+proves what the app *accepts*, never what its UI *offers* (our D-017).
+
+**The three findings that shaped the project:**
+
+1. **The pack format is a spec without a runtime** (§0.1). `PERSONA_PACK_SPEC.md`
+   describes `.buzzpack`, `buzz install`, `pack.lock` — none of it is implemented.
+   What actually installs personas today is snapshot import in the desktop app.
+2. **The in-community persona catalog is alive** (§0.2). Kind 30175 with a
+   `["shared","true"]` tag feeds the desktop's "Discover agents"
+   (`crates/buzz-core/src/kind.rs:187`). What does not exist is discovery *between*
+   communities — the gap this project fills.
+3. **No workflow action invokes an agent** (§0.3, `crates/buzz-workflow/src/schema.rs:92`).
+   Agents are addressed by mention, with no delivery or ordering guarantee. Killer
+   Bee's orchestration claims are written to that reality, not around it.
+
+**The facts an integrator needs (all cited inline):** agent/team snapshots are the
+real install path — JSON, or a PNG with the manifest in a `tEXt` chunk, sniffed by
+magic bytes with the extension ignored (§10.4, §10.8). Import validates form (format,
+version, names, sizes, ranges), never content, and writes no credentials: an imported
+agent arrives `STOPPED`, in no channel; `model`/`provider` travel in the snapshot,
+the provider *key* comes from the user's global config (§10.6). Unknown snapshot
+fields are accepted on parse and silently dropped on reserialization (§10.3);
+unknown persona-frontmatter keys are a fatal parse error upstream (§2.2,
+`deny_unknown_fields`, `persona.rs:174-176`). Team snapshots embed every member in
+full (§10.2), and a relay event body caps at 256 KiB (`ingest.rs:1868`) — our real
+team measures 8,617 bytes compact. There is no anonymous relay read: `REQ` requires
+NIP-42 auth (§5.3).
+
+**Method, because it is the product:** collection failure is never reported as
+absence (three states: present / absent / not-collected — D-014); app-behavior claims
+require the running app, not the source (D-017); and every bibliographic citation got
+the same second-reader treatment as code citations. Corrections are dated and left
+visible in place rather than silently rewritten.
+
+---
+
 Tudo aqui foi lido no fonte. Cada afirmação carrega `arquivo:linha`. O que não foi
 encontrado está na seção **⚠️ Não verificado** e **não virou decisão de design**.
 
