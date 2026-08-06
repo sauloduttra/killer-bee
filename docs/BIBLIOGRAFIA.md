@@ -45,7 +45,9 @@ de 1998. A inversão é real e distingue os dois.
 o artigo não está no PubMed nem no Europe PMC. A autoria foi confirmada pela lista de
 referências tipografada pela própria Royal Society no artigo de 1998.
 
-### ⚠️ Limiar REFORÇADO — a versão adaptativa *(B-02, não implementada)*
+### ⚠️ Limiar REFORÇADO — a versão adaptativa
+
+*(B-02: **matemática implementada** em [`killerbee/threshold.py`](../killerbee/threshold.py), análise em [`THRESHOLD-DYNAMICS.md`](THRESHOLD-DYNAMICS.md), decisão em [D-031](DECISIONS.md); ligar ao runtime segue bloqueado na série E. Esta linha dizia "não implementada" e contradizia BACKLOG, DECISIONS e README por meia sessão — flagrado pela revisão adversarial em 2026-08-06.)*
 
 > Theraulaz, G., Bonabeau, E., Deneubourg, J.-L. "Response threshold reinforcements and
 > division of labour in insect societies". *Proceedings of the Royal Society of London.

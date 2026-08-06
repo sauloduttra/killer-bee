@@ -642,3 +642,38 @@ e na instabilidade (λ > 0); refutação adversarial corrigiu 3 corolários (dir
 colapso fora do domínio, limite φ→0, bordas refletoras e não absorventes) — todos
 viraram teste. Um erro dimensional NOSSO (√Var/λ em vez de √(Var/λ)) foi pego pelos
 testes de propriedade e está travado como regressão. Suíte: 314.
+
+## D-032 — Revisão adversarial de código: 14 defeitos reais no módulo do B-02
+
+**Quando:** 2026-08-06, logo após D-031
+**O que:** 4 lentes independentes (matemática, testes, contrato, honestidade científica)
+sobre `killerbee/threshold.py`, cada achado verificado por um cético que tentava
+refutá-lo rodando o código. **22 levantados, 14 confirmados, todos corrigidos.** Os que
+mais importam:
+
+- **`act_probability` estourava** (OverflowError/ZeroDivisionError) por elevar sⁿ e θⁿ
+  separadamente, destruindo a invariância de escala que o próprio módulo afirma. Não era
+  exótico: **n=8 e s=1e40 estão dentro da grade de expoentes que os testes já usavam**.
+  Agora é logística em log-espaço.
+- **`noise_dominated_halfwidth` devolvia nan em silêncio** — violação direta de
+  AUTONOMIA §2.3, e pior que erro: o guarda `|θ-θ*| > halfwidth` avalia False para nan e
+  invalidava toda previsão sem uma palavra. Com outros parâmetros devolvia 0.0, errado
+  por 77 ordens de grandeza. A identidade fechada já estava na docstring e não era usada.
+- **`λ > 0 sempre` era falso em float:** o produto ξ·φ cru colapsava para 0.0 com
+  ξ=φ=1e-165 (valor exato 1e-165, float normal). Reassociado.
+- **Guardas eram dead code** e as duas simulações tinham validações DIVERGENTES: ξ
+  negativo rodava a dinâmica invertida em silêncio, `floor > ceiling` devolvia números.
+  Helper único agora.
+- **Quatro testes não provavam o que prometiam**, cada um demonstrado por mutação que
+  passava verde: λ só tinha o sinal testado (apagar o fator `n` passava), a identidade
+  Var=ξφ nunca era exercida, o teste de borda refletora passava com piso ABSORVENTE, e
+  as guardas nunca eram chamadas.
+- **`BIBLIOGRAFIA.md` dizia "não implementada"** por meia sessão, contradizendo BACKLOG,
+  DECISIONS e README.
+
+**Método que fica:** todo teste novo desta rodada foi verificado MATANDO a mutação
+correspondente — teste que não mata a mutação é decoração. Duas das minhas correções
+sobreviveram à primeira tentativa e precisaram de um segundo teste (concordância cruzada
+na meia-largura).
+**Custo de reversão:** nenhum a considerar — são correções.
+**Suíte:** 391 (era 327).

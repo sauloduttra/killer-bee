@@ -51,7 +51,11 @@ como comportamento e como teste:
    piso. Só ξ → 0⁺ manda θ\* → 0.
 3. **As bordas não são absorventes.** Em θ_min o drift é +φ(1−P) > 0 estrito; em θ_max é
    −ξ·P < 0. A cadeia segue irredutível e a massa se acumula *perto* das bordas, sem
-   grudar. Há teste que falharia se o piso absorvesse (`act_rate` seria exatamente 1).
+   grudar. **Há teste que falha se o piso absorver** — e a primeira versão dele não
+   falhava: `act_rate < 1.0` passava verde com um piso absorvente, provado por mutação na
+   revisão adversarial. O teste atual é uma testemunha determinística de UM passo, partindo
+   do piso com seed escolhida para não agir: o limiar tem que subir φ. Piso absorvente não
+   sobe.
 
 Um quarto erro foi meu, na implementação, e os testes de propriedade pegaram: a janela de
 indeterminação é **√(Var/λ)**, não √Var/λ — a segunda tem dimensão [θ]·√[passo] e produz

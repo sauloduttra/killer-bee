@@ -56,10 +56,28 @@ def _require_positive(**values: float) -> None:
 
 
 def act_probability(stimulus: float, threshold: float, steepness: float) -> float:
-    """P(agir) = sⁿ/(sⁿ + θⁿ). Estritamente decrescente em θ, imagem em (0, 1)."""
+    """P(agir) = sⁿ/(sⁿ + θⁿ). Estritamente decrescente em θ.
+
+    **Avaliada em log-espaço, não pela forma literal.** P depende apenas da
+    RAZÃO θ/s — é disso que vem a homogeneidade de θ* em s. Calcular sⁿ e θⁿ
+    separadamente destrói essa invariância em float: a implementação anterior
+    dava 1/3 para (s=1, θ=√2, n=2) e OverflowError para (s=1e40, θ=1.09e40,
+    n=8), que é o MESMO ponto matemático — e n=8 está dentro da grade que os
+    testes já usavam. Com ``z = n·(ln θ - ln s)`` e a logística, os dois casos
+    devolvem 1/3 (achado da revisão adversarial, 2026-08-06).
+
+    Saturação honesta: matematicamente a imagem é o intervalo ABERTO (0, 1),
+    mas em ponto flutuante ela satura em 0.0 e 1.0 quando |z| passa de ~745 —
+    1/(1+e^750) não é distinguível de zero num double. Isso é limite da
+    representação, não da fórmula, e está dito aqui em vez de prometido ao
+    contrário.
+    """
     _require_positive(stimulus=stimulus, threshold=threshold, steepness=steepness)
-    stimulus_n = stimulus**steepness
-    return stimulus_n / (stimulus_n + threshold**steepness)
+    z = steepness * (math.log(threshold) - math.log(stimulus))
+    if z > 0.0:
+        decay = math.exp(-z)
+        return decay / (1.0 + decay)
+    return 1.0 / (1.0 + math.exp(z))
 
 
 def expected_drift(
@@ -116,10 +134,16 @@ def drift_slope_at_equilibrium(
     λ > 0 é a prova de que θ* é repulsor: o mapa médio tem multiplicador
     1 + λ > 1. Devolvemos o número (e não um booleano) porque a MAGNITUDE é a
     taxa de fuga — quanto maior, mais rápido o agente satura.
+
+    A associação ``n·(ξ/(ξ+φ))·(φ/θ*)`` evita formar o produto ξ·φ cru, que
+    fazia λ virar **exatamente 0.0** por underflow com ξ=φ=1e-165 — falsificando
+    em silêncio a afirmação "λ > 0 sempre" que este módulo inteiro sustenta
+    (achado da revisão adversarial). O valor exato ali é 1e-165, um float
+    normal, longe do menor subnormal.
     """
     theta_star = equilibrium_threshold(stimulus, decrement_on_act, increment_on_idle, steepness)
     total = decrement_on_act + increment_on_idle
-    return steepness * decrement_on_act * increment_on_idle / (total * theta_star)
+    return steepness * (decrement_on_act / total) * (increment_on_idle / theta_star)
 
 
 def basin_of(
@@ -168,12 +192,54 @@ def noise_dominated_halfwidth(
     [θ]·√[passo] em vez de [θ], e produz uma janela que não encolhe quando o
     reforço afina. Os testes de propriedade pegaram; ficam como regressão.)
 
+    **Calculada pela identidade fechada, não pela rota ξφ/λ.** A rota literal
+    formava ξ·φ e λ separadamente, ambos estourando para inf com ξ=φ=1e155:
+    inf/inf devolvia **nan em silêncio** — violação direta de AUTONOMIA §2.3, e
+    pior que um erro, porque o guarda documentado (``|θ-θ*| > halfwidth``)
+    avalia False para nan e invalidava toda previsão sem dizer nada. Com
+    ξ=φ=1e154 devolvia 0.0, um número plausível errado por 77 ordens de
+    grandeza. A identidade abaixo é exata (relerr 0.0 na grade benigna) e
+    finita nos dois casos — achado da revisão adversarial, 2026-08-06.
+
     Consequência prática, e é ela que interessa ao projeto: uma previsão de
     especialização só é afirmável para agentes FORA desta janela.
     """
-    slope = drift_slope_at_equilibrium(stimulus, decrement_on_act, increment_on_idle, steepness)
-    variance_at_equilibrium = decrement_on_act * increment_on_idle
-    return math.sqrt(variance_at_equilibrium / slope)
+    theta_star = equilibrium_threshold(stimulus, decrement_on_act, increment_on_idle, steepness)
+    return math.sqrt((decrement_on_act + increment_on_idle) * theta_star / steepness)
+
+
+def _check_simulation_domain(
+    *,
+    initial_thresholds: tuple[float, ...],
+    stimulus: float,
+    decrement_on_act: float,
+    increment_on_idle: float,
+    steepness: float,
+    steps: int,
+    floor: float,
+    ceiling: float,
+) -> None:
+    """Guardas comuns aos dois simuladores — UM lugar só, de propósito.
+
+    Elas viviam duplicadas e já tinham divergido: `simulate_colony` não checava
+    `floor < ceiling` nem os limiares iniciais, e NENHUM dos dois checava ξ e φ,
+    que a camada pura rejeita. Resultado medido antes da correção: ξ negativo
+    rodava a dinâmica invertida em silêncio, e `floor > ceiling` devolvia
+    números sem erro (revisão adversarial, 2026-08-06).
+    """
+    _require_positive(
+        stimulus=stimulus,
+        decrement_on_act=decrement_on_act,
+        increment_on_idle=increment_on_idle,
+        steepness=steepness,
+        floor=floor,
+        steps=steps,
+    )
+    if not floor < ceiling:
+        raise ValueError(f"floor ({floor}) deve ser < ceiling ({ceiling})")
+    for index, initial in enumerate(initial_thresholds):
+        if not floor <= initial <= ceiling:
+            raise ValueError(f"limiar inicial [{index}] = {initial} fora de [{floor}, {ceiling}]")
 
 
 @dataclass(frozen=True)
@@ -207,11 +273,16 @@ def simulate_agent(
     +φ(1-P) > 0 e em ``ceiling`` é -ξ·P < 0, ambos estritos. A cadeia continua
     irredutível; a massa se acumula numa camada perto das bordas, sem grudar.
     """
-    _require_positive(floor=floor, steps=steps)
-    if not floor < ceiling:
-        raise ValueError(f"floor ({floor}) deve ser < ceiling ({ceiling})")
-    if not floor <= initial_threshold <= ceiling:
-        raise ValueError(f"initial_threshold {initial_threshold} fora de [{floor}, {ceiling}]")
+    _check_simulation_domain(
+        initial_thresholds=(initial_threshold,),
+        stimulus=stimulus,
+        decrement_on_act=decrement_on_act,
+        increment_on_idle=increment_on_idle,
+        steepness=steepness,
+        steps=steps,
+        floor=floor,
+        ceiling=ceiling,
+    )
 
     rng = random.Random(seed)
     theta = initial_threshold
@@ -254,14 +325,23 @@ def simulate_colony(
 
     Devolve ``(limiares finais, execuções por agente, estímulo final)``.
     """
+    if not initial_thresholds:
+        raise ValueError("colônia sem agentes")
     _require_positive(
         demand_per_step=demand_per_step,
         relief_per_act=relief_per_act,
         stimulus_floor=stimulus_floor,
-        steps=steps,
     )
-    if not initial_thresholds:
-        raise ValueError("colônia sem agentes")
+    _check_simulation_domain(
+        initial_thresholds=tuple(initial_thresholds),
+        stimulus=stimulus_floor,
+        decrement_on_act=decrement_on_act,
+        increment_on_idle=increment_on_idle,
+        steepness=steepness,
+        steps=steps,
+        floor=floor,
+        ceiling=ceiling,
+    )
 
     rng = random.Random(seed)
     thresholds = list(initial_thresholds)

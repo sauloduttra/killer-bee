@@ -392,3 +392,162 @@ def test_criterio_de_separacao_de_niveis_para_uma_escala_futura():
     # E os níveis bem colocados têm bacias OPOSTAS — que é o ponto de existirem.
     assert basin_of(bom_baixo, **CASE) == "floor"
     assert basin_of(bom_alto, **CASE) == "ceiling"
+
+
+# ---------------------------------------------------------------------------
+# Buracos que a revisão adversarial provou com mutação (2026-08-06)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("steepness", [0.5, 2.0, 7.0])
+@pytest.mark.parametrize(("xi", "phi"), [(0.02, 0.01), (0.01, 0.05)])
+def test_lambda_bate_com_a_derivada_numerica_do_drift(steepness, xi, phi):
+    """A MAGNITUDE de λ, não só o sinal. A suíte anterior só checava λ > 0, e a
+    mutação que apagava o fator `n` da fórmula passava verde (revisão
+    adversarial). Concordância cruzada com a derivada central mata isso."""
+    params = dict(stimulus=1.0, decrement_on_act=xi, increment_on_idle=phi, steepness=steepness)
+    theta_star = equilibrium_threshold(**params)
+    h = 1e-6 * theta_star
+    numeric = (
+        expected_drift(theta_star + h, **params) - expected_drift(theta_star - h, **params)
+    ) / (2.0 * h)
+    assert drift_slope_at_equilibrium(**params) == pytest.approx(numeric, rel=1e-6)
+
+
+def test_variancia_em_theta_estrela_e_exatamente_xi_phi():
+    """A identidade que a meia-largura usa: (ξ+φ)²·P(1-P) colapsa em ξφ no
+    ponto fixo. Sem este teste, trocar ξφ por ξ² passava verde e a janela saía
+    41% maior (revisão adversarial)."""
+    xi, phi = CASE["decrement_on_act"], CASE["increment_on_idle"]
+    theta_star = equilibrium_threshold(**CASE)
+    probability = act_probability(CASE["stimulus"], theta_star, CASE["steepness"])
+    variance = (xi + phi) ** 2 * probability * (1.0 - probability)
+    assert variance == pytest.approx(xi * phi, rel=1e-12)
+
+
+def test_o_piso_devolve_o_agente_em_UM_passo_determinístico():
+    """Testemunha de borda refletora que a versão anterior não tinha: o teste
+    antigo (`act_rate < 1.0`) passava mesmo com um piso ABSORVENTE, provado por
+    mutação. Um único passo, com seed escolhida para NÃO agir, tem que mover θ
+    para CIMA do piso — coisa que um piso absorvente jamais faria."""
+    step = simulate_agent(initial_threshold=SIM["floor"], seed=153, **{**SIM, "steps": 1})
+    assert step.act_count == 0, "seed escolhida para não agir; se agiu, reescolha"
+    assert step.final_threshold == pytest.approx(SIM["floor"] + SIM["increment_on_idle"]), (
+        "o piso reteve o agente — seria borda absorvente"
+    )
+
+
+@pytest.mark.parametrize(
+    ("overrides", "esperado"),
+    [
+        (dict(floor=0.0), "floor deve ser > 0"),
+        (dict(steps=0), "steps deve ser > 0"),
+        (dict(floor=4.0, ceiling=0.1), "deve ser < ceiling"),
+        (dict(initial_threshold=99.0), "fora de"),
+        (dict(decrement_on_act=-0.02), "decrement_on_act deve ser > 0"),
+        (dict(increment_on_idle=0.0), "increment_on_idle deve ser > 0"),
+    ],
+)
+def test_guardas_do_simulate_agent_sao_exercidas(overrides, esperado):
+    """As guardas eram dead code para a suíte: apagar QUALQUER uma delas passava
+    verde. ξ negativo era o pior — rodava a dinâmica invertida em silêncio."""
+    kwargs = {"initial_threshold": 1.0, "seed": 1, **SIM, **overrides}
+    with pytest.raises(ValueError, match=esperado):
+        simulate_agent(**kwargs)
+
+
+@pytest.mark.parametrize(
+    ("overrides", "esperado"),
+    [
+        (dict(floor=4.0, ceiling=0.1), "deve ser < ceiling"),
+        (dict(decrement_on_act=-0.02), "decrement_on_act deve ser > 0"),
+        (dict(steps=0), "steps deve ser > 0"),
+    ],
+)
+def test_colonia_aplica_as_MESMAS_guardas_do_agente(overrides, esperado):
+    """As duas funções tinham validações divergentes: entrada que
+    `simulate_agent` rejeitava, `simulate_colony` aceitava e devolvia números.
+    Agora ambas passam pelo mesmo helper."""
+    kwargs = {"initial_thresholds": (1.0,), "seed": 1, **COLONY, **overrides}
+    with pytest.raises(ValueError, match=esperado):
+        simulate_colony(**kwargs)
+
+
+def test_colonia_rejeita_limiar_inicial_fora_do_dominio_nomeando_o_indice():
+    with pytest.raises(ValueError, match=r"limiar inicial \[1\]"):
+        simulate_colony(initial_thresholds=(1.0, 99.0), seed=1, **COLONY)
+
+
+# ---------------------------------------------------------------------------
+# Robustez numérica: a invariância de escala é da matemática, tem que ser do código
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("scale", [1e-200, 1e-40, 1e40, 1e200])
+@pytest.mark.parametrize("steepness", [0.5, 2.0, 8.0])
+def test_probabilidade_e_invariante_a_escala_comum(scale, steepness):
+    """P depende SÓ da razão θ/s. A implementação literal (sⁿ e θⁿ separados)
+    dava 1/3 na escala 1 e OverflowError na escala 1e40 com n=8 — o mesmo ponto
+    matemático, dentro da grade de n que os testes já usavam."""
+    theta = 1.4142135623730951
+    base = act_probability(1.0, theta, steepness)
+    scaled = act_probability(1.0 * scale, theta * scale, steepness)
+    assert scaled == pytest.approx(base, rel=1e-12)
+
+
+@pytest.mark.parametrize(("xi", "phi"), [(1e-165, 1e-165), (1e154, 1e154), (1e-300, 1e-3)])
+def test_lambda_nunca_colapsa_em_zero_nem_em_inf(xi, phi):
+    """λ > 0 é a afirmação central do módulo; formar o produto ξ·φ cru a
+    falsificava por underflow (λ virava exatamente 0.0 com ξ=φ=1e-165, quando
+    o valor exato 1e-165 é um float normal)."""
+    slope = drift_slope_at_equilibrium(1.0, xi, phi, 2.0)
+    assert slope > 0.0
+    assert math.isfinite(slope)
+
+
+@pytest.mark.parametrize(("xi", "phi"), [(1e155, 1e155), (1e154, 1e154), (1e-200, 1e-200)])
+def test_janela_nunca_e_nan_nem_zero_silencioso(xi, phi):
+    """NaN silencioso é proibido (AUTONOMIA §2.3) e aqui era pior que erro: o
+    guarda `|theta-theta*| > halfwidth` avalia False para nan, invalidando toda
+    previsão sem uma palavra."""
+    halfwidth = noise_dominated_halfwidth(1.0, xi, phi, 2.0)
+    assert math.isfinite(halfwidth), "nan/inf silencioso na meia-largura"
+    assert halfwidth > 0.0
+
+
+def test_o_ponto_fixo_emitido_e_sempre_consumivel_pelo_proprio_modulo():
+    """Autoconsistência: `equilibrium_threshold` devolvia θ*=1.4e200 alegremente
+    e `expected_drift` no MESMO θ* levantava OverflowError — o módulo produzia
+    um ponto que ele próprio não conseguia consumir."""
+    for stimulus in (1e-200, 1e-40, 1.0, 1e40, 1e200):
+        params = dict(
+            stimulus=stimulus, decrement_on_act=0.02, increment_on_idle=0.01, steepness=2.0
+        )
+        theta_star = equilibrium_threshold(**params)
+        drift = expected_drift(theta_star, **params)
+        assert math.isfinite(drift)
+        assert drift == pytest.approx(0.0, abs=1e-12)
+        assert basin_of(theta_star * 2.0, **params) == "ceiling"
+
+
+@pytest.mark.parametrize("steepness", [0.5, 2.0, 7.0])
+@pytest.mark.parametrize(("xi", "phi"), [(0.02, 0.01), (0.01, 0.05), (0.03, 0.03)])
+@pytest.mark.parametrize("stimulus", [0.4, 1.0, 5.0])
+def test_meia_largura_concorda_pelas_duas_rotas(stimulus, xi, phi, steepness):
+    """Concordância cruzada, e é ela que ancora o VALOR.
+
+    A implementação usa a identidade fechada √((ξ+φ)·θ*/n) porque a rota
+    literal produzia nan por overflow. Mas identidade fechada sem verificação é
+    fé: em escala benigna, √(Var/λ) — com Var = ξφ e λ da fórmula — tem que dar
+    o mesmo número. Sem este teste, trocar (ξ+φ) por 2ξ na implementação
+    passava verde (verificado por mutação em 2026-08-06); o teste de
+    monotonicidade não pegava porque ambas as rotas escalam juntas.
+    """
+    params = dict(
+        stimulus=stimulus, decrement_on_act=xi, increment_on_idle=phi, steepness=steepness
+    )
+    variance = xi * phi
+    slope = drift_slope_at_equilibrium(**params)
+    assert noise_dominated_halfwidth(**params) == pytest.approx(
+        math.sqrt(variance / slope), rel=1e-12
+    )
