@@ -385,3 +385,35 @@ test("páginas internas mantêm og:site_name e og:type", async () => {
     assert.ok(/property="og:type"/.test(html), `${page}: og:type sumiu`);
   }
 });
+
+test("post-as-card: presente com imeta, ausente sem — e a URL é a deste host", async () => {
+  // O catálogo só carrega `imeta` quando o build recebeu NEXT_PUBLIC_SITE_URL
+  // (D-027). Este teste segue o CATÁLOGO, não uma expectativa fixa: com imeta,
+  // a seção e o valor exato têm que estar no HTML; sem, ela não pode aparecer —
+  // publicar uma URL de localhost num canal de outra pessoa é pior que não
+  // oferecer o atalho.
+  const persona = firstPack.personas[0];
+  const withImeta = persona.files?.find((f) => f.imeta?.length);
+  const html = await read(
+    join("personas", firstPack.name, persona.name, "index.html"),
+  );
+
+  if (!withImeta) {
+    assert.ok(
+      !html.includes("Post as a chat card"),
+      "catálogo sem imeta, mas a página ofereceu o bloco de postagem",
+    );
+    return;
+  }
+
+  assert.ok(html.includes("Post as a chat card"), "bloco de postagem ausente");
+  const url = withImeta.imeta[1].replace(/^url /, "");
+  assert.ok(html.includes(url), `URL do imeta ausente do HTML: ${url}`);
+  assert.ok(
+    html.includes(`x ${withImeta.sha256}`),
+    "o `x` do imeta na página não é o sha256 publicado — o card recusaria Import",
+  );
+  // A URL do imeta tem que apontar para o arquivo que ESTE export serve.
+  const served = join(OUT, "downloads", firstPack.name, withImeta.name);
+  assert.ok(existsSync(served), `imeta aponta para ${withImeta.name}, que o export não serve`);
+});

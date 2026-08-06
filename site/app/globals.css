@@ -1127,6 +1127,44 @@ section,
   overflow-wrap: anywhere;
 }
 
+/* "Post as a chat card": link markdown + tag imeta, prontos para colar num
+   canal Buzz. Mesma gramática visual do bloco de checksums logo acima — é a
+   continuação da mesma ideia (o sha256 publicado É o `x` que habilita o botão
+   Import do outro lado). */
+.postable {
+  margin-block-start: 10px;
+}
+.postable-note {
+  margin: 8px 0 0;
+  font-size: var(--step--1);
+  color: var(--char-muted);
+  max-inline-size: var(--measure);
+}
+.postable-item {
+  margin-block-start: 14px;
+}
+.postable-item h4 {
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  font-weight: 400;
+  color: var(--grid);
+}
+.postable-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-block-end: 6px;
+}
+.postable-value {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--char-muted);
+  overflow-wrap: anywhere;
+}
+
 .downloads {
   display: flex;
   flex-wrap: wrap;

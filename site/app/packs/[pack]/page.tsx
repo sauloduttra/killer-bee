@@ -15,6 +15,7 @@ import {
 import { OG_ALT } from "@/app/lib/site";
 import { CopyButton } from "@/app/components/CopyButton";
 import { Checksums } from "@/app/components/Checksums";
+import { PostAsCard } from "@/app/components/PostAsCard";
 import { ProfileMeter } from "@/app/components/ProfileMeter";
 
 export function generateStaticParams() {
@@ -141,6 +142,7 @@ export default async function PackPage({ params }: { params: Promise<{ pack: str
                 </a>
               </div>
               <Checksums files={team.files} />
+              <PostAsCard files={team.files} />
             </div>
           ))}
         </section>

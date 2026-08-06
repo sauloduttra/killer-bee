@@ -33,6 +33,17 @@ export interface ArtifactFile {
   name: string;
   sha256: string;
   bytes: number;
+  /**
+   * A tag `imeta` pronta, na forma do e2e upstream
+   * (`agent-snapshot-recipient.spec.ts:118-126`):
+   * `["imeta", "url …", "m …", "x <sha256>", "size …", "filename …"]`.
+   *
+   * Presente só quando o build recebeu `NEXT_PUBLIC_SITE_URL` — cada host
+   * publica imeta apontando para os PRÓPRIOS downloads (D-027). Em `next dev`
+   * sem a variável o campo não existe, e a página simplesmente não mostra a
+   * seção: um imeta com URL errada é pior que nenhum.
+   */
+  imeta?: string[];
 }
 
 export interface Persona {

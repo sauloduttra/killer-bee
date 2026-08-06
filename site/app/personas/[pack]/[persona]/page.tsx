@@ -11,6 +11,7 @@ import {
 import { VerbatimPrompt } from "@/app/lib/verbatim";
 import { OG_ALT } from "@/app/lib/site";
 import { Checksums } from "@/app/components/Checksums";
+import { PostAsCard } from "@/app/components/PostAsCard";
 import { ProfileMeter } from "@/app/components/ProfileMeter";
 import { CopyButton } from "@/app/components/CopyButton";
 
@@ -161,6 +162,7 @@ export default async function PersonaPage({
           </a>
         </div>
         <Checksums files={persona.files} />
+        <PostAsCard files={persona.files} />
         <p className="install-count">
           Import in Buzz Desktop: <strong>{IMPORT_CLICK_COUNT}</strong>.
         </p>
