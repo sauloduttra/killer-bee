@@ -141,6 +141,24 @@ def bottom_k_overlap(
     return len(set_a & set_b) / k
 
 
+def robust_threshold(values: list[float]) -> tuple[float, float, float]:
+    """Devolve ``(mediana, MAD, limiar)`` com ``limiar = mediana menos 3 MADs``.
+
+    **Uma definição só, de propósito.** O limiar publicado no CATALOG-AUDIT e o
+    limiar que decide quais arestas o site desenha TÊM que ser o mesmo número;
+    duas cópias de "mediana menos três MADs" divergem em silêncio no dia em que
+    alguém mexe numa delas. Por isso o gerador do grafo importa esta função em
+    vez de reimplementá-la.
+
+    Não é veredito — é onde o fundo da distribuição descola do corpo dela.
+    """
+    if not values:
+        raise ValueError("limiar robusto sobre lista vazia — falha de coleta, não catálogo limpo")
+    median = statistics.median(values)
+    mad = statistics.median([abs(v - median) for v in values])
+    return median, mad, median - 3.0 * mad
+
+
 def main() -> None:
     repo_root = Path(__file__).resolve().parent.parent
     packs_root = repo_root / "packs"
@@ -155,11 +173,7 @@ def main() -> None:
     write_matrix_csv(out_csv, names, ncd_by_pair)
 
     values = [v for v, _, _ in zstd_pairs]
-    median = statistics.median(values)
-    mad = statistics.median([abs(v - median) for v in values])
-    # Limiar robusto e declarado: 3 MADs abaixo da mediana. Não é veredito —
-    # é onde o "fundo" começa a descolar do corpo da distribuição.
-    threshold = median - 3.0 * mad
+    median, mad, threshold = robust_threshold(values)
     flagged = [(v, a, b) for v, a, b in zstd_pairs if v < threshold]
 
     k = max(len(flagged), 10)

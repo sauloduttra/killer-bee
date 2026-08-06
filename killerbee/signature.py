@@ -3,8 +3,8 @@
 O card de snapshot no chat do Buzz usa o PRÓPRIO arquivo como thumbnail, e o
 nosso corpo era 1x1 transparente (achado de baixa prioridade da auditoria
 2026-08-06): o instalável não se explicava. Este módulo desenha, em Python
-puro (zlib/struct/bytes — sem Pillow), o mesmo sistema de coordenadas polares
-que o site publica em ``site/app/lib/dance.ts``:
+puro (zlib/struct/bytes — sem Pillow), o sistema de coordenadas polares da
+dança da abelha:
 
 - **ângulo**      = posição no campo, distribuída no círculo com meio passo
 - **comprimento** = ``0.28 + 0.72·√(recruitment normalizado 1..=32)``
@@ -13,10 +13,16 @@ que o site publica em ``site/app/lib/dance.ts``:
 - taper ``sin(πt)`` nas pontas; amplitude fixa (a informação está na CONTAGEM)
 - hub em 0.18 do raio; anéis de escala em recruitment 8/16/24/32
 
-As CONSTANTES que carregam informação são as de dance.ts, byte a byte —
-teste espelha a tabela (test_signature). O que muda é o CAMPO: o site plota o
-catálogo inteiro; um artefato só conhece o próprio pack (ou os membros do
-team), então o círculo é distribuído sobre ELE. Documentado em D-030.
+**Este módulo passou a ser a única implementação da dança** em 2026-08-06:
+o site trocou o hero radial pelo grafo de similaridade (D-037) e o
+``site/app/lib/dance.ts``, que era o espelho em TypeScript, ficou órfão e foi
+removido. Módulo sem chamador com três doc-comments apontando para ele é
+exatamente o apodrecimento que este projeto combate. A tabela de constantes
+continua travada por golden em test_signature; o que sumiu foi a cópia, não a
+verificação. Documentado em D-030 e D-037.
+
+A dança não saiu do produto: ela é o corpo de cada .agent.png/.team.png, que é
+o thumbnail que o card de snapshot do chat do Buzz exibe.
 
 Consequência no import (leitura de fonte, segundo leitor conferiu): quando o
 manifesto não traz avatar inline — nosso caso — o corpo do PNG é ADOTADO
@@ -41,7 +47,7 @@ from itertools import pairwise
 
 from .model import ScutellataProfile
 
-# ── Constantes espelhadas de site/app/lib/dance.ts — não mude um sem o outro ──
+# ── As constantes que carregam informação — travadas por golden em test_signature ──
 HUB = 0.18
 PERSISTENCE_WEIGHT = {"short": 1.4, "medium": 2.4, "long": 3.6}
 THRESHOLD_WAGGLES = {"high": 2, "medium": 4, "low": 7}
@@ -101,7 +107,11 @@ def _cos(x: float) -> float:
 
 
 def length_from_recruitment(recruitment: int) -> float:
-    """A MESMA função de comprimento de dance.ts (lengthFromRecruitment)."""
+    """Comprimento do traço a partir de recruitment (1..=32).
+
+    Também é a curva de tamanho das células do hero (scripts/ncd_graph.py a
+    importa daqui em vez de recopiá-la).
+    """
     clamped = min(max(recruitment, RECRUITMENT_MIN), RECRUITMENT_MAX)
     normalized = (clamped - RECRUITMENT_MIN) / (RECRUITMENT_MAX - RECRUITMENT_MIN)
     return 0.28 + 0.72 * math.sqrt(normalized)
@@ -115,7 +125,7 @@ def trace_polyline(
     radius: float,
     amplitude: float = AMPLITUDE,
 ) -> list[tuple[float, float]]:
-    """Os pontos do traço — tracePath de dance.ts, sem o texto SVG."""
+    """Os pontos do traço: a reta radial com o requebrado sobreposto."""
     radians = (angle_deg - 90.0) * math.pi / 180.0
     dir_x = _cos(radians)
     dir_y = _sin(radians)

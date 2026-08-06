@@ -214,3 +214,16 @@ Distribuição re-medida com o mesmo método (a matriz e o CSV foram regenerados
 exatamente o residual que a opção 1 aceita e a opção 2 removeria. Fica registrado como
 limitação conhecida, não como surpresa: os dois seguem no catálogo por decisão, com o
 número ao lado. Os 5 recorrentes do fundo (§5) continuam candidatos a REESCRITA.
+
+## 9. Esta medição agora é a capa do site (D-037)
+
+Desde 2026-08-06 o hero da home **é** este grafo: as 48 personas como células, as 71
+arestas como as ligações abaixo do limiar desta auditoria, e o par residual da §8 em
+vermelho, com o número da decisão que o aceitou ao lado. O site não publica um resumo
+da auditoria — publica a auditoria.
+
+Consequência prática, e ela é dura de propósito: **o limiar e as contagens são um
+número só, em um lugar só.** `scripts/ncd_graph.py` importa a `robust_threshold` deste
+mesmo módulo e a `pairwise_ncd` que gera a matriz acima; um teste do site re-deriva
+cada número da legenda a partir do JSON gerado. Se esta auditoria mudar, a capa muda
+junto — ou o build quebra.

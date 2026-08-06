@@ -2,7 +2,7 @@ import Link from "next/link";
 import { allTags, packs } from "@/app/lib/catalog";
 import { submitPackUrl } from "@/app/lib/install";
 import { CatalogBrowser } from "@/app/components/CatalogBrowser";
-import { WaggleField } from "@/app/components/WaggleField";
+import { NcdField } from "@/app/components/NcdField";
 
 export default function Home() {
   const tags = allTags();
@@ -41,7 +41,7 @@ export default function Home() {
             </p>
           </div>
         </div>
-        <WaggleField />
+        <NcdField />
       </section>
 
       <section className="directory" aria-labelledby="catalog-heading">

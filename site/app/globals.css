@@ -382,81 +382,210 @@ section,
   color: var(--char-muted);
 }
 
-/* --- A signature: o campo de dança ------------------------------------- */
+/* --- A signature: o grafo de similaridade do catálogo -------------------
+   Substituiu o campo de dança radial em 2026-08-06 (D-037). O que mudou de
+   fundo: o desenho antigo mostrava 48 personas LADO a lado; este mostra o que
+   foi medido ENTRE elas. A dança não sumiu — ela continua no corpo de cada
+   .agent.png e na página de cada persona.
 
-.waggle {
+   Cor: --burn para aresta dentro do pack, --ramp-1 para a que cruza pack (o
+   evento mais raro leva a tinta mais densa da RAMPA — --char puro é tinta de
+   texto e dominava o desenho), --redline só para o par medido abaixo do
+   controle escrito à mão, e nunca só cor: ele leva um tique perpendicular.
+   --grid é tinta de escala e por isso só aparece na faixa.
+
+   LIMITAÇÃO CONHECIDA: dentro-do-pack contra cruza-pack fica só na cor, com
+   1,39:1 entre as duas tintas. O canal redundante natural seria tracejado, e
+   ele NÃO cabe: a animação de traçado usa `stroke-dasharray` com
+   `pathLength=1`, e com `fill-mode: both` o estado final da keyframe
+   sobrescreveria qualquer padrão estático. A legenda nomeia as duas em texto,
+   que é onde a distinção fica legível de verdade. */
+
+.ncd {
   margin: 0;
   display: grid;
   gap: 16px;
 }
 
-.waggle-svg {
+.ncd-svg {
   inline-size: 100%;
   block-size: auto;
   overflow: visible;
 }
 
-.waggle-ring {
-  fill: none;
-  stroke: var(--grid-faint);
-  stroke-width: 0.6;
-  stroke-dasharray: 2 4;
-}
+/* --- Arestas: a medição --------------------------------------------------- */
 
-.waggle-hub {
+.ncd-edge {
   fill: none;
-  stroke: var(--grid);
-  stroke-width: 1;
-}
-
-.waggle-hit {
-  fill: none;
-  stroke: transparent;
   stroke-linecap: round;
 }
-
-.waggle-line {
-  fill: none;
+.ncd-edge-same {
   stroke: var(--burn);
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: stroke 120ms ease;
+}
+/* A que cruza pack é o evento mais raro (16 de 71) e leva a tinta mais densa
+   da rampa — não uma cor nova. --char puro é tinta de TEXTO: usado aqui, o
+   branco dominava o desenho e a medição virava wireframe. */
+.ncd-edge-cross {
+  stroke: var(--ramp-1);
+}
+.ncd-edge-redline {
+  stroke: var(--redline);
+}
+.ncd-hatch {
+  stroke: var(--redline);
+  stroke-width: 1.1;
+  stroke-linecap: butt;
 }
 
-.waggle-label {
-  font-family: var(--font-mono);
-  font-size: 8.5px;
-  fill: var(--char-muted);
-  transition: fill 120ms ease;
-}
+/* --- Células: os links ---------------------------------------------------- */
 
-.waggle-trace a {
+.ncd-node a {
   text-decoration: none;
 }
 
-.waggle-trace:hover .waggle-line,
-.waggle-trace:focus-within .waggle-line {
-  stroke: var(--char);
-}
-.waggle-trace:hover .waggle-label,
-.waggle-trace:focus-within .waggle-label {
-  fill: var(--char);
-  font-weight: 500;
+.ncd-hit {
+  fill: transparent;
+  stroke: none;
 }
 
-.waggle-caption {
+.ncd-cell {
+  fill: var(--stock);
+  stroke: var(--char);
+  stroke-linejoin: round;
+  transition:
+    fill 120ms ease,
+    stroke 120ms ease;
+}
+
+/* Persona sem parente medido: célula vazada. A diferença NÃO é só cor — é
+   preenchimento contra vazado, que sobrevive a daltonismo e a modo de alto
+   contraste, e o `title` diz "no measured kin in the catalog" em texto. */
+.ncd-node-alone .ncd-cell {
+  fill: none;
+  stroke: var(--char-muted);
+  stroke-dasharray: 1.6 1.4;
+}
+
+.ncd-node:hover .ncd-cell,
+.ncd-node:focus-within .ncd-cell {
+  fill: var(--burn);
+  stroke: var(--char);
+}
+.ncd-node:focus-within .ncd-cell {
+  outline: none;
+}
+.ncd-node a:focus-visible .ncd-cell {
+  stroke: var(--annot);
+  stroke-width: 2.4;
+}
+
+/* --- A faixa: escala impressa antes do dado ------------------------------- */
+
+.ncd-rule {
+  stroke: var(--grid-faint);
+  stroke-width: 0.6;
+}
+.ncd-key-cell {
+  fill: none;
+  stroke: var(--char);
+  stroke-linejoin: round;
+}
+.ncd-key-wire {
+  stroke: var(--burn);
+  stroke-linecap: round;
+}
+.ncd-key-label,
+.ncd-stamp {
+  font-family: var(--font-mono);
+  font-size: 7.4px;
+  fill: var(--grid);
+}
+.ncd-stamp-redline {
+  fill: var(--redline);
+}
+
+/* --- Como a rede se forma -------------------------------------------------
+   ORDEM é a única coisa que o tempo codifica: as arestas se ligam do par mais
+   próximo ao mais distante, a mesma ordem do fundo do ranking no CATALOG-AUDIT.
+   Duração é constante e não codifica nada.
+
+   O estado final vive no ATRIBUTO; o keyframe só subtrai no começo. Sem CSS,
+   com CSS quebrado ou com o keyframe ignorado, o que foi servido já é o
+   desenho pronto — nada fica preso num estado inicial. Estas são as primeiras
+   @keyframes do projeto. */
+
+@keyframes ncd-wire {
+  from {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes ncd-settle {
+  from {
+    fill-opacity: 0;
+    stroke-opacity: 0;
+  }
+  to {
+    fill-opacity: 1;
+    stroke-opacity: 1;
+  }
+}
+
+.ncd-edge,
+.ncd-hatch {
+  animation: ncd-wire 260ms linear both;
+  animation-iteration-count: 1;
+}
+
+/* Só célula COM aresta anima. A isolada aparece no quadro zero e fica: ela já
+   estava no catálogo e continua sem parente — o estado dela é verdadeiro desde
+   o começo, então animá-la contaria uma história falsa de chegada tardia. */
+.ncd-cell[style] {
+  animation: ncd-settle 200ms ease-out both;
+  animation-iteration-count: 1;
+}
+
+.ncd-caption {
   font-size: var(--step--1);
   color: var(--char-muted);
   max-inline-size: 52ch;
 }
-.waggle-caption strong {
+.ncd-caption strong {
   color: var(--char);
   font-weight: 600;
 }
-.waggle-note {
+/* O defeito conhecido, em texto de tamanho normal e legível por leitor de tela
+   — a faixa dentro do SVG é aria-hidden e sai a 7,8 px num telefone. */
+.ncd-alert {
+  color: var(--char-muted);
+  border-inline-start: 2px solid var(--redline);
+  padding-inline-start: 10px;
+}
+.ncd-alert strong {
+  color: var(--redline);
+  font-weight: 600;
+}
+.ncd-note {
   font-family: var(--font-mono);
   color: var(--grid);
   margin: 0;
+}
+
+@media (forced-colors: active) {
+  /* No modo de alto contraste o sistema recolore tudo: a distinção vazado x
+     preenchido é o que sobrevive, então ela é reafirmada aqui. */
+  .ncd-cell {
+    fill: Canvas;
+    stroke: CanvasText;
+  }
+  .ncd-node-alone .ncd-cell {
+    fill: none;
+  }
 }
 
 /* ============================================================================
@@ -1381,6 +1510,15 @@ th {
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+  /* A regra acima zera DURAÇÃO, não ATRASO. Um stagger de 1,2 s sobreviveria
+     inteiro e deixaria o hero em branco exatamente para quem pediu menos
+     movimento — com fill-mode: both, zerar o atraso pinta o estado final no
+     primeiro quadro. */
+  .ncd-edge,
+  .ncd-hatch,
+  .ncd-cell {
+    animation-delay: 0ms !important;
+  }
 }
 
 @media print {
@@ -1392,7 +1530,7 @@ th {
   .tools,
   .downloads,
   .copy,
-  .waggle {
+  .ncd {
     display: none;
   }
   .verbatim {

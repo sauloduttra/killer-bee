@@ -1,9 +1,11 @@
-"""A assinatura de dança rasterizada: constantes espelhadas de dance.ts,
+"""A assinatura de dança rasterizada: as constantes que carregam informação,
 determinismo multiplataforma travado por golden do raster CRU (não do PNG —
 zlib não é contrato), e o PNG emitido continuando um snapshot importável.
 
-Se o golden quebrar aqui e não em dance.ts (ou vice-versa), as duas
-implementações divergiram — e é exatamente esse o alarme que este arquivo é.
+Estas constantes eram espelhadas de `site/app/lib/dance.ts`. Esse arquivo foi
+removido em 2026-08-06 (D-037) quando o hero deixou de desenhar a dança;
+`killerbee/signature.py` virou a única implementação, e este golden virou a
+única guarda dela. Mudar um valor aqui muda o corpo de todo .agent.png.
 """
 
 from __future__ import annotations
@@ -40,12 +42,12 @@ PROFILES = [p.profile for p in MANIFEST.personas]
 
 
 # ---------------------------------------------------------------------------
-# Espelho de dance.ts — não mude um lado sem o outro
+# Os valores que carregam informação — mudá-los muda todo artefato já publicado
 # ---------------------------------------------------------------------------
 
 
-def test_constantes_espelham_dance_ts():
-    """Os valores que CARREGAM informação, literais de site/app/lib/dance.ts."""
+def test_constantes_que_carregam_informacao():
+    """Golden das constantes da dança (antes espelhadas de dance.ts, D-037)."""
     assert HUB == 0.18
     assert PERSISTENCE_WEIGHT == {"short": 1.4, "medium": 2.4, "long": 3.6}
     assert THRESHOLD_WAGGLES == {"high": 2, "medium": 4, "low": 7}

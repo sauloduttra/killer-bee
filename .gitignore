@@ -18,7 +18,9 @@ __pycache__/
 
 # Artefatos gerados a partir de packs/ — o repositório é a fonte da verdade, e
 # versionar a saída criaria duas verdades que divergem em silêncio.
-site/data/catalog.json
+# O diretório inteiro, e não arquivo por arquivo: a lista por nome deixou de
+# cobrir o segundo gerado no dia em que ele apareceu (D-037).
+site/data/
 site/public/downloads/
 
 .env

@@ -417,3 +417,124 @@ test("post-as-card: presente com imeta, ausente sem — e a URL é a deste host"
   const served = join(OUT, "downloads", firstPack.name, withImeta.name);
   assert.ok(existsSync(served), `imeta aponta para ${withImeta.name}, que o export não serve`);
 });
+
+// ── O hero: o grafo de similaridade ─────────────────────────────────────────
+
+const graph = JSON.parse(await readFile("data/ncd-graph.json", "utf8"));
+
+/** O `<figure>` do hero, isolado do resto da página. */
+function heroFigure(html) {
+  const start = html.indexOf('<figure class="ncd"');
+  assert.notEqual(start, -1, "o <figure> do hero sumiu do HTML exportado");
+  const end = html.indexOf("</figure>", start);
+  assert.notEqual(end, -1, "o <figure> do hero não fecha");
+  return html.slice(start, end);
+}
+
+/** Só o desenho, sem a legenda — a legenda tem prosa e um link externo. */
+function heroDrawing(html) {
+  const figure = heroFigure(html);
+  const start = figure.indexOf("<svg");
+  const end = figure.indexOf("</svg>", start);
+  assert.ok(start !== -1 && end !== -1, "o <svg> do hero sumiu");
+  return figure.slice(start, end);
+}
+
+test("o hero desenha um nó por persona e uma aresta por par medido", async () => {
+  const figure = heroFigure(await read("index.html"));
+  const cells = [...figure.matchAll(/class="ncd-cell"/g)].length;
+  const edges = [...figure.matchAll(/class="ncd-edge ncd-edge-/g)].length;
+  assert.equal(cells, graph.meta.personas, "número de células diverge do catálogo");
+  assert.equal(edges, graph.meta.edges, "número de arestas diverge do grafo gerado");
+  // Toda célula é link de verdade, não <g> decorativo com onclick. Contado no
+  // DESENHO: a legenda carrega um link externo que não é persona.
+  const links = [...heroDrawing(await read("index.html")).matchAll(/<a\b[^>]*href="/g)].length;
+  assert.equal(links, graph.meta.personas, "persona sem link no hero");
+});
+
+test("os números impressos no hero são os do grafo, não texto digitado", async () => {
+  // Modo de falha silencioso e já visto neste repo: a legenda envelhece e passa
+  // a citar a era pré-corte (51 personas, 1275 pares, limiar 0,8374). Nada
+  // quebra; o site só passa a mentir. Por isso cada número é re-derivado do
+  // JSON e exigido no HTML.
+  // Só a PROSA: procurar "48" no <figure> inteiro casaria com a coordenada
+  // 248.00 de qualquer hexágono, e o teste passaria sem a legenda dizer nada.
+  const html = await read("index.html");
+  const figure = heroFigure(html);
+  const legenda = decodeEntities(figure.slice(figure.indexOf("<figcaption")));
+  const br = (n) => n.toFixed(4).replace(".", ",");
+  const obrigatorios = [
+    String(graph.meta.personas),
+    String(graph.meta.pairs),
+    String(graph.meta.edges),
+    String(graph.meta.samePack),
+    String(graph.meta.crossPack),
+    String(graph.meta.isolates),
+    br(graph.meta.threshold),
+    graph.meta.compressor,
+  ];
+  for (const valor of obrigatorios) {
+    const comFronteira = new RegExp(`(^|[^\\d,.])${valor.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}([^\\d,.]|$)`);
+    assert.match(legenda, comFronteira, `a legenda do hero não imprime ${valor}, que o grafo mede`);
+  }
+  // E o defeito conhecido continua impresso, com o número da decisão.
+  if (graph.meta.redlined > 0) {
+    assert.ok(figure.includes(br(graph.meta.control)), "o par-controle sumiu da faixa");
+    assert.ok(figure.includes("D-036"), "o redline perdeu a referência da decisão");
+  }
+});
+
+test("o hero não chama o grafo de rede neural", async () => {
+  // A figura PARECE uma rede neural e foi pedida assim. Ela é um grafo de
+  // similaridade por compressão — e o nome do mecanismo tem que estar escrito,
+  // não subentendido (regra de metáfora do CONTRIBUTING).
+  //
+  // O escopo é o <figure>, NUNCA a página: index.html contém "neural" dentro do
+  // prompt legítimo da persona nanozero ("has no neural network: it is
+  // tabula-rasa UCB1 search"), e uma regra sobre o documento inteiro quebraria
+  // o CI por causa de conteúdo correto.
+  const figure = decodeEntities(heroFigure(await read("index.html")));
+  for (const proibido of [/neural/i, /synap/i, /\bbrain\b/i, /\btrained\b/i, /embedding/i]) {
+    assert.ok(!proibido.test(figure), `o hero passou a alegar ${proibido} — ele mede compressão`);
+  }
+  assert.ok(
+    /Normalized Compression Distance/.test(figure),
+    "a legenda tem que nomear o mecanismo, não só mostrá-lo",
+  );
+  assert.ok(/Cilibrasi/.test(figure), "metáfora carrega recibo: a citação sumiu");
+});
+
+test("o desenho servido já é o desenho pronto", async () => {
+  // A animação só SUBTRAI no começo, via CSS. Se um estado inicial vazasse para
+  // o atributo, quem abre sem CSS — ou com o keyframe ignorado — veria uma
+  // figura em branco para sempre. Isto também é a regressão do doc-comment que
+  // descrevia uma animação inexistente no hero antigo: agora o contrato é teste.
+  const figure = heroFigure(await read("index.html"));
+  for (const estadoInicial of [
+    /stroke-dashoffset/,
+    /stroke-dasharray="/,
+    /opacity="0"/,
+    /fill-opacity="0"/,
+    /visibility="hidden"/,
+  ]) {
+    assert.ok(
+      !estadoInicial.test(figure),
+      `o hero foi servido com estado inicial no atributo (${estadoInicial}) — sem CSS ele nasceria invisível`,
+    );
+  }
+  // O único style inline permitido é o atraso, que carrega um número medido.
+  const styles = [...figure.matchAll(/style="([^"]*)"/g)].map((m) => m[1]);
+  for (const style of styles) {
+    assert.match(style, /^animation-delay:\d+ms$/, `style inline inesperado no hero: ${style}`);
+  }
+});
+
+test("célula isolada não anima e diz por quê", async () => {
+  const figure = heroFigure(await read("index.html"));
+  const isoladas = [...figure.matchAll(/ncd-node ncd-node-alone/g)].length;
+  assert.equal(isoladas, graph.meta.isolates, "contagem de personas sem parente diverge");
+  assert.ok(
+    figure.includes("no measured kin in the catalog"),
+    "a célula isolada tem que explicar em TEXTO por que está sozinha",
+  );
+});

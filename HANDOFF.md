@@ -238,11 +238,39 @@ com `loader` como única camada de I/O. `build` emite por pack: `.agent.json`/`.
 por persona, `.team.json`/`.team.png` com **membros embutidos**, `acp-rules.toml` e
 `catalog.json`.
 
+### O hero: o grafo de similaridade (D-037, 2026-08-06)
+
+O `WaggleField` saiu; entrou o **`NcdField`**. Cada persona é célula hexagonal e link
+(o que o Saulo queria preservar); cada linha é um par cuja NCD mediu abaixo do limiar
+que o CATALOG-AUDIT publica. Os aglomerados que aparecem são os packs se
+reconhecendo — não fui eu que os posicionei.
+
+- **Gerador:** `scripts/ncd_graph.py` → `site/data/ncd-graph.json` (gitignored). Layout
+  puro e determinístico: FR spring embedder partindo das posições EXATAS do hero
+  antigo, sem RNG. `prepare-data.mjs` roda depois do catálogo, ~0,9 s.
+- **Um número, um lugar:** limiar via `robust_threshold` (extraída para
+  `ncd_catalog`, compartilhada com a auditoria) e NCD via a mesma `pairwise_ncd`.
+  **Foi o que pegou um bug real:** concatenar na ordem do catálogo dava 68 arestas sob
+  0,8369 contra as 71 sob 0,8376 do audit — `C(xy) ≠ C(yx)`.
+- **O TSX não faz aritmética.** Coordenada, caminho do hexágono, espessura e atraso
+  vêm prontos do Python. Fórmula duplicada em duas linguagens diverge.
+- **Animação:** ordem = ranking de proximidade; duração constante; isolada não anima;
+  estado final no atributo (teste proíbe estado inicial no markup).
+- **Testes que custaram para ficar honestos:** as duas primeiras versões do teste de
+  layout **sobreviveram à mutação** — liguei nós vizinhos no círculo inicial (já
+  nascem perto) e testei `separate()` isolada em vez de provar que `relax` a usa. As
+  versões atuais matam as duas mutações; o canário do alvo de toque mede 7,0 de folga
+  com o passe e 4,93 sem.
+- **Limitação escrita, não subentendida:** alvo de toque 16 px no mobile (WCAG 2.5.8
+  pede 24). Não é regressão (o antigo dava ~17) e vale a exceção de controle
+  equivalente — a lista do catálogo, logo abaixo, tem o link inteiro.
+
 ### `site/` — o Waggle
 
 Next 16, export estático puro. Conceito **REGISTRO** (registrador de gráfico), documentado
-em [D-015](docs/DECISIONS.md). Prompt **verbatim** com âncora por linha, signature funcional
-(traço de dança derivado de campos reais), numeral como maior elemento da página.
+em [D-015](docs/DECISIONS.md). Prompt **verbatim** com âncora por linha, numeral como maior
+elemento da página, e o hero como **grafo de similaridade medido** (D-037 — o traço de
+dança saiu do hero e continua no corpo de cada `.agent.png`).
 
 ### `packs/crossfire-review/`
 

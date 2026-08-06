@@ -75,4 +75,14 @@ for (const name of packNames) {
   run(["build", `packs/${name}`, "--out", "site/public/downloads"]);
 }
 
+// O grafo do hero: NCD entre os corpos de prompt, arestas abaixo do limiar
+// robusto. Depende do catálogo já escrito (lê ordem e perfis de lá) e usa a
+// MESMA função de limiar do CATALOG-AUDIT — um número só, em um lugar só.
+// Custo medido: ~0,9 s. O cross-check com lzma NÃO roda aqui: são +6 s por
+// build para reconfirmar o que a auditoria já publica.
+execFileSync("uv", ["run", "python", "scripts/ncd_graph.py"], {
+  cwd: repoDir,
+  stdio: "inherit",
+});
+
 console.log(`\ndados prontos: ${packNames.length} pack(s)\n`);

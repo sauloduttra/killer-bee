@@ -776,3 +776,107 @@ rebuild). Corrigido com `rmSync` antes da regeneração; verificado: zero órfã
 `out/`.
 **Suíte:** 427 (o pin de contagem do teste do NCD foi 51 → 48 com o motivo no
 docstring).
+
+---
+
+## D-037 — O hero vira o grafo de similaridade do próprio catálogo
+
+**Quando:** 2026-08-06, a pedido do Saulo: *"podia ser algo formando uma rede
+neural artificial se formando à medida que cresce, uma pegada meio Asimov"* — e
+guardando o que ele gostava no hero antigo: **clicar em cada fio e ir para a
+página**.
+**O que:** o `WaggleField` (48 traços radiais em volta de um hub) foi
+substituído pelo `NcdField`. Cada persona é uma célula hexagonal e um link;
+cada linha é um par cuja NCD mediu **abaixo do limiar publicado**. Gerador em
+`scripts/ncd_graph.py`, dado em `site/data/ncd-graph.json`, TSX sem aritmética.
+
+**Por que isto e não uma ilustração de rede neural:** a rede que ele pediu já
+existia medida. A auditoria do catálogo (D-034) computa NCD entre os 1128 pares;
+desenhar essas arestas custa zero invenção e entrega na home o que o
+CATALOG-AUDIT mede. **O desenho não é ilustração de rede — é o grafo de
+similaridade do catálogo.** A legenda nomeia o mecanismo e cita Cilibrasi &
+Vitányi 2005; a palavra "neural" é proibida por teste dentro do `<figure>`
+(escopado ao `<figure>` de propósito: `index.html` contém "neural" no prompt
+legítimo da persona `nanozero`, e uma regra sobre o documento inteiro quebraria
+o CI por conteúdo correto).
+
+**O que cada canal codifica** — e o que foi RECUSADO: tamanho da célula é
+`recruitment`; espessura da borda é `persistence`; existência da aresta é
+NCD < limiar; espessura da aresta é quão abaixo; célula vazada é grau zero.
+`threshold` e `propagation` **não são desenhados**: neste catálogo são quase
+constantes (41/7/0 e 24/23/1), e canal que não varia é decoração.
+
+**Uma definição por número:** o limiar vem de `robust_threshold`, extraída de
+`ncd_catalog` e agora compartilhada com a auditoria; a curva de tamanho importa
+`killerbee.signature.length_from_recruitment`, que já tem teste espelhando
+`dance.ts`. Nenhuma cópia nova de fórmula entrou. **Um bug real que isso pegou:**
+a primeira versão concatenava os corpos na ordem do catálogo, e como
+`C(xy) ≠ C(yx)` num compressor real, dava **68 arestas sob 0,8369** contra as
+**71 sob 0,8376** que o audit publica — duas verdades nascendo na home. Passou a
+chamar a mesma `pairwise_ncd` da auditoria.
+
+**Como a rede "se forma":** a ORDEM é a única coisa que o tempo codifica — as
+arestas se ligam do par mais próximo ao mais distante, a mesma ordem do fundo do
+ranking do CATALOG-AUDIT. Duração é constante e não codifica nada. Célula
+isolada **não anima**: ela já estava no catálogo sem parente, e animar a entrada
+dela contaria uma chegada que não houve. Primeiras `@keyframes` do projeto; o
+estado final vive no atributo e o CSS só subtrai no começo, então sem CSS, com
+`prefers-reduced-motion` ou com o keyframe ignorado, o que foi servido já é o
+desenho pronto (há teste proibindo estado inicial no markup).
+
+**A home imprime o próprio defeito:** o único par medido abaixo do par-controle
+escrito à mão (`adversary~guard`, 0,7801) sai em `--redline` com tique
+perpendicular — nunca só cor — e o carimbo cita **D-036**, a decisão que o
+aceitou.
+
+**Alternativas consideradas** (painel de 3 propostas, 3 juízes por lente):
+"Lattice", colunas por faixa de recruitment, venceu honestidade e
+implementabilidade mas ficou com cara de figura de artigo; "Radiant", prato de
+acreção radial, tinha defeitos que quebravam interação (traço transparente
+continua recebendo clique) e o CI. Venceu o de **craft** — o único juiz que
+renderizou os três como SVG real — porque o pedido era estético e os outros dois
+vinham com enxertos aplicáveis. Enxertados daqui: recusar canal degenerado
+(Lattice), animação que roda uma vez só e isolada sem animação (Radiant).
+
+**Custo de reversão:** `WaggleField.tsx` **e** `site/app/lib/dance.ts` estão no
+histórico — os dois foram removidos nesta mudança, e reverter exige restaurar os
+dois (o componente importava o hub do módulo), mais a seção de CSS. `dance.ts`
+saiu porque ficou órfã: nada mais a importava, e três doc-comments apontavam
+para ela. A dança **não sumiu do projeto** — `killerbee/signature.py` passou a
+ser a única implementação, e ela é o corpo de cada `.agent.png` (D-030).
+
+**Revisão adversarial (36 agentes, 4 lentes, cada achado com um cético
+tentando refutá-lo): 22 confirmados, 10 derrubados.** Os que mais valeram:
+
+- **Dois testes MEUS nomeavam mutações que não matavam** — o pecado que o D-032
+  criou a regra para evitar, cometido no mesmo repo que a criou. O do limiar
+  calculava o valor esperado e **jogava fora**: passava verde com o limiar
+  hardcodado e com a definição trocada de 3 para 2,5 MADs (92 arestas sob
+  0,8441, com a auditoria publicando 71 sob 0,8376). O das arestas checava só
+  "toda aresta está abaixo do limiar", que um top-50 satisfaz. Agora o primeiro
+  **compara com a tabela publicada no CATALOG-AUDIT §8** e o segundo reconta os
+  pares do zero. As duas mutações morrem, verificadas.
+- **`aria-label` num `<a>` suprime o `<title>` irmão.** Quem usa leitor de tela
+  ouvia 48 vezes "Fulano in pack" e nunca recebia a relação — que é o conteúdo
+  inteiro da figura. O nome acessível passou a carregar o parentesco.
+- **O aviso do próprio defeito estava escondido:** só dentro de markup
+  `aria-hidden`, a 7,8 px num telefone. Um site que existe para não esconder
+  defeito não pode esconder o próprio na tipografia miúda. Agora ele também é
+  parágrafo de texto normal na legenda.
+- **Um `.persona.md` não listado no manifesto derrubava o build do site**, com
+  mensagem culpando o catálogo. O manifesto é a autoridade; rascunho no disco
+  agora é ignorado.
+- Mais: tooltip que dizia "8 measured kin" e listava 4; ponto decimal no
+  tooltip contra vírgula na legenda; "1 pair" no singular fixo; chave imprimindo
+  amostra duplicada se o controle coincidir com o mínimo; **par-controle acima
+  do limiar pintaria TODA aresta de vermelho e geraria espessura negativa** na
+  chave; comentário do CSS citando `--char` onde a regra usa `--ramp-1`;
+  docstring dizendo que a posição inicial era cópia coordenada a coordenada do
+  hero antigo (é a mesma forma reescalada); comentário prometendo um teste de
+  cobertura que não existia.
+**Limitação declarada:** alvo de toque de 16 px no mobile (24,9 px no desktop),
+abaixo dos 24 px do WCAG 2.5.8. Não é regressão — o hero antigo dava ~17 px — e
+o critério é atendido pela exceção de controle equivalente: toda persona tem um
+link de tamanho normal na lista do catálogo, na mesma página. Está escrito no
+doc-comment do componente, não subentendido.
+**Suíte:** 451 Python (+24) · 26 do site (+5).
