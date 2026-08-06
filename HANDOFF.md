@@ -221,7 +221,13 @@ páginas, roteiro do vídeo sem credencial.
   (segundas, `--strict`: deriva também falha). Baseline: **175 confirmadas · 0
   quebradas**; 18 atalhos ambíguos listados como débito (qualificar a 1ª menção).
 - Suíte: **427 Python** (405 + 12 do NCD + 10 do verificador, medida por `pytest`) ·
-  21 site. Pendências da fase:
+  21 site.
+- **Corte executado na mesma data (Q-010 respondida → D-036): catálogo 51 → 48.**
+  Saíram `hjm-lab` (hub da zona A), `autograd-lab` (2 pares no fundo; `nanograd` é o
+  repo mais rico) e `fomc-quant` (`focus-quant` é o assunto mais raro). Zona A: 6 → 1
+  par (`g2pp~shortrate` 0,7620, residual aceito — opção 2 o removeria). Maior team:
+  systems-cs, 12 membros, ~15% do cap. Packs, README dos packs, manifests, teste do
+  NCD e site regenerados; adendo §8 no CATALOG-AUDIT. Pendências da fase:
   P1 (tipagem em massa — começada nas seções novas), P3 (receitas por [OBSERVADO]),
   P6 (protocol.json lido pelo emissor), corpus de PDFs (§7 — último da fila).
 

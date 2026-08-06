@@ -110,10 +110,10 @@ def test_strip_frontmatter_falha_ruidoso(text: str, erro: str):
 
 def test_catalogo_real_carrega_e_exclui_template():
     """O catálogo do repo carrega inteiro e TEMPLATE fica fora. Mata: remover
-    a exclusão do TEMPLATE (o glob acharia 52) ou quebrar o parse de qualquer
-    persona publicada."""
+    a exclusão do TEMPLATE (o glob acharia 49) ou quebrar o parse de qualquer
+    persona publicada. 48 = 51 menos o corte da opção 1 do CATALOG-AUDIT (D-036)."""
     bodies = load_catalog_bodies(ROOT / "packs")
-    assert len(bodies) == 51
+    assert len(bodies) == 48
     assert not any(key.startswith("TEMPLATE/") for key in bodies)
 
 

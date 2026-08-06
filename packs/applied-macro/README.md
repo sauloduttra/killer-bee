@@ -7,7 +7,6 @@ Central-bank and labour releases read like a quant reads them: surprise decompos
 | Persona | Repository | What it covers |
 |---|---|---|
 | **Focus Decoder** | [`focus-quant`](https://github.com/sauloduttra/focus-quant) | Reads Brazil's weekly BCB Focus market-expectations report as ex-ante real rates, expectation anchoring, a Taylor benchmark and revision momentum. |
-| **Dot Plot** | [`fomc-quant`](https://github.com/sauloduttra/fomc-quant) | Reads an FOMC decision as a distribution — dot-plot mode-vs-median skew, ex-ante real policy rate, a Taylor benchmark, and forward-guidance removal counted in the statement text. |
 | **Payrolls Read-Through** | [`nfp-quant-readthrough`](https://github.com/sauloduttra/nfp-quant-readthrough) | Walks a BLS Employment Situation release end to end: surprise-plus-revisions decomposition, sector z-scores, AR(1) wage projection, Treasury curve shift, and DDM repricing. |
 
 ## Importing

@@ -25,13 +25,6 @@ personas:
       recruitment: 2
       persistence: medium
       propagation: medium
-  - file: personas/fomc-quant.persona.md
-    # fomc-quant — medium threshold because FOMC reads are asked for around scheduled meetings; recruitment 3 maps to the three genuinely separate signal families (dot distribution, real-rate/Taylor, statement text); persistence long because the dot-plot round-trip and skew identities require patient, exact reconciliation rather than a first-pass answer.
-    profile:
-      threshold: medium
-      recruitment: 3
-      persistence: long
-      propagation: medium
   - file: personas/nfp-quant-readthrough.persona.md
     # nfp-quant-readthrough — recruitment 5 mirrors the five independent sections that fan out across statistics, term structure, cost of capital and valuation in the same hour; medium threshold because payroll reads are event-driven requests, and propagation high because the README explicitly invites forking and re-running it on the next release.
     profile:
@@ -52,4 +45,4 @@ teams:
       quantitative claim carries its formula, its assumptions, and the regime where it
       stops holding. When another member's answer contradicts yours, say so explicitly
       rather than softening it. None of you gives investment advice.
-    members: [focus-quant, fomc-quant, nfp-quant-readthrough]
+    members: [focus-quant, nfp-quant-readthrough]

@@ -745,3 +745,34 @@ enumerar o COMPORTAMENTO (quem monta os handlers, quem chama o upload), não a s
 no app rodando). Registro completo com recibos de busca em
 [`NEGATIVE-SPACE.md`](NEGATIVE-SPACE.md).
 **Custo de reversão:** nenhum — são correções contra o fonte pinado.
+
+---
+
+## D-036 — Corte do catálogo: opção 1 executada, 51 → 48
+
+**Quando:** 2026-08-06, decisão do usuário sobre a Q-010 ("Corta pela opção 1").
+**O que saiu e por quê cada um:**
+
+- **`rates-term-structure/hjm-lab`** — fixado pela própria auditoria: hub da zona A
+  (3 dos 6 pares). A descrição do pack perdeu a menção ao drift de HJM.
+- **`systems-cs/autograd-lab`** — dos dois de autodiff, era o que aparecia em DOIS
+  pares do fundo (com `nanograd` 0,7545 e com `nanozero` 0,8368) — removê-lo desfaz
+  ambos; e `nanograd` é o repo mais rico (engine + nn + transformer de ponta a ponta).
+- **`applied-macro/fomc-quant`** — dos dois observadores de banco central, mantém-se
+  o mais raro: leitor de FOMC existe às dúzias; decodificador do Focus/BCB é
+  incomum e é o território do autor. Empate técnico no NCD (só o par mútuo no fundo);
+  o desempate é curadoria, registrado como tal.
+
+**Efeito medido (adendo §8 do CATALOG-AUDIT):** zona A 6 → **1 par**
+(`g2pp~shortrate` 0,7620 — o residual que a opção 1 aceita e a opção 2 removeria;
+fica como limitação conhecida). Mínimo 0,7144 → 0,7620; concordância zstd/lzma
+89,5% → 91,5%. Maior team agora: systems-cs com 12 membros, 38.968 B ≈ 15% do cap.
+**Custo de reversão:** `git revert` — personas e histórico preservados; os repos
+públicos de origem continuam existindo, então recriar é rodar o gerador de novo.
+**Bônus: o corte expôs um defeito do pipeline do site.** `prepare-data.mjs` escrevia
+`public/downloads` por pack e nunca apagava — persona removida do catálogo ficaria
+**publicada como download órfão para sempre** (hjm-lab & cia. sobreviveram ao primeiro
+rebuild). Corrigido com `rmSync` antes da regeneração; verificado: zero órfãos no
+`out/`.
+**Suíte:** 427 (o pin de contagem do teste do NCD foi 51 → 48 com o motivo no
+docstring).

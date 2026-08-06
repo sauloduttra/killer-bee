@@ -8,8 +8,8 @@
 name: rates-term-structure
 version: 0.1.0
 description: >-
-  Short-rate models, the two-factor Gaussian workhorse, the HJM no-arbitrage drift
-  condition, and the market model practitioners actually quote from.
+  Short-rate models, the two-factor Gaussian workhorse, and the market model
+  practitioners actually quote from.
 author: Saulo Duttra
 license: Apache-2.0
 tags: [quant, rates, reference]
@@ -32,13 +32,6 @@ personas:
       recruitment: 4
       persistence: long
       propagation: medium
-  - file: personas/hjm-lab.persona.md
-    # hjm-lab — A derivation-heavy theory persona: answers on request (medium), modest fan-out for the analytic-vs-quadrature and cross-model reproduction checks, and long persistence because a drift derivation is only settled once the independent quadrature agrees.
-    profile:
-      threshold: medium
-      recruitment: 3
-      persistence: long
-      propagation: medium
   - file: personas/lmm-lab.persona.md
     # lmm-lab — Recruitment 4 mirrors the repo's flagship measure-invariance check — one caplet under own, spot and terminal measures plus Black — and long persistence because sign/index drift traps need several passes to settle; medium threshold since it is a summoned pricing specialist, not a monitor.
     profile:
@@ -59,4 +52,4 @@ teams:
       quantitative claim carries its formula, its assumptions, and the regime where it
       stops holding. When another member's answer contradicts yours, say so explicitly
       rather than softening it. None of you gives investment advice.
-    members: [shortrate-lab, g2pp-lab, hjm-lab, lmm-lab]
+    members: [shortrate-lab, g2pp-lab, lmm-lab]

@@ -192,3 +192,25 @@ juros. O detector está medindo o que promete.
 
 Os três pares do `crossfire-review` na tabela são o time escrito à mão — compartilham
 o preâmbulo de time por design e servem de calibração, não de candidato a corte.
+
+---
+
+## 8. Adendo pós-corte — 2026-08-06, opção 1 executada (D-036)
+
+O usuário decidiu pela **opção 1**: 51 → 48. Saíram `rates-term-structure/hjm-lab`
+(hub do cluster — removê-lo desfez 3 dos 6 pares da zona A),
+`systems-cs/autograd-lab` (aparecia em 2 pares do fundo, com `nanograd` e com
+`nanozero`; `nanograd` fica por ser o repo mais rico — transformer de ponta a ponta) e
+`applied-macro/fomc-quant` (`focus-quant` fica: decodificador do Focus/BCB é
+globalmente mais raro que mais um leitor de FOMC, e é o território do autor).
+
+Distribuição re-medida com o mesmo método (a matriz e o CSV foram regenerados):
+
+| personas | pares | mín | mediana | máx | limiar (med − 3·MAD) | abaixo do limiar | concordância zstd/lzma |
+|---|---|---|---|---|---|---|---|
+| 48 | 1128 | 0,7620 | 0,8767 | 0,9437 | 0,8376 | 71 | 91,5% |
+
+**Zona A depois do corte: 1 par** (era 6). Sobra `g2pp-lab ~ shortrate-lab` a 0,7620 —
+exatamente o residual que a opção 1 aceita e a opção 2 removeria. Fica registrado como
+limitação conhecida, não como surpresa: os dois seguem no catálogo por decisão, com o
+número ao lado. Os 5 recorrentes do fundo (§5) continuam candidatos a REESCRITA.

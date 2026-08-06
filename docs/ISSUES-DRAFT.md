@@ -41,7 +41,7 @@ the meantime is wrong retroactively. We're building an external publisher and hi
 exactly this: we defined a member projection (snapshot minus
 {respondTo, respondToAllowlist}) and published it as a JSON Schema
 (https://github.com/sauloduttra/killer-bee/blob/main/schema/kind-30178-content.schema.json),
-measured against the 256 KB cap (largest 13-member team uses ~15%).
+measured against the 256 KB cap (largest 12-member team uses ~15%).
 
 **Question:** would you take a PR adding a content schema definition to
 docs/nips/NIP-AP.md (or a serde struct alongside the persona 30175

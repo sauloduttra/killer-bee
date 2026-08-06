@@ -15,7 +15,7 @@
  * morre aqui — antes de gerar página, não depois.
  */
 import { execFileSync, execSync } from "node:child_process";
-import { readdirSync, existsSync } from "node:fs";
+import { readdirSync, existsSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -65,6 +65,11 @@ if (packNames.length === 0) {
   console.error("\nnenhum pack em packs/ — o site não teria conteúdo\n");
   process.exit(1);
 }
+
+// Limpar antes de regenerar: o build escreve por pack e nunca apaga — sem isto,
+// persona removida do catálogo continuaria PUBLICADA como download órfão para
+// sempre (aconteceu no corte 51→48, D-036: hjm-lab & cia. sobreviveram aqui).
+rmSync(join(siteDir, "public", "downloads"), { recursive: true, force: true });
 
 for (const name of packNames) {
   run(["build", `packs/${name}`, "--out", "site/public/downloads"]);

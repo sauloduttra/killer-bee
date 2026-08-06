@@ -74,13 +74,6 @@ personas:
       recruitment: 2
       persistence: medium
       propagation: medium
-  - file: personas/autograd-lab.persona.md
-    # autograd-lab — A compact teaching library with two clearly separated modes — one or two passes cover any question, and its pedagogical framing makes it highly forkable.
-    profile:
-      threshold: medium
-      recruitment: 2
-      persistence: medium
-      propagation: high
   - file: personas/nanograd.persona.md
     # nanograd — Gradient bugs are chased down layer by layer, so this persona needs to keep digging; three parallel passes match the engine/nn/training-loop split without over-spreading.
     profile:
@@ -122,4 +115,4 @@ teams:
       quantitative claim carries its formula, its assumptions, and the regime where it
       stops holding. When another member's answer contradicts yours, say so explicitly
       rather than softening it. None of you gives investment advice.
-    members: [tinytcp, raft-py, lsm-tree, tinysat, tinyspsc, tinycrypt, tinylang, pathtrace, autograd-lab, nanograd, nanozero, mini-blas, scrape-arsenal]
+    members: [tinytcp, raft-py, lsm-tree, tinysat, tinyspsc, tinycrypt, tinylang, pathtrace, nanograd, nanozero, mini-blas, scrape-arsenal]

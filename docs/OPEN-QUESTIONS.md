@@ -161,7 +161,11 @@ site não promete esse número em lugar nenhum.
 - Se estiver certo e eu não verificar: perde-se um número bom de vídeo.
 - Se estiver errado e for publicado: repete-se D-017, e aí com reincidência.
 
-## Q-010 — Cortar quantas personas do catálogo, e quais?
+## Q-010 — Cortar quantas personas do catálogo, e quais? ✅ RESPONDIDA 2026-08-06
+
+> **Decisão do usuário: opção 1 (51 → 48), executada em D-036.** Saíram `hjm-lab`,
+> `autograd-lab` e `fomc-quant`; zona A caiu de 6 pares para 1 (residual
+> `g2pp~shortrate` 0,7620, aceito). Texto original mantido abaixo pelo histórico.
 
 O NCD sobre os 51 prompts ([`CATALOG-AUDIT.md`](CATALOG-AUDIT.md), 2026-08-06) achou 6
 pares gerados MAIS parecidos entre si que o par-controle escrito à mão
