@@ -12,9 +12,17 @@ corrompia dado em silêncio.
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import pytest
 
-from killerbee.loader import (
+# Sem isto, o módulo só importa quando OUTRO arquivo de teste insere o path
+# primeiro — `pytest tests/test_loader.py` sozinho falhava na coleção. Teste
+# que depende da ordem de execução não é teste.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from killerbee.loader import (  # noqa: E402
     MAX_BODY_BYTES,
     PackLoadError,
     load_pack,
@@ -188,3 +196,46 @@ def test_profile_com_chave_desconhecida_e_erro(tmp_path):
     )
     with pytest.raises(PackLoadError, match="chaves desconhecidas"):
         load_pack(pack)
+
+
+@pytest.mark.parametrize(
+    ("valor", "motivo"),
+    [
+        ("[]", "lista vazia — falsy, engolida em silêncio pelo `or {}` anterior"),
+        ("0", "zero — falsy"),
+        ("false", "false — falsy"),
+        ('""', "string vazia — falsy"),
+        ("7", "truthy: já era erro antes, tem que continuar sendo"),
+    ],
+)
+def test_profile_nao_mapeamento_e_erro(tmp_path, valor, motivo):
+    """`profile: 0` virava "todos os defaults" calado enquanto `profile: 7` dava
+    erro — o mesmo tipo de valor com dois destinos, decidido por truthiness.
+    O JSON Schema já rejeitava os dois; o loader é que divergia."""
+    pack = make_pack(
+        tmp_path,
+        "name: demo\nversion: 0.1.0\npersonas:\n"
+        f"  - file: personas/bot.persona.md\n    profile: {valor}\n",
+    )
+    with pytest.raises(PackLoadError, match="'profile' deve ser um mapeamento"):
+        load_pack(pack)
+
+
+@pytest.mark.parametrize("valor", ["[]", "0", "false", '""', "7"])
+def test_compat_nao_mapeamento_e_erro(tmp_path, valor):
+    pack = make_pack(tmp_path, MANIFEST_OK + f"\ncompat: {valor}\n")
+    with pytest.raises(PackLoadError, match="'compat' deve ser um mapeamento"):
+        load_pack(pack)
+
+
+def test_profile_e_compat_nulos_continuam_virando_defaults(tmp_path):
+    """Ausente e nulo seguem sendo "use os defaults" — a chave presente e vazia
+    durante edição é estado comum e não pode explodir."""
+    pack = make_pack(
+        tmp_path,
+        "name: demo\nversion: 0.1.0\ncompat:\npersonas:\n"
+        "  - file: personas/bot.persona.md\n    profile:\n",
+    )
+    manifest = load_pack(pack)
+    assert manifest.buzz_commit == ""
+    assert manifest.personas[0].profile.threshold == "medium"

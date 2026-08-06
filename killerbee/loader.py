@@ -121,6 +121,25 @@ def _str_or_none(value: object, *, source: str, key: str) -> str | None:
     )
 
 
+def _mapping_of(value: object, *, source: str, key: str) -> dict:
+    """Mapeamento do manifesto: ausente/nulo → {}; qualquer outra coisa é erro.
+
+    A versão anterior era ``data.get(key) or {}``, que engolia em silêncio todo
+    escalar FALSY — ``profile: 0``, ``compat: []``, ``profile: false`` viravam
+    "todos os defaults" sem uma palavra, enquanto ``profile: 1`` (truthy) dava
+    erro. Inconsistência achada pelo verify adversarial em 2026-08-06; o
+    JSON Schema já rejeitava os dois casos, então o loader é que divergia.
+    """
+    if value is None:
+        return {}
+    if not isinstance(value, dict):
+        raise PackLoadError(
+            f"{source}: '{key}' deve ser um mapeamento, veio "
+            f"{type(value).__name__} ({value!r})"
+        )
+    return value
+
+
 def _list_of(value: object, *, source: str, key: str, item_type: type = str) -> list:
     """Coleção do manifesto: ausente/nula → lista vazia; escalar é erro.
 
@@ -159,9 +178,7 @@ def _load_persona(pack_dir: Path, entry: object, manifest_path: Path) -> Persona
     source = str(persona_path)
     frontmatter, body = parse_frontmatter(persona_path.read_text(encoding="utf-8"), source=source)
 
-    profile_data = entry.get("profile") or {}
-    if not isinstance(profile_data, dict):
-        raise PackLoadError(f"{source}: 'profile' no manifesto deve ser um mapeamento")
+    profile_data = _mapping_of(entry.get("profile"), source=source, key="profile")
     unknown = set(profile_data) - _PROFILE_KEYS
     if unknown:
         raise PackLoadError(f"{source}: chaves desconhecidas no profile: {sorted(unknown)}")
@@ -224,9 +241,7 @@ def load_pack(pack_dir: str | Path) -> PackManifest:
             )
         )
 
-    compat = data.get("compat") or {}
-    if not isinstance(compat, dict):
-        raise PackLoadError(f"{src}: 'compat' deve ser um mapeamento")
+    compat = _mapping_of(data.get("compat"), source=src, key="compat")
 
     return PackManifest(
         name=str(data.get("name", "")),

@@ -7,8 +7,15 @@ pior espécie de bug, porque explode na mão do usuário final.
 
 from __future__ import annotations
 
-from killerbee.model import PackManifest, Persona, Team
-from killerbee.validate import validate_pack
+import sys
+from pathlib import Path
+
+# Sem isto o módulo só importa quando outro arquivo de teste insere o path
+# primeiro — rodar este arquivo sozinho falhava na coleção.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from killerbee.model import PackManifest, Persona, Team  # noqa: E402
+from killerbee.validate import validate_pack  # noqa: E402
 
 
 def make_persona(name: str = "bot", **overrides) -> Persona:
