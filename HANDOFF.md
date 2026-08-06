@@ -124,11 +124,23 @@ a base real era 130; a contagem atual foi verificada por stash/pop em 2026-08-06
   heterogeneidade é o `threshold` que o autor do pack já escolhe.
   **O schema do pack NÃO mudou** ([D-031](docs/DECISIONS.md)): o próprio B-02 mandava
   decidir antes de congelar o formato.
-- **Método que pagou:** 3 derivações cegas independentes (3/3 concordando), refutação
-  adversarial corrigindo 3 corolários, e a simulação derrubando uma afirmação MINHA
-  ("os limiares se separam") antes de virar doc publicado. Um erro dimensional próprio
-  (√Var/λ em vez de √(Var/λ)) foi pego pelos testes de propriedade.
-- Suíte: **326 testes Python** · 21 do site.
+- **Método que pagou, quatro vezes:** 3 derivações cegas independentes (3/3 concordando),
+  refutação adversarial corrigindo 3 corolários, a simulação derrubando uma afirmação
+  MINHA ("os limiares se separam") antes de virar doc publicado, e um erro dimensional
+  próprio (√Var/λ em vez de √(Var/λ)) pego pelos testes de propriedade.
+- **Revisão adversarial DO CÓDIGO ([D-032](docs/DECISIONS.md)): 22 levantados, 14 reais,
+  todos corrigidos.** Três quebravam promessa da própria docstring: `act_probability`
+  estourando por elevar sⁿ e θⁿ separado (com n=8 e s=1e40 — **dentro** da grade que os
+  testes já usavam), `noise_dominated_halfwidth` devolvendo **nan em silêncio** (o guarda
+  `|θ-θ*| > halfwidth` avalia False para nan e invalidava toda previsão), e `λ > 0
+  sempre` falso em float por underflow de ξ·φ. Mais: guardas que eram dead code e tinham
+  divergido entre os dois simuladores (ξ negativo rodava a dinâmica invertida calado), e
+  **quatro testes que não provavam o que prometiam** — cada um demonstrado por mutação
+  que passava verde, inclusive o de borda refletora passando com piso ABSORVENTE.
+- **Regra nova de teste, e vale para o repo todo:** teste novo se verifica MATANDO a
+  mutação correspondente. Duas das minhas correções sobreviveram à primeira tentativa e
+  precisaram de um segundo teste.
+- Suíte: **391 testes Python** · 21 do site.
 
 **Auditoria 2026-08-06** ([docs/AUDIT-2026-08-06.md](docs/AUDIT-2026-08-06.md)): 15
 agentes em 6 dimensões + verificação adversarial; 9/9 achados fortes confirmados e
