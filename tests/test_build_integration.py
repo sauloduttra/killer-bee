@@ -143,6 +143,25 @@ def test_catalog_nao_vaza_caminho_absoluto(tmp_path):
     )
 
 
+def test_cli_sobrevive_a_console_cp1252(tmp_path):
+    """Windows: stdout em pipe nasce cp1252 e o '→' dos relatórios crashava o
+    CLI inteiro (UnicodeEncodeError) — visto no `npm run build` local, invisível
+    no CI Linux. PYTHONIOENCODING=cp1252 reproduz a condição em qualquer
+    plataforma; o reconfigure em main() tem que vencê-la."""
+    import os
+    import subprocess
+
+    env = {**os.environ, "PYTHONIOENCODING": "cp1252"}
+    result = subprocess.run(
+        [sys.executable, "-m", "killerbee", "build", str(PACK), "--out", str(tmp_path)],
+        capture_output=True,
+        env=env,
+        cwd=ROOT,
+    )
+    assert result.returncode == 0, result.stderr.decode("utf-8", "replace")
+    assert "→" in result.stdout.decode("utf-8")
+
+
 # ---------------------------------------------------------------------------
 # killerbee inspect — leia antes de rodar, em forma de comando
 # ---------------------------------------------------------------------------

@@ -40,6 +40,16 @@ from .validate import (
 )
 
 
+def _stdio_utf8() -> None:
+    """Os relatórios usam '→'; no Windows, stdout/stderr em pipe nascem cp1252
+    e o print vira UnicodeEncodeError. O contrato do CLI é emitir UTF-8 sempre —
+    o CI (Linux) nunca vê a falha, então ela é reproduzida em teste com
+    PYTHONIOENCODING=cp1252."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
+
+
 def _compact_bytes(snapshot: dict) -> int:
     """Tamanho da projeção que iria num corpo de evento: JSON compacto.
 
@@ -419,6 +429,7 @@ def cmd_inspect(path: Path, *, show_prompt: bool) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _stdio_utf8()
     parser = argparse.ArgumentParser(prog="killerbee", description=__doc__)
     parser.add_argument("--version", action="version", version=f"killerbee {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
