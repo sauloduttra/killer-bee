@@ -99,6 +99,7 @@ PILLARS = {
 
 LICENSE = "Apache-2.0"
 AUTHOR = "Saulo Duttra"
+GITHUB_USER = "sauloduttra"
 BUZZ_COMMIT = "ed4b3e7afafb5f5a688c210f39b90d747e6f0f00"
 
 
@@ -219,9 +220,10 @@ def write_pack(pillar: str, personas: list[dict], out_root: Path, *, dry_run: bo
         "|---|---|---|",
     ]
     for persona in personas:
+        url = f"https://github.com/{GITHUB_USER}/{persona['repo']}"
         readme.append(
             f"| **{persona['display_name']}** "
-            f"| [`{persona['repo']}`](https://github.com/{AUTHOR.split()[0].lower()}duttra/{persona['repo']}) "
+            f"| [`{persona['repo']}`]({url}) "
             f"| {persona['description']} |"
         )
     readme += [
@@ -232,7 +234,7 @@ def write_pack(pillar: str, personas: list[dict], out_root: Path, *, dry_run: bo
         "snapshot embeds every member in full, and importing it after the personas "
         "creates duplicates.",
         "",
-        f"Built by [{AUTHOR}](https://github.com/sauloduttra).",
+        f"Built by [{AUTHOR}](https://github.com/{GITHUB_USER}).",
         "",
     ]
 
