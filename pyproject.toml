@@ -1,6 +1,6 @@
 [project]
 name = "killerbee-buzz"
-version = "0.0.0"
+version = "0.1.0"
 description = "Killer Bee — catálogo de personas e agent teams entre comunidades Buzz"
 readme = "README.md"
 requires-python = ">=3.11"

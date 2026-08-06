@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use or cite this work, cite it as below."
+title: "Killer Bee — persona and agent-team packs for Buzz"
+type: software
+version: 0.1.0
+date-released: 2026-08-06
+license: Apache-2.0
+repository-code: "https://github.com/sauloduttra/killer-bee"
+url: "https://sauloduttra.github.io/killer-bee/"
+authors:
+  - family-names: Duttra
+    given-names: Saulo
+abstract: >-
+  A cross-community catalog of persona and agent-team packs for Buzz
+  (Block's Nostr-native agent platform). Emits the agent and team
+  snapshots the Buzz desktop imports natively, compiles a response
+  threshold profile (Hill function; no algorithmic novelty claimed) to
+  native runtime fields, and publishes a static, verifiable catalog with
+  per-artifact sha256. Every upstream claim is cited file:line against a
+  pinned commit and checked by a second reader.
+keywords:
+  - buzz
+  - nostr
+  - agents
+  - persona
+  - response-threshold-model
