@@ -8,7 +8,9 @@ license = { text = "Apache-2.0" }
 # pyyaml é a única dependência de runtime, e existe por um motivo específico:
 # os .persona.md usam frontmatter YAML porque esse é o formato NATIVO do Buzz,
 # e manter compatibilidade byte a byte com o formato deles vale uma dependência.
-# (Os scripts de scripts/ continuam stdlib-only e rodam com --no-project.)
+# (Os scripts de scripts/ continuam stdlib-only e rodam com --no-project.
+#  Exceção registrada em D-034: ncd_catalog.py usa zstandard, do grupo dev,
+#  porque o FASE-2 §4.1 fixa zstd como compressor do NCD — rode com `uv run`.)
 dependencies = ["pyyaml>=6.0"]
 
 [dependency-groups]
@@ -16,6 +18,7 @@ dev = [
     "jsonschema>=4.26.0",
     "pytest>=8.0",
     "ruff>=0.14",
+    "zstandard>=0.22",
 ]
 
 [tool.uv]

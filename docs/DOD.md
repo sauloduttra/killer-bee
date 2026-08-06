@@ -14,7 +14,7 @@ funcionando".
 | 6 | Team catalog 30178 publicado e lido ao vivo pelo site | ⛔ **publicar** segue bloqueado em 🔴 credencial (assinar exige chave). O que dava para fazer offline foi feito em 2026-08-06: o **schema do corpo** — que não existe no upstream, delegado ao cliente publicador (NIP-AP.md:223) — está definido e publicado em [`schema/kind-30178-content.schema.json`](../schema/kind-30178-content.schema.json), e `killerbee event` emite o evento **não assinado** (D-029). O site já existe e está no ar nos dois hosts; falta a leitura ao vivo, que além da credencial exige keypair efêmero + NIP-42 ([§11.5](PROTOCOL-NOTES.md)) |
 | 7 | `killerbee validate` no CI, falhando em pack inválido | ✅ dois jobs: valida os packs **e** prova que rejeita um quebrado |
 | 8 | `recruitment` → campo nativo de paralelismo (1–32); resto em `PROFILE-COMPILATION.md` | ✅ [`PROFILE-COMPILATION.md`](PROFILE-COMPILATION.md), com teste de faixa |
-| 9 | Crossfire por menção, 3 agentes respondendo no canal | 🟨 **os 3 existem no app, em 3 providers distintos** — o Buzz rotula o team como "Mixed models". Faltam credencial de provider e "Add to channel"; execução segue bloqueada |
+| 9 | Crossfire por menção, 3 agentes respondendo no canal | 🟨 **os 3 existem no app, em 3 providers distintos** — o Buzz rotula o team como "Mixed models". 2026-08-06: o custo do desbloqueio caiu para **UMA chave** — o rótulo olha o modelo, não o provider ([PROTOCOL-NOTES §7](PROTOCOL-NOTES.md), D-033); runbook reduzido a colar-chave → menção → esperar ([LOCAL-SETUP A](LOCAL-SETUP.md)); protocolo pré-registrado com critérios C1-C5 e roteiro de 90s em [CROSSFIRE-RUN.md](CROSSFIRE-RUN.md). Falta só a chave (🔴) |
 | 10 | Site estático buildando, catálogo de `packs/`, fontes com `@font-face` | ✅ **builda nos dois modos (com e sem basePath), 21/21 testes de export** — incluindo integridade de todos os links internos, sha256 publicado vs arquivo servido, CSP, og:image/favicon/robots/sitemap. Fontes auto-hospedadas com subset filtrado (232 KB). Auditoria e correções em [AUDIT-2026-08-06](AUDIT-2026-08-06.md) |
 | 11 | `LICENSE` Apache-2.0, `NOTICE`, `THIRD_PARTY_NOTICES.md`, `CONTRIBUTING.md` com DCO | ✅ os quatro, + job de DCO no CI |
 | 12 | `docs/LICENSE-AUDIT.md` completo | ✅ **123 repos, zero falhas, duas fontes concordando** — 48 MIT, 1 ausente, 0 contribuidores externos |
@@ -77,5 +77,9 @@ verde ([§10.9](PROTOCOL-NOTES.md)).
 
 A conta de ter esperado: o mesmo bloco que fechou o item 4 derrubou uma afirmação que o
 site já publicava — a de que arrastar o arquivo sobre a seção Agents pulava dois cliques.
-Ela nasceu de leitura de fonte, atravessou uma revisão e só morreu quando alguém abriu o
-app. **Amarelo honesto é o que impede um verde de virar mentira.**
+**E a história ganhou um segundo capítulo em 2026-08-06:** a "correção" também estava
+errada — o fonte TEM alvo de drop (`useFileImportZone`, spread props que o grep de
+`onDrop=` não vê), e a negação foi publicada com a mesma confiança que a promessa. Duas
+lições empilhadas: afirmação de UI só fecha no app rodando (D-017), e ausência
+confirmada exige enumerar o comportamento, não a sintaxe (D-035). **Amarelo honesto é o
+que impede um verde de virar mentira — nas duas direções.**

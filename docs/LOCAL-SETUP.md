@@ -1,6 +1,91 @@
-# Ambiente local — relay Buzz em Docker
+# Rodar o crossfire — runbook
 
-**Estado: runbook preparado e verificado no fonte. Não executado — parou em 🔴 vermelho.**
+**Estado: preparado até a linha vermelha. Colar chave é 🔴 e é seu.**
+
+A descoberta que reduz o custo (PROTOCOL-NOTES §7, verificado @ ed4b3e7a): o rótulo
+"Mixed models" do card de time olha **a string do modelo** de cada agente, nunca o
+provider (`TeamIdentityCard.tsx:204-218`). E a credencial é por provider
+(`readiness.rs:527-532`). Logo:
+
+> **Uma chave de OpenRouter roda os três agentes.** Nenhuma conta nova.
+
+---
+
+## A · Quickstart: colar chave → mandar menção → o que esperar
+
+Pré-condição já cumprida: os três agentes do `crossfire-review` foram importados no
+Buzz Desktop 0.5.5 em 2026-08-05 (`[OBSERVADO]`, PROTOCOL-NOTES §10.9). Importado ≠
+rodando: cada um mostra `Status: STOPPED` e aba Channels vazia até os passos abaixo.
+
+### Passo 1 — colar a chave 🔴
+
+Caminho de **uma chave** (recomendado): em cada um dos três agentes, configure
+
+| Agente | Provider | Model |
+|---|---|---|
+| Forager | `openrouter` | `anthropic/claude-sonnet-5` |
+| Adversary | `openrouter` | `openai/gpt-5` |
+| Guard | `openrouter` | `deepseek/deepseek-chat` |
+
+e forneça `OPENROUTER_API_KEY` quando o app listar o requisito faltante — o desktop
+computa exatamente o que falta por agente (`readiness.rs:640-646`; a lista de
+requisitos é derivada do código, o rótulo exato na UI é `[NÃO VERIFICADO]` até a
+primeira rodada). Três fabricantes distintos, uma conta. O card do time continua
+"Mixed models" porque as três strings diferem.
+
+Caminho alternativo (ideal declarado do pack): três chaves nativas —
+`ANTHROPIC_API_KEY`, `OPENAI_COMPAT_API_KEY`, `OPENROUTER_API_KEY` — com os modelos
+originais das personas. Mesmo resultado no card; independência também operacional
+(D-033 registra o trade-off).
+
+**Regra que não se negocia:** nenhuma chave volta para chat, log, screenshot, prompt
+ou arquivo versionado.
+
+### Passo 2 — canal
+
+Os três agentes precisam estar **no mesmo canal** de uma community: inicie cada agente
+(`Start`) e adicione-os ao canal. Sem community? O relay local do Anexo B sobe uma
+(seis segredos no `.env`, também 🔴 seus).
+
+### Passo 3 — mandar UMA menção
+
+No canal, uma única mensagem, mencionando só a Forager:
+
+> @forager corrija esta função e poste o patch: `def median(xs): return sorted(xs)[len(xs)//2]` — quebra com lista vazia e erra em lista par.
+
+Por que só uma menção: os perfis do pack compilam gatilhos distintos
+(`killerbee.yaml` + D-007) — Forager `threshold: medium` → `require_mention = true`
+(só responde chamada); Adversary e Guard `threshold: low` → `require_mention = false`
+(reagem a tudo no canal). A menção acorda a Forager; o patch dela é o que acorda os
+outros dois.
+
+### Passo 4 — o que se espera ver
+
+1. Forager responde à menção com patch + nota de design.
+2. Adversary ataca o patch; Guard audita as quatro superfícies de segurança dele.
+3. **A ordem entre Adversary e Guard não é garantida, nem a latência.** Nada no
+   protocolo ordena respostas; pode precisar de mais de uma tomada para o vídeo.
+
+**Como saber que falhou** (cada modo com causa provável):
+
+| Sintoma | Causa provável |
+|---|---|
+| Agente não sai de `STOPPED` | requisito faltando — ver painel de readiness |
+| Ninguém responde à menção | agente fora do canal, ou regra sem `require_mention` correto — conferir `acp-rules.toml` gerado |
+| Forager responde, os outros dois calam | Adversary/Guard não estão no canal ou não iniciaram |
+| 404 `no community is configured for this host` | armadilha do `RELAY_URL` — Anexo B, passo 3b |
+| Erro de credencial no turno | chave inválida/sem crédito no OpenRouter |
+
+### Passo 5 — registrar
+
+Sucesso e fracasso valem igual: preencha `docs/CROSSFIRE-RUN.md` (protocolo
+pré-registrado + roteiro de gravação de 90s já estão lá).
+
+---
+
+## B · Anexo — relay local em Docker
+
+**Estado: runbook preparado e verificado no fonte. Não executado — parou em 🔴.**
 
 Dois bloqueios de política, ambos legítimos e nenhum contornável por mim:
 
@@ -10,12 +95,7 @@ Dois bloqueios de política, ambos legítimos e nenhum contornável por mim:
 2. **O compose expõe além de `127.0.0.1` por padrão.** Corrigível, e a correção está
    abaixo — mas é decisão consciente sua, não minha.
 
-Tudo o que dá para preparar sem tocar em segredo está preparado. Você preenche seis
-valores e roda.
-
----
-
-## Pré-requisitos nesta máquina
+### Pré-requisitos nesta máquina
 
 Verificado em 2026-08-05:
 
@@ -28,24 +108,13 @@ Verificado em 2026-08-05:
 | Python | `3.11.4` · uv `0.8.22` |
 | `gh` | `2.92.0`, autenticado como `sauloduttra` |
 
-### O shell do agente já está resolvido
+**O shell do agente já está resolvido.** O resolvedor do Buzz procura nesta ordem
+(`crates/buzz-dev-mcp/src/shell.rs:392-398`): `BUZZ_SHELL` explícito → `GIT_BASH` →
+`bash.exe` no PATH **excluindo System32** (nunca resolve o launcher do WSL) → o
+`bash.exe` irmão do `git.exe`. Nesta máquina o default acerta sozinho — **não defina
+`BUZZ_SHELL`**.
 
-A §4.3 do `PROMPT.md` alertava que o agente Buzz roda sob bash e que no Windows isso
-exige configuração. **Não exige, nesta máquina.** O resolvedor do Buzz procura nesta
-ordem (`crates/buzz-dev-mcp/src/shell.rs:392-398`):
-
-1. `BUZZ_SHELL` explícito
-2. `GIT_BASH`
-3. `bash.exe` no PATH — **excluindo System32, para nunca resolver o launcher do WSL**
-4. `git.exe` no PATH → o `..\bin\bash.exe` irmão
-
-Nesta máquina o `bash` do PATH é justamente `C:\Windows\system32\bash.exe` (WSL), que o
-passo 3 pula de propósito, e o Git Bash real existe. **Não defina `BUZZ_SHELL`** — o
-default acerta sozinho.
-
----
-
-## Passo 1 — subir o daemon do Docker
+### Passo 1 — subir o daemon do Docker
 
 ```bash
 docker version
@@ -54,9 +123,7 @@ docker version
 Se pendurar ou reclamar de `dockerDesktopLinuxEngine`, abra o Docker Desktop pela
 interface uma vez e aceite o que ele pedir. Foi onde esta sessão parou.
 
----
-
-## Passo 2 — preparar o `.env` 🔴
+### Passo 2 — preparar o `.env` 🔴
 
 ```bash
 cd /d/EMPRESAS/buzz/_upstream/buzz/deploy/compose
@@ -82,11 +149,9 @@ Seis valores `CHANGE_ME`, todos em `.env.example`:
   dentro de `killer-bee/`.
 - Nenhum desses valores volta para o chat, para log, para screenshot ou para prompt.
 
----
+### Passo 3 — corrigir os dois defaults perigosos 🔴
 
-## Passo 3 — corrigir os dois defaults perigosos 🔴
-
-### 3a. O relay é publicado em `0.0.0.0`
+#### 3a. O relay é publicado em `0.0.0.0`
 
 `deploy/compose/compose.yml` publica assim:
 
@@ -113,7 +178,7 @@ Isso resolve para `"127.0.0.1:3000:3000"`. Confirme antes de subir:
 
 Tem que aparecer `127.0.0.1`. Se aparecer só `3000:3000`, **não suba**.
 
-### 3b. `RELAY_URL` — a armadilha que cria comunidade fantasma
+#### 3b. `RELAY_URL` — a armadilha que cria comunidade fantasma
 
 O `.env.example` traz `RELAY_URL=wss://buzz.example.com` e o `.env.example` da raiz do
 repo traz `ws://localhost:3000`. **Nenhum dos dois serve.** Use:
@@ -124,7 +189,7 @@ RELAY_URL=ws://127.0.0.1:3000
 
 `localhost` e `127.0.0.1` são **comunidades diferentes** — há três normalizadores
 incompatíveis no código, e o que decide identidade de comunidade
-(`buzz_core::tenant::normalize_host`, `tenant.rs:121-137`) **não** dobra loopback.
+(`buzz_core::tenant::normalize_host`, `crates/buzz-core/src/tenant.rs:121-137`) **não** dobra loopback.
 
 O sintoma de errar não é o que se espera: é **404 `"relay: no community is configured for
 this host"`** (`crates/buzz-relay/src/router.rs:307-308`), não 401. Se você caçar erro de
@@ -142,9 +207,7 @@ BUZZ_MEDIA_SERVER_DOMAIN=127.0.0.1
 BUZZ_CORS_ORIGINS=http://127.0.0.1:3000
 ```
 
----
-
-## Passo 4 — o join aberto
+### Passo 4 — o join aberto
 
 A §2.4 do `PROMPT.md` afirma que o relay vem com join aberto por padrão. **Meio certo, e
 a distinção importa:**
@@ -168,9 +231,7 @@ BUZZ_ALLOW_NIP_OA_AUTH=true
 Relay fechado exige `RELAY_OWNER_PUBKEY` válido e chave de relay estável — é por isso que
 os dois são obrigatórios.
 
----
-
-## Passo 5 — subir e verificar
+### Passo 5 — subir e verificar
 
 ```bash
 cd /d/EMPRESAS/buzz/_upstream/buzz/deploy/compose
@@ -187,9 +248,7 @@ healthcheck em cada um. O relay só inicia depois que os três ficam saudáveis 
 `BUZZ_AUTO_MIGRATE=true` já vem no `.env.example` de produção — sem isso o banco novo
 sobe vazio e o relay não encontra schema.
 
----
-
-## Passo 6 — agente postando em canal 🔴 bloqueado
+### Passo 6 — agente postando em canal 🔴 bloqueado
 
 Depende do Passo 2. O harness ACP conecta por WebSocket:
 
@@ -203,11 +262,10 @@ mesma string, byte a byte, pelo motivo do passo 3b.
 
 Critério de saída: mensagem assinada num canal, evento visível no log de auditoria.
 
----
+### Erros encontrados no caminho
 
-## Erros encontrados no caminho
-
-Registro honesto do que apareceu nesta sessão, que é o que vira conteúdo de README:
+Registro honesto do que apareceu na sessão de 2026-08-05, que é o que vira conteúdo de
+README:
 
 1. **`docker info` pendura indefinidamente** quando o Docker Desktop nunca foi aberto na
    sessão do Windows. Não dá erro — pendura. Diagnóstico: `open //./pipe/dockerDesktopLinuxEngine:

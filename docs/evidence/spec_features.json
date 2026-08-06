@@ -1,0 +1,1288 @@
+[
+ {
+  "id": "f-01",
+  "title": "Persona Pack is a superset of the Open Plugin Spec (OPS); OPS consumers safely ignore unknown fields",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "5-7",
+    "quote": "a **superset of the [Open Plugin Spec](https://open-plugin-spec.org)**"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "25-26",
+    "quote": "OPS consumers safely ignore unknown fields."
+   }
+  ]
+ },
+ {
+  "id": "f-02",
+  "title": ".plugin/plugin.json manifest following OPS schema with Buzz extensions at top level",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "23-24",
+    "quote": "The `.plugin/plugin.json` manifest follows the OPS schema"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "94-95",
+    "quote": "Buzz-specific fields sit at the top level of `plugin.json` alongside OPS fields"
+   }
+  ]
+ },
+ {
+  "id": "f-03",
+  "title": "OPS metadata manifest fields ($schema, id, name, version, description, author, license, homepage, keywords)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "30-40",
+    "quote": "\"$schema\": \"https://open-plugin-spec.org/schema/v1/plugin.json\""
+   }
+  ]
+ },
+ {
+  "id": "f-04",
+  "title": "engines.buzz minimum-version negotiation; buzz-acp rejects packs requiring newer version",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "41-43",
+    "quote": "\"engines\": { \"buzz\": \">=0.9.0\" }"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "92-93",
+    "quote": "`engines.buzz` specifies minimum required Buzz version; buzz-acp rejects packs requiring a newer version"
+   }
+  ]
+ },
+ {
+  "id": "f-05",
+  "title": "personas manifest field: authoritative list of persona file paths",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "44-49",
+    "quote": "\"personas\": [ \"agents/pip.persona.md\""
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "91",
+    "quote": "reads both OPS fields and the Buzz-specific fields; `personas` is authoritative"
+   }
+  ]
+ },
+ {
+  "id": "f-06",
+  "title": "pack_instructions manifest field pointing to instructions file",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "50",
+    "quote": "\"pack_instructions\": \"instructions.md\""
+   }
+  ]
+ },
+ {
+  "id": "f-07",
+  "title": "mcp_config manifest field pointing to pack-level MCP config",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "51",
+    "quote": "\"mcp_config\": \".mcp.json\""
+   }
+  ]
+ },
+ {
+  "id": "f-08",
+  "title": "hooks_config manifest field pointing to hooks file",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "52",
+    "quote": "\"hooks_config\": \"hooks/hooks.json\""
+   }
+  ]
+ },
+ {
+  "id": "f-09",
+  "title": "defaults manifest object: pack-wide behavioral defaults for all personas",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "69-70",
+    "quote": "The `defaults` object sets pack-wide behavioral defaults for all personas."
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "96-97",
+    "quote": "buzz-acp resolves it at deploy time before constructing per-persona configurations"
+   }
+  ]
+ },
+ {
+  "id": "f-10",
+  "title": "Pack directory layout and conventions (agents/ flat, skills/ subdirs, .plugin/, optional hooks/, instructions.md, .mcp.json)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "103-126",
+    "quote": "my-pack/ ├── .plugin/ │   └── plugin.json"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "129",
+    "quote": "`agents/` — all persona files. No nesting; flat directory."
+   }
+  ]
+ },
+ {
+  "id": "f-11",
+  "title": "Prohibited pack contents: working-dir state, secrets, build artifacts",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "138-139",
+    "quote": "Pack contents must not include: agent working directory state"
+   }
+  ]
+ },
+ {
+  "id": "f-12",
+  "title": ".persona.md file format: YAML frontmatter + markdown body",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "145-147",
+    "quote": "A persona file is a markdown document with YAML frontmatter."
+   }
+  ]
+ },
+ {
+  "id": "f-13",
+  "title": "Persona identity fields: name/display_name/description required; avatar, version (defaults to pack version), author optional",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "204-207",
+    "quote": "Machine name / agent ID. Lowercase, no spaces, unique within pack."
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "208",
+    "quote": "Semver. Defaults to pack version if omitted."
+   }
+  ]
+ },
+ {
+  "id": "f-14",
+  "title": "Persona skills frontmatter field (pack-relative skill directory paths)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "210",
+    "quote": "Pack-relative paths to skill directories for this agent only."
+   }
+  ]
+ },
+ {
+  "id": "f-15",
+  "title": "Persona mcp_servers frontmatter field (name/command/args/env entries)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "211",
+    "quote": "Per-persona MCP servers. Merged with pack-level `.mcp.json`."
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "459-466",
+    "quote": "mcp_servers: - name: \"semgrep\" command: \"semgrep-mcp\""
+   }
+  ]
+ },
+ {
+  "id": "f-16",
+  "title": "Behavioral config field group in frontmatter (subscribe, triggers, model, temperature, max_context_tokens, thread_replies, broadcast_replies), consumed entirely by harness",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "212-218",
+    "quote": "Channels to monitor. See Section 10."
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "575-577",
+    "quote": "behavioral config fields in a persona's frontmatter control how the agent participates in"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "841",
+    "quote": "All fields are consumed entirely by buzz-acp."
+   }
+  ]
+ },
+ {
+  "id": "f-17",
+  "title": "Persona hooks frontmatter field (harness-managed lifecycle hooks)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "219",
+    "quote": "Lifecycle hooks. Harness-managed. See Section 9."
+   }
+  ]
+ },
+ {
+  "id": "f-18",
+  "title": "respond_to accepted as legacy alias for triggers (frontmatter and plugin.json defaults)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "221",
+    "quote": "The YAML key `respond_to` is accepted as an alias for `triggers`"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1104",
+    "quote": "The `respond_to` key is accepted as a legacy alias for `triggers`"
+   }
+  ]
+ },
+ {
+  "id": "f-19",
+  "title": "Markdown body after closing --- is the persona prompt; embed directly, no external file references",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "223-224",
+    "quote": "Everything after the closing `---` is the persona prompt text."
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "226-227",
+    "quote": "Embed the prompt directly — do not reference external files"
+   }
+  ]
+ },
+ {
+  "id": "f-20",
+  "title": "Two-layer prompt architecture with fixed section order ([Base], [System], [Context], [Thread/Conversation Context], [Buzz event])",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "233-234",
+    "quote": "assembles the agent's context from two distinct prompt layers"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "241-260",
+    "quote": "[Base] <platform orientation — injected by buzz-acp>"
+   }
+  ]
+ },
+ {
+  "id": "f-21",
+  "title": "[Base] layer compiled into buzz-acp, identical for every agent (platform identity, MCP reference, workspace layout, polling)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "262-272",
+    "quote": "compiled into buzz-acp and is **identical for every agent**"
+   }
+  ]
+ },
+ {
+  "id": "f-22",
+  "title": "BUZZ_ACP_NO_BASE_PROMPT env var omits the [Base] section",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "276-277",
+    "quote": "Set `BUZZ_ACP_NO_BASE_PROMPT` to omit the `[Base]` section entirely."
+   }
+  ]
+ },
+ {
+  "id": "f-23",
+  "title": "BUZZ_ACP_BASE_PROMPT_FILE env var replaces compiled-in base prompt with custom file",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "277-278",
+    "quote": "`BUZZ_ACP_BASE_PROMPT_FILE` to a file path — buzz-acp reads it at startup"
+   }
+  ]
+ },
+ {
+  "id": "f-24",
+  "title": "[System] layer: persona prompt, unique per agent",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "282-284",
+    "quote": "**unique per agent** and defines the agent's role, identity, and behavioral rules"
+   }
+  ]
+ },
+ {
+  "id": "f-25",
+  "title": "Skill path resolution and runtime copying to .agents/skills/ is planned, not yet implemented",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "312-314",
+    "quote": "runtime copying to `$AGENT_CWD/.agents/skills/` is planned for a future release"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "937",
+    "quote": "buzz-acp will copy `skills/` → `$AGENT_CWD/.agents/skills/`"
+   }
+  ]
+ },
+ {
+  "id": "f-26",
+  "title": "Skills: reusable on-demand instruction sets in markdown",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "316-317",
+    "quote": "Skills are reusable instruction sets that agents load on demand."
+   }
+  ]
+ },
+ {
+  "id": "f-27",
+  "title": "Skill discovery paths under $AGENT_CWD; .agents/skills/ is canonical; pack-root skills/ NOT scanned",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "327-331",
+    "quote": "`.agents/skills/` is buzz-acp's canonical skill location."
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "333-334",
+    "quote": "`$AGENT_CWD/skills/` is NOT scanned."
+   }
+  ]
+ },
+ {
+  "id": "f-28",
+  "title": "$AGENT_CWD resolution order: AGENT_CWD env var, then current_dir(), else refuse to start; stored as session.working_dir",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "344-347",
+    "quote": "The `AGENT_CWD` environment variable on the buzz-acp process, if set."
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "347",
+    "quote": "buzz-acp logs an error and **refuses to start**"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "349",
+    "quote": "stores this value as `session.working_dir` and uses it for all skill discovery"
+   }
+  ]
+ },
+ {
+  "id": "f-29",
+  "title": "Skill load key is the name: field from SKILL.md frontmatter",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "353",
+    "quote": "The load key used in `load(source: \"skill-name\")` is the `name:` field"
+   }
+  ]
+ },
+ {
+  "id": "f-30",
+  "title": "SKILL.md name: and description: required; missing/malformed frontmatter silently skips skill with no directory-name fallback",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "355-356",
+    "quote": "Both `name:` and `description:` are required fields in `SKILL.md` frontmatter."
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "366-367",
+    "quote": "the skill is **silently skipped**. There is **no fallback to the directory name**."
+   }
+  ]
+ },
+ {
+  "id": "f-31",
+  "title": "Skill scoping rules: skill claimed by any persona copied only to that persona; unclaimed skills copied to all agents",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "375-381",
+    "quote": "Copied **only** to that persona's `$AGENT_CWD/.agents/skills/`"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "382-383",
+    "quote": "Once a skill is claimed by any persona, it is no longer automatically shared"
+   }
+  ]
+ },
+ {
+  "id": "f-32",
+  "title": "Skill collision handling: existing skill not overwritten; buzz-acp must log WARN",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "387-388",
+    "quote": "the pack skill is **not overwritten**"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "390-393",
+    "quote": "when a pack skill is skipped due to a collision"
+   }
+  ]
+ },
+ {
+  "id": "f-33",
+  "title": "Skills not auto-loaded; explicit load(source:...) call; available skills listed in user message prefix",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "398-401",
+    "quote": "Skills are not auto-loaded into context. The agent must explicitly load them"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "404",
+    "quote": "buzz-acp lists available skills in the user message prefix"
+   }
+  ]
+ },
+ {
+  "id": "f-34",
+  "title": "SKILL.md file format (frontmatter + content); buzz pack validate does not yet enforce required metadata fields",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "409-418",
+    "quote": "name: \"security-review\" description: \"Reviews code for security vulnerabilities"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "421-423",
+    "quote": "warns on skill name mismatches but does not yet enforce required metadata fields"
+   }
+  ]
+ },
+ {
+  "id": "f-35",
+  "title": "Two-level MCP configuration: pack-level .mcp.json shared plus per-persona entries",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "428-430",
+    "quote": "defined at two levels: pack-level (shared across all agents) and per-persona"
+   }
+  ]
+ },
+ {
+  "id": "f-36",
+  "title": "MCP transport restriction: only stdio and streamable_http; SSE rejected causing session startup failure",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "432-435",
+    "quote": "Only `stdio` and `streamable_http` transports are supported."
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "433-434",
+    "quote": "SSE is unsupported, migrate to streamable_http"
+   }
+  ]
+ },
+ {
+  "id": "f-37",
+  "title": "Pack-level .mcp.json format with mcpServers object (command/args/env)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "437-455",
+    "quote": "\"mcpServers\": { \"github\": { \"command\": \"github-mcp-server\""
+   }
+  ]
+ },
+ {
+  "id": "f-38",
+  "title": "MCP merge rules: pack-level base set; name collision means per-persona entry wins entirely; merged set passed via NewSessionRequest.mcp_servers",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "470-471",
+    "quote": "per-persona entry wins entirely (no partial merge)"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "472",
+    "quote": "The merged set is passed to the agent runtime via `NewSessionRequest.mcp_servers`."
+   }
+  ]
+ },
+ {
+  "id": "f-39",
+  "title": "${VAR_NAME} MCP env interpolation planned; currently passed through as literals; unresolved vars will cause startup error",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "476-478",
+    "quote": "`${VAR_NAME}` strings are passed through as literals"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "482-483",
+    "quote": "Unresolved variables will cause a startup error."
+   }
+  ]
+ },
+ {
+  "id": "f-40",
+  "title": "MCP delivery: no .mcp.json written to agent working directory",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "485-486",
+    "quote": "**No `.mcp.json` is written to the agent's working directory.**"
+   }
+  ]
+ },
+ {
+  "id": "f-41",
+  "title": "instructions.md appended to persona prompt in user message prefix; no file written to disk",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "492-493",
+    "quote": "buzz-acp appends it to the persona prompt in the user message prefix"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "495-496",
+    "quote": "**No file is written to disk.**"
+   }
+  ]
+ },
+ {
+  "id": "f-42",
+  "title": "Instruction delivery anti-patterns (.mdc, rules/, AGENTS.md) and AGENTS.md/.goosehints as secondary operator mechanism",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "498-500",
+    "quote": "`.mdc` rule files (agent runtimes typically don't read them)"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "502-504",
+    "quote": "Some agent runtimes auto-load `AGENTS.md` and `.goosehints` from `$AGENT_CWD`"
+   }
+  ]
+ },
+ {
+  "id": "f-43",
+  "title": "Hooks parsed and validated at pack load time but not yet executed",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "510-511",
+    "quote": "Hooks are parsed and validated at pack load time but not yet executed."
+   }
+  ]
+ },
+ {
+  "id": "f-44",
+  "title": "Hooks are entirely a harness (buzz-acp) feature; agent runtimes have no hook system",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "513-514",
+    "quote": "**Agent runtimes typically have no hook system**"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "569-570",
+    "quote": "They are implemented entirely in buzz-acp. Bypassing buzz-acp means no hooks fire."
+   }
+  ]
+ },
+ {
+  "id": "f-45",
+  "title": "hooks/hooks.json pack-level hook file format (on_start/on_stop/on_message) applying to all agents",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "517-527",
+    "quote": "Pack-level hooks apply to all agents"
+   }
+  ]
+ },
+ {
+  "id": "f-46",
+  "title": "Per-persona hooks override pack-level hooks for that agent",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "529-537",
+    "quote": "Per-persona hooks override pack-level hooks for that agent"
+   }
+  ]
+ },
+ {
+  "id": "f-47",
+  "title": "Hook points: on_start (before session), on_stop (after session ends), on_message (before each dispatch)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "541-545",
+    "quote": "`on_message` | Before each message is dispatched to the agent"
+   }
+  ]
+ },
+ {
+  "id": "f-48",
+  "title": "Hook execution environment (buzz-acp user, cwd=$AGENT_CWD, agent env vars) and exit-code semantics",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "549",
+    "quote": "Hooks run as the buzz-acp user; working directory is `$AGENT_CWD`"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "550-551",
+    "quote": "`on_start` non-zero → abort startup; `on_stop` non-zero → logged only"
+   }
+  ]
+ },
+ {
+  "id": "f-49",
+  "title": "on_message hook contract: stdin UTF-8 input, read-only, 5s timeout with SIGKILL, output logged at DEBUG",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "555-557",
+    "quote": "receives the incoming message content via **stdin** (UTF-8 text)"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "559-561",
+    "quote": "5 seconds. Hooks that exceed this are killed (SIGKILL)"
+   }
+  ]
+ },
+ {
+  "id": "f-50",
+  "title": "on_stop crash caveat: does not fire on buzz-acp crash (SIGSEGV, OOM)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "565-566",
+    "quote": "It **will not fire** if buzz-acp crashes (SIGSEGV, OOM, etc.)."
+   }
+  ]
+ },
+ {
+  "id": "f-51",
+  "title": "Missing defaults key in plugin.json: precedence level 4 skipped entirely",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "586-587",
+    "quote": "level 4 is skipped entirely and fields fall through directly to built-in defaults"
+   }
+  ]
+ },
+ {
+  "id": "f-52",
+  "title": "Five-level configuration precedence model (operator env > desktop UI > persona frontmatter > pack defaults > built-in)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "639-648",
+    "quote": "it applies this order (highest wins)"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "650-651",
+    "quote": "buzz-acp resolves levels 3–5 at deploy time"
+   }
+  ]
+ },
+ {
+  "id": "f-53",
+  "title": "Operator env var precedence: buzz-acp MUST NOT override env vars already set in parent environment",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "653",
+    "quote": "buzz-acp MUST NOT override them with pack/persona values"
+   }
+  ]
+ },
+ {
+  "id": "f-54",
+  "title": "Deploy-time resolution: defaults merged into per-persona effective config at pack load; defaults object never forwarded to runtime",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "634-636",
+    "quote": "\"deploy time\"** means when buzz-acp loads the pack and constructs per-persona"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "946-950",
+    "quote": "The `defaults` object itself is not forwarded to the agent runtime"
+   }
+  ]
+ },
+ {
+  "id": "f-55",
+  "title": "null semantics: null values treated as absent, fall through to next precedence level",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "667-669",
+    "quote": "`null` values are treated as absent. The field falls through"
+   }
+  ]
+ },
+ {
+  "id": "f-56",
+  "title": "Empty array semantics: subscribe: [] is an intentional override meaning subscribe to nothing",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "671-672",
+    "quote": "an empty array is NOT treated as absent. It means \"subscribe to nothing.\""
+   }
+  ]
+ },
+ {
+  "id": "f-57",
+  "title": "Empty object semantics: triggers: {} overrides pack default entirely; sub-fields fall through to built-in defaults",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "674-676",
+    "quote": "an empty object is NOT treated as absent"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "749-751",
+    "quote": "falls through to its **built-in default** (not the pack default)"
+   }
+  ]
+ },
+ {
+  "id": "f-58",
+  "title": "Shallow replacement merge semantics: no deep merge; object and array fields replaced whole",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "683",
+    "quote": "Field merging is **shallow replacement** — there is no deep merge."
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "713-714",
+    "quote": "the persona's `triggers` replaced the entire object"
+   }
+  ]
+ },
+ {
+  "id": "f-59",
+  "title": "Canonical behavioral config field schema with types and built-in defaults, identical for defaults object and persona frontmatter",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "753-756",
+    "quote": "applies identically to both the `defaults` object in `plugin.json` and the top-level"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "759-770",
+    "quote": "| `triggers.mentions` | bool | `true` |"
+   }
+  ]
+ },
+ {
+  "id": "f-60",
+  "title": "Temperature validation: passed through without range validation; buzz pack validate checks type only",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "767",
+    "quote": "passes through without range validation; `buzz pack validate` checks type only"
+   }
+  ]
+ },
+ {
+  "id": "f-61",
+  "title": "Unknown key handling: validation warning in defaults, hard error in persona frontmatter (deny_unknown_fields), WARN-and-ignore at deploy",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "772-773",
+    "quote": "are **validation warnings** in `buzz pack validate`"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "773-775",
+    "quote": "frontmatter are **hard errors** (via `deny_unknown_fields` in the YAML parser)"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "775-779",
+    "quote": "buzz-acp logs a `WARN` and ignores unknown manifest keys, remaining fail-soft"
+   }
+  ]
+ },
+ {
+  "id": "f-62",
+  "title": "Channel # prefix is display-only convention; stripped before relay API calls",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "808-811",
+    "quote": "buzz-acp strips the leading `#` before making any relay API calls."
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "761",
+    "quote": "`#` prefix stripped before relay calls."
+   }
+  ]
+ },
+ {
+  "id": "f-63",
+  "title": "Env var mapping: model split on first colon to GOOSE_PROVIDER/GOOSE_MODEL; GOOSE_TEMPERATURE; GOOSE_CONTEXT_LIMIT; omitted model sets nothing",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "822-826",
+    "quote": "`GOOSE_PROVIDER=anthropic` + `GOOSE_MODEL=claude-sonnet-4-20250514` | Split on first `:`"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "828-829",
+    "quote": "buzz-acp does not set `GOOSE_PROVIDER` or `GOOSE_MODEL`"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "815-817",
+    "quote": "The env vars set reflect the fully-resolved values — not the raw persona frontmatter."
+   }
+  ]
+ },
+ {
+  "id": "f-64",
+  "title": "Per-subprocess env injection via AcpClient::spawn extra_env with std::env::var parent-environment check (PF-6, implemented)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "831",
+    "quote": "`AcpClient::spawn` accepts per-persona env vars via the `extra_env` parameter."
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "655-656",
+    "quote": "buzz-acp checks `std::env::var(key)` for each env var."
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1149",
+    "quote": "`AcpClient::spawn` accepts `extra_env: &[(String, String)]` injected via `Command::env()`"
+   }
+  ]
+ },
+ {
+  "id": "f-65",
+  "title": ".buzzpack archive format: pack distributed as zip file (Phase 1)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "849-850",
+    "quote": "A pack is distributed as a `.buzzpack` file (zip archive)"
+   }
+  ]
+ },
+ {
+  "id": "f-66",
+  "title": "buzz pack validate command (schema-validates plugin.json, identity fields, behavioral config; warns on unknown keys/name mismatches)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "852",
+    "quote": "buzz pack validate ./my-pack"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1145",
+    "quote": "Schema-validates `plugin.json`; checks `.persona.md` required identity fields; validates behavioral config fields"
+   }
+  ]
+ },
+ {
+  "id": "f-67",
+  "title": "buzz pack packaging command with --output producing .buzzpack",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "853",
+    "quote": "buzz pack ./my-pack --output my-pack-1.2.0.buzzpack"
+   }
+  ]
+ },
+ {
+  "id": "f-68",
+  "title": "buzz install command accepting local .buzzpack path or HTTPS URL",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "854",
+    "quote": "buzz install ./my-pack-1.2.0.buzzpack"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "855",
+    "quote": "buzz install https://example.com/releases/my-pack-1.2.0.buzzpack"
+   }
+  ]
+ },
+ {
+  "id": "f-69",
+  "title": "Required .buzzpack.sha256 checksum file; verify before install, refuse on mismatch; HTTP checksum fetched from same base URL",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "859-860",
+    "quote": "Zip packs **must** ship with `<pack-name>-<version>.buzzpack.sha256`"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "860-861",
+    "quote": "buzz-acp **must** verify before installation and refuse on mismatch"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "861-862",
+    "quote": "the checksum file is fetched from the same base URL"
+   }
+  ]
+ },
+ {
+  "id": "f-70",
+  "title": "pack.lock Phase 1 format recording source, sha256, version, installed_at per pack id",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "866-877",
+    "quote": "Phase 1 installs record the installed pack in `pack.lock` alongside the pack directory"
+   }
+  ]
+ },
+ {
+  "id": "f-71",
+  "title": "Phase 2 git install syntaxes: github: shorthand, @tag pinning, git+https URLs",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "881-885",
+    "quote": "buzz install github:example/meadow-security-team@v1.2.0"
+   }
+  ]
+ },
+ {
+  "id": "f-72",
+  "title": "pack.lock for git installs records resolved commit SHA; verified on install",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "887-898",
+    "quote": "`pack.lock` for git installs records the resolved commit SHA"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1012",
+    "quote": "`pack.lock` pins the resolved commit SHA; buzz-acp verifies on install"
+   }
+  ]
+ },
+ {
+  "id": "f-73",
+  "title": "Phase 3 App Store UI: Buzz-hosted registry, API-compatible with OPS registries (details TBD)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "902-903",
+    "quote": "A Buzz-hosted registry and in-app browser for discovering and installing packs"
+   }
+  ]
+ },
+ {
+  "id": "f-74",
+  "title": "Installed pack location ~/.buzz/packs/<pack-id>/, read by buzz-acp at agent startup",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "907-908",
+    "quote": "Installed packs live at `~/.buzz/packs/<pack-id>/`."
+   }
+  ]
+ },
+ {
+  "id": "f-75",
+  "title": "Desktop Agents section import accepts .agent.json or .agent.png snapshots",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "916",
+    "quote": "Accepts `.agent.json` or `.agent.png` (an agent snapshot)."
+   }
+  ]
+ },
+ {
+  "id": "f-76",
+  "title": "Desktop Agent teams import accepts .team.json/.team.png (buzz-team-snapshot v1); persona-pack .zip rejected with error",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "917-919",
+    "quote": "Accepts `.team.json` or `.team.png` (a `buzz-team-snapshot v1`)"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "918-919",
+    "quote": "A persona-pack `.zip` is rejected outright with an error"
+   }
+  ]
+ },
+ {
+  "id": "f-77",
+  "title": "Persona packs and desktop snapshots are separate non-interchangeable formats; no conversion command either direction",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "921",
+    "quote": "**Persona packs and desktop snapshots are two separate, non-interchangeable formats today.**"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "924-925",
+    "quote": "Neither format converts into the other"
+   }
+  ]
+ },
+ {
+  "id": "f-78",
+  "title": "buzz pack inspect command (inspection; resolved config usable as reference for manual recreation)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "922-923",
+    "quote": "validated and inspected via `buzz pack validate` / `buzz pack inspect`"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "926-927",
+    "quote": "using `buzz pack inspect`'s resolved config as reference"
+   }
+  ]
+ },
+ {
+  "id": "f-79",
+  "title": "Delivery mechanism summary: skill copy is the only filesystem write; all other components delivered via protocol, env vars, or prefix",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "935-944",
+    "quote": "buzz-acp will copy `skills/` → `$AGENT_CWD/.agents/skills/`"
+   }
+  ]
+ },
+ {
+  "id": "f-80",
+  "title": "[System] block prepended to user message text by format_prompt() in queue.rs; NOT injected into actual system prompt",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "954-955",
+    "quote": "`format_prompt()` in `queue.rs` prepends a `[System]` block to the **user message text**"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "956-957",
+    "quote": "it is NOT injected into the agent's actual system prompt"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "149",
+    "quote": "currently delivered as a `[System]` prefix in the user message text"
+   }
+  ]
+ },
+ {
+  "id": "f-81",
+  "title": "[System] block contents: persona prompt, Team Instructions, available-skills list with load() usage line",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "961-972",
+    "quote": "Available skills: code-review, security-review, shared"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "971",
+    "quote": "Load a skill with: load(source: \"skill-name\")"
+   }
+  ]
+ },
+ {
+  "id": "f-82",
+  "title": "True system prompt injection planned (PF-1): extend_system_prompt() once at session creation instead of per-turn prefix",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "976-978",
+    "quote": "calling `agent.extend_system_prompt()` after `create_agent_for_session()` in `on_new_session()`"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1144",
+    "quote": "Current `[System]` prefix re-sends persona prompt on every turn"
+   }
+  ]
+ },
+ {
+  "id": "f-83",
+  "title": "Anti-pattern reference table (nonexistent goose flags, .mdc files, root skills/, SSE, parent-process GOOSE_MODEL, defaults deep-merge expectation)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "982-993",
+    "quote": "`--skill-path` flag does not exist in goose"
+   }
+  ]
+ },
+ {
+  "id": "f-84",
+  "title": "Secret management: never embed secrets; ${VAR_NAME} references in env blocks; future refusal to start on unresolved vars",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1001-1005",
+    "quote": "Never embed secrets in pack files. Use `${VAR_NAME}` references in all `env` blocks."
+   }
+  ]
+ },
+ {
+  "id": "f-85",
+  "title": "Hook security: hooks run with buzz-acp privileges; display hook commands before first execution (Phase 2 feature)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1017",
+    "quote": "Hooks run with buzz-acp's privileges — significant attack surface."
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1019-1020",
+    "quote": "display hook commands before first execution (Phase 2 feature)"
+   }
+  ]
+ },
+ {
+  "id": "f-86",
+  "title": "V6 (buzz-namespaced) to current format migration field mapping",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1034-1049",
+    "quote": "Field mapping from V6 `.persona.md` to current `.persona.md`"
+   }
+  ]
+ },
+ {
+  "id": "f-87",
+  "title": "Pre-V6 flat JSON persona to .persona.md migration mapping (system_prompt to markdown body, channels to subscribe)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1084-1092",
+    "quote": "Field mapping from flat JSON (`personas/lep.json`) to `.persona.md`"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1088",
+    "quote": "`system_prompt` | Markdown body (after closing `---`)"
+   }
+  ]
+ },
+ {
+  "id": "f-88",
+  "title": "Backward compatibility: V6 namespaced buzz: block format not supported; only flat top-level fields accepted",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1102-1104",
+    "quote": "The V6 namespaced `buzz:` block format is not supported."
+   }
+  ]
+ },
+ {
+  "id": "f-89",
+  "title": "Multi-pack skill name collision: first-installed pack wins silently under no-overwrite rule",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1123-1125",
+    "quote": "the no-overwrite rule means the first-installed wins silently"
+   }
+  ]
+ },
+ {
+  "id": "f-90",
+  "title": "Open questions and future work (session/set_model, CONTEXT_FILE_NAMES, skill versioning, pack signing, multi-pack conflicts, buzz pack init, hot reload, marketplace, dependencies, handoff)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1110-1130",
+    "quote": "The ACP runtime implements `on_set_model()` (ACP unstable feature)"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1134",
+    "quote": "`buzz pack init` scaffolding; hot reload of skills/instructions; skill marketplace; pack dependencies"
+   }
+  ]
+ },
+ {
+  "id": "f-91",
+  "title": "Planned features table PF-1 through PF-6 (PF-2 and PF-6 marked Implemented)",
+  "spec_citations": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1138-1149",
+    "quote": "Features required by this spec but not yet implemented."
+   }
+  ]
+ }
+]

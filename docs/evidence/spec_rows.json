@@ -1,0 +1,2597 @@
+[
+ {
+  "id": "f-01",
+  "claim": "Persona Pack is a superset of OPS; OPS consumers safely ignore unknown fields",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "126-129",
+    "quote": "plugin.json is an OPS superset and may carry fields from other tools"
+   },
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "79-121",
+    "quote": "pub struct PackManifest {"
+   },
+   {
+    "file": "crates/buzz-persona/src/validate.rs",
+    "lines": "99-118",
+    "quote": "Known top-level keys in `plugin.json`"
+   },
+   {
+    "file": "crates/buzz-persona/src/validate.rs",
+    "lines": "604-607",
+    "quote": "OPS fields should not trigger unknown key errors"
+   }
+  ],
+  "notes": "Buzz's side of the contract is implemented: OPS metadata fields sit at top level alongside Buzz extensions, and the parser (RawManifest, no deny_unknown_fields) silently tolerates foreign/unknown fields; validate emits only advisory warnings and accepts OPS-standard keys ($schema, repository, engines...). The 'OPS consumers ignore unknown fields' half concerns external tools and is untestable in-repo. Example pack at examples/meadow-core/.plugin/plugin.json uses the $schema URL."
+ },
+ {
+  "id": "f-05",
+  "claim": "personas manifest field is the authoritative list of persona file paths",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "102-104",
+    "quote": "Paths to `.persona.md` files (pack-relative)."
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "158-167",
+    "quote": "for rel_path in &manifest.personas {"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "119-124",
+    "quote": "pack contains zero personas"
+   }
+  ],
+  "notes": "load_pack reads exactly the files listed in `personas` (each safe_resolve'd against the pack root, missing file = PersonaNotFound error); no directory scanning of agents/ occurs, so the list is authoritative. Zero personas is a hard error at resolve and validate (validate.rs 189-192)."
+ },
+ {
+  "id": "f-09",
+  "claim": "defaults manifest object provides pack-wide behavioral defaults resolved before per-persona configurations",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "43-70",
+    "quote": "Persona-level values take precedence; these fill in the gaps."
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "405-410",
+    "quote": "let resolved = resolve_persona_config(&fm_json, pack_defaults);"
+   },
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "41-46",
+    "quote": "Persona field present (non-null) → use persona value"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "700-733",
+    "quote": "assert_eq!(p.model.as_deref(), Some(\"claude-3-sonnet\"));"
+   }
+  ],
+  "notes": "Defaults semantics (levels 3-5 precedence) are fully implemented in buzz-persona and applied at pack-load time. Caveat on the second citation: buzz-acp itself never loads packs — grep 'buzz_persona' in crates/buzz-acp/src yields 0 hits (the Cargo.toml dependency at crates/buzz-acp/Cargo.toml:22 is unused in code); the only consumers of resolve_pack/load_pack are buzz-cli (`buzz pack validate`/`inspect`, crates/buzz-cli/src/commands/pack.rs:24,62). The desktop passes resolved config to buzz-acp via env vars instead."
+ },
+ {
+  "id": "f-13",
+  "claim": "Identity fields: name/display_name/description required; avatar, version (defaults to pack version), author optional",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "220-237",
+    "quote": "ok_or(PersonaError::MissingField(\"name\".into()))"
+   },
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "108-119",
+    "quote": "pub version: Option<String>,"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "223-228",
+    "quote": "LoadedPersona has no per-persona version field"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "228",
+    "quote": "let version = pack_version.to_owned();"
+   }
+  ],
+  "notes": "Required fields (name/display_name/description) enforced including non-empty checks; avatar/version/author optional — matches. Divergence: frontmatter `version` is parsed (persona.rs 116) but dropped when building LoadedPersona (pack.rs 77-98 has no version field), so ResolvedPersona.version is ALWAYS the pack version even when a persona declares its own — not 'defaults to pack version if omitted'. Minor: uniqueness within pack enforced (resolve.rs 125-131), but names allow uppercase [a-zA-Z0-9_-] (validate.rs 176-182) while spec says lowercase."
+ },
+ {
+  "id": "f-17",
+  "claim": "Persona hooks frontmatter field (harness-managed lifecycle hooks)",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "81-93",
+    "quote": "Lifecycle hooks (paths are pack-relative)."
+   },
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "164-165",
+    "quote": "pub hooks: Option<Hooks>,"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "57-58",
+    "quote": "Hooks (parsed, not executed — reserved for future use, not yet wired)"
+   }
+  ],
+  "notes": "The frontmatter field exists with on_start/on_stop/on_message and deny_unknown_fields (typo 'on_init' is a parse error, persona.rs 424-430), and is carried through pack.rs 419-424 into ResolvedHooks (resolve.rs 347-357, paths kept raw pending safe_resolve). Execution is deliberately unimplemented, which matches the spec's own Section 9 implementation note ('parsed and validated at pack load time but not yet executed')."
+ },
+ {
+  "id": "f-21",
+  "claim": "[Base] layer compiled into buzz-acp, identical for every agent (platform identity, tool reference, workspace layout, polling)",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-acp/src/lib.rs",
+    "lines": "1591-1597",
+    "quote": "Some(include_str!(\"base_prompt.md\"))"
+   },
+   {
+    "file": "crates/buzz-acp/src/base_prompt.md",
+    "lines": "1",
+    "quote": "You are operating inside the Buzz platform"
+   },
+   {
+    "file": "crates/buzz-acp/src/base_prompt.md",
+    "lines": "83",
+    "quote": "poll with `buzz messages get --channel <UUID> --since <ts>`"
+   },
+   {
+    "file": "crates/buzz-acp/src/base_prompt.md",
+    "lines": "95-111",
+    "quote": "## Workspace Layout"
+   },
+   {
+    "file": "crates/buzz-acp/src/config.rs",
+    "lines": "402-414",
+    "quote": "env = \"BUZZ_ACP_NO_BASE_PROMPT\""
+   }
+  ],
+  "notes": "Compiled-in static string shared by all agents in the process; framed via base_section() (queue.rs 1387-1389) for legacy agents and framed_system_prompt() (pool.rs 1262-1283) for session/new delivery. Covers platform identity, workspace layout, and polling; the spec's 'MCP tool reference' row is realized as the buzz CLI command table (base_prompt.md 9-34) rather than a literal MCP server tool reference. BUZZ_ACP_NO_BASE_PROMPT and BUZZ_ACP_BASE_PROMPT_FILE both implemented (config.rs 873-880 reads the override file)."
+ },
+ {
+  "id": "f-25",
+  "claim": "Skill path resolution and runtime copying to .agents/skills/ is planned, not yet implemented",
+  "status": "confirmed",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "60-61",
+    "quote": "Skills (bare names — reserved for future use, not yet wired)"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "243-249",
+    "quote": "Determine which skills go to which persona."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep '\\.agents/skills|agents.skills' over entire repo",
+    "Grep -i 'skills_dir|copy_skill|skill.*copy|copy.*skill' excluding crates/buzz-persona",
+    "grep -rn 'skill' crates/buzz-acp/src"
+   ],
+   "false_positives": "7 files matched .agents/skills: buzz-agent hints.rs/tests (skill DISCOVERY from the dir, not copying), desktop nest.rs/util.rs/discovery (write/symlink only the built-in buzz-cli SKILL.md; nest.rs:455 'copy user's SKILL.md' is a migration of that single built-in skill), plus the spec itself. crates/buzz-acp/src contains the string 'skill' zero times.",
+   "falsifier": "Any code that copies LoadedPack.skills_dir / pack skills/ contents into $AGENT_CWD/.agents/skills at deploy or install time."
+  },
+  "notes": "Matches the spec's own claim: buzz-persona computes the per-persona skill-name mapping (resolve_skills, pack.rs 249-315 — pure, no filesystem writes) and stores declared paths, but nothing anywhere copies pack skills into an agent working directory."
+ },
+ {
+  "id": "f-29",
+  "claim": "Skill load key is the name: field from SKILL.md frontmatter",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "86-108",
+    "quote": "let name = map.get(\"name\")"
+   },
+   {
+    "file": "crates/buzz-agent/src/builtin.rs",
+    "lines": "57",
+    "quote": "let entry = match skills.iter().find(|s| s.name == name) {"
+   },
+   {
+    "file": "crates/buzz-agent/src/builtin.rs",
+    "lines": "13",
+    "quote": "pub const LOAD_SKILL_TOOL: &str = \"load_skill\";"
+   },
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "100-105",
+    "quote": "unwrap_or(\"\")"
+   }
+  ],
+  "notes": "Core claim holds: the load key is the SKILL.md frontmatter `name:` (required, non-empty; skill silently skipped when frontmatter fails, hints.rs 128-135, with no directory-name fallback). Divergences from the cited spec text: invocation is the built-in `load_skill(name: ...)` tool, not `load(source: \"skill-name\")` (the string 'load(source' appears nowhere in code, only in the spec); and `description:` is NOT required — it defaults to empty string, unlike the spec's SkillMetadata struct which requires both fields."
+ },
+ {
+  "id": "f-33",
+  "claim": "Skills not auto-loaded; explicit load call; available skills listed in user message prefix by buzz-acp",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-agent/src/builtin.rs",
+    "lines": "3-5",
+    "quote": "load skill content on demand rather than having every skill inlined"
+   },
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "239-247",
+    "quote": "Use the `load_skill` tool to read the full content"
+   },
+   {
+    "file": "crates/buzz-agent/tests/hints_integration.rs",
+    "lines": "251-252",
+    "quote": "loaded into the system prompt as metadata only"
+   },
+   {
+    "file": "crates/buzz-agent/src/agent.rs",
+    "lines": "286-290",
+    "quote": "Inject the built-in load_skill tool when skills are available."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "grep -rn 'skill' crates/buzz-acp/src",
+    "Grep 'Available skills|load\\(source' repo-wide excluding PERSONA_PACK_SPEC.md"
+   ],
+   "false_positives": "3 hits for the second pattern were 'sourceMessages'/'sanitize...(source' code, unrelated. crates/buzz-acp/src has zero occurrences of 'skill'.",
+   "falsifier": "buzz-acp adding an 'Available skills:' block to its user-message prefix (queue.rs format_prompt) or [System] assembly."
+  },
+  "notes": "On-demand loading with an explicit call is implemented — but in the buzz-agent runtime: skills are listed under '## Available Skills' in the runtime's own system prompt (built by hints.rs from $AGENT_CWD/.agents|.goose|.claude/skills) with the `load_skill` tool. buzz-acp does NOT list skills in the user message prefix as the spec states; it contains no skills code at all."
+ },
+ {
+  "id": "f-37",
+  "claim": "Pack-level .mcp.json format with mcpServers object (command/args/env)",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "201-222",
+    "quote": "let path = pack_root.join(\".mcp.json\");"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "283-293",
+    "quote": "if let Some(servers_obj) = shared.get(\"mcpServers\")"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "311-338",
+    "quote": "let command = config.get(\"command\").and_then(|v| v.as_str())?.to_owned();"
+   }
+  ],
+  "notes": "Loads .mcp.json from the manifest's mcp_config path or the pack-root default, parses the documented mcpServers name→{command,args,env} shape, merges with per-persona frontmatter servers (persona wins on name collision, resolve.rs 295-300), and passes ${VAR} env values through as literals (test mcp_env_literals_preserved, resolve.rs 493-506) — consistent with the spec's 'interpolation planned' note."
+ },
+ {
+  "id": "f-41",
+  "claim": "instructions.md appended to persona prompt in user message prefix; no file written to disk",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-acp/src/queue.rs",
+    "lines": "1441-1447",
+    "quote": "sections.push(format!(\"[Team Instructions]\\n{team}\"));"
+   },
+   {
+    "file": "crates/buzz-acp/src/pool.rs",
+    "lines": "1304-1317",
+    "quote": "Append the team-owned instruction section after `[System]` and before core memory."
+   },
+   {
+    "file": "crates/buzz-acp/src/pool.rs",
+    "lines": "894-910",
+    "quote": "Standard protocol-v2 agents receive it in `session/new`"
+   },
+   {
+    "file": "desktop/src-tauri/src/managed_agents/runtime.rs",
+    "lines": "727-732",
+    "quote": "command.env(\"BUZZ_ACP_TEAM_INSTRUCTIONS\", instructions);"
+   }
+  ],
+  "notes": "No file is written to the agent workspace — instructions flow desktop env var → config.team_instructions (config.rs 1070-1075) → in-memory prompt assembly. Divergences: rendered as a separate '[Team Instructions]' section after [System], not appended inside the [System] block under '--- # Team Instructions'; and for protocol_version >= 2 agents it is delivered once via the session/new systemPrompt (system role), not the per-turn user message prefix the spec describes as current."
+ },
+ {
+  "id": "f-45",
+  "claim": "hooks/hooks.json pack-level hook file (on_start/on_stop/on_message) applying to all agents",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "114-116",
+    "quote": "Path to `hooks/hooks.json`."
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "111-112",
+    "quote": "hooks_config is intentionally omitted: hooks are a runtime concern"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "grep -rn 'hooks_config' --include=*.rs .",
+    "Grep 'hooks\\.json|on_start|on_stop|on_message' repo-wide excluding PERSONA_PACK_SPEC.md"
+   ],
+   "false_positives": "6 hooks_config hits, all in buzz-persona (manifest field, RawManifest, validate KNOWN_MANIFEST_KEYS, pack.rs omission comment) — none opens the file. on_message hits elsewhere (buzz-pubsub conn_control.rs, desktop native_websocket.rs) are websocket callback APIs, unrelated. docs/MCP_DRIVEN_HOOKS.md describes a different buzz-agent MCP-tool hook system (_Stop/_PostCompact), not pack hooks.json.",
+   "falsifier": "Any code that reads/parses the hooks_config path or hooks/hooks.json and applies pack-level hooks to agents."
+  },
+  "notes": "Only the manifest path field is parsed and then deliberately dropped by the loader; no parser or consumer for the pack-level hooks.json file format exists anywhere (buzz-acp, desktop, or buzz-persona). Per-persona frontmatter hooks parse (see f-17) but are also never executed."
+ },
+ {
+  "id": "f-49",
+  "claim": "on_message hook contract: stdin UTF-8 input, read-only, 5s timeout with SIGKILL, output logged at DEBUG",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "57-58",
+    "quote": "parsed, not executed — reserved for future use, not yet wired"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "343-346",
+    "quote": "Since hooks are not executed in this PR, we store them as-is."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "grep -ri 'hook' crates/buzz-acp/src",
+    "Grep -i 'SIGKILL|kill.*hook|hook.*timeout' repo-wide excluding PERSONA_PACK_SPEC.md"
+   ],
+   "false_positives": "1 hit in buzz-acp: pool.rs:6113 'NIP-AM emit-hook unit tests' comment, unrelated to lifecycle hooks. SIGKILL hits are agent child-process shutdown paths (acp.rs 416-439, 2207-2236) and buzz-dev-mcp shell cleanup. docs/MCP_DRIVEN_HOOKS.md's 2.5s-timeout hooks are MCP tools called by buzz-agent (_Stop/_PostCompact), a different mechanism with no stdin/SIGKILL contract.",
+   "falsifier": "buzz-acp's dispatch loop invoking ResolvedHooks.on_message as a shell command with stdin piping, a 5s SIGKILL timeout, and DEBUG-level output capture."
+  },
+  "notes": "Hooks never execute anywhere in the repo, so no part of the on_message contract (stdin delivery, message-drop on non-zero exit, 5s SIGKILL, DEBUG logging) exists."
+ },
+ {
+  "id": "f-53",
+  "claim": "Operator env var precedence: buzz-acp MUST NOT override env vars already set in the parent environment",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-acp/src/acp.rs",
+    "lines": "469-471",
+    "quote": "operator precedence wins: skip injection if already set in the parent environment"
+   },
+   {
+    "file": "crates/buzz-acp/src/acp.rs",
+    "lines": "503-511",
+    "quote": "if std::env::var_os(key).is_none() { cmd.env(key, value); }"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "359-364",
+    "quote": "ACP is responsible for filtering based on operator precedence (level 1)"
+   }
+  ],
+  "notes": "AcpClient::spawn takes extra_env (acp.rs 451-455) and checks the parent environment per key before injecting — operator values win, matching PF-6 which the spec marks Implemented. Regression test at acp.rs 2969-2988. The desktop spawn applies the same parent-env check for runtime default env (desktop runtime.rs 720-725). CODEX_CONFIG has a documented special recursive-merge path (acp.rs 246-260) that still preserves operator keys."
+ },
+ {
+  "id": "f-57",
+  "claim": "Empty object semantics: triggers: {} overrides pack default entirely; sub-fields fall to built-in defaults",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "44-46",
+    "quote": "Empty array `[]` or object `{}`  → present, overrides default"
+   },
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "143-145",
+    "quote": "(Some(v), _) if !v.is_null() => parse_triggers(v),"
+   },
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "177-198",
+    "quote": ".and_then(|v| v.as_bool()).unwrap_or(true)"
+   },
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "354-371",
+    "quote": "All sub-fields fall to built-in defaults."
+   }
+  ],
+  "notes": "triggers: {} is treated as present (not null), shallow-replaces the pack default, and parse_triggers fills missing sub-fields with built-ins (mentions=true, keywords=[], all_messages=false) — exactly the spec's example. subscribe: [] similarly stays Some(empty) as intentional override (merge.rs 105-125; persona.rs tests 584-599); null falls through (merge.rs 66-68, test 224-229)."
+ },
+ {
+  "id": "f-61",
+  "claim": "Unknown keys: validation warning in defaults, hard error in persona frontmatter, WARN-and-ignore at deploy",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/validate.rs",
+    "lines": "317-331",
+    "quote": "report.warn(format!(\"plugin.json defaults: unknown key \\\"{key}\\\"\"));"
+   },
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "173-175",
+    "quote": "Unknown keys are rejected — typos cause parse errors instead of silent drops."
+   },
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "128-129",
+    "quote": "Unknown fields are silently ignored here; the validator issues advisory warnings"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep -i 'unknown key' repo-wide excluding PERSONA_PACK_SPEC.md"
+   ],
+   "false_positives": "Hits in git-sign-nostr (envelope keys) and docs/nips are unrelated protocols; all pack-related hits live in validate.rs (validate-time only).",
+   "falsifier": "A tracing::warn for unknown manifest/defaults keys in the load path (manifest.rs parse_manifest or pack.rs load_pack) or in any deploy-time consumer."
+  },
+  "notes": "Two of three legs match: `buzz pack validate` warns on unknown top-level/defaults/triggers keys (catches 'temprature'), and persona frontmatter uses deny_unknown_fields hard errors (test persona.rs 415-422; surfaced as validate errors, validate.rs 730-753). Divergence: at load ('deploy') time unknown manifest keys are silently ignored with NO WARN log — the spec's 'WARN: Unknown key ... ignoring' behavior does not exist; behavior is fail-soft but silent."
+ },
+ {
+  "id": "f-65",
+  "claim": ".buzzpack archive format: pack distributed as zip file (Phase 1)",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "crates/buzz-cli/src/lib.rs",
+    "lines": "1780-1791",
+    "quote": "Subcommands for `buzz pack`."
+   },
+   {
+    "file": "crates/buzz-cli/src/lib.rs",
+    "lines": "2272",
+    "quote": "assert_eq!(names(&cmd, \"pack\"), vec![\"inspect\", \"validate\"]);"
+   },
+   {
+    "file": "crates/buzz-cli/src/commands/pack.rs",
+    "lines": "1-3",
+    "quote": "These commands operate on local pack directories. No relay connection needed."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep -i 'buzzpack' repo-wide",
+    "grep -rn 'buzz install' --include=*.rs --include=*.md excluding the spec",
+    "grep 'pack\\.lock|\\.buzz/packs' --include=*.rs,*.ts,*.tsx,*.toml"
+   ],
+   "false_positives": "'buzzpack' matched exactly 1 file: PERSONA_PACK_SPEC.md itself. Zip-handling code exists for desktop managed-node bundles (commands/agent_discovery) and is unrelated to packs. 'buzz install', 'pack.lock', and '~/.buzz/packs' have zero hits.",
+   "falsifier": "A `buzz pack --output`/`buzz install` command, any .buzzpack reader/writer, or a pack.lock writer."
+  },
+  "notes": "The CLI has only `buzz pack validate` and `buzz pack inspect` operating on directories. No archive builder, no installer, no pack.lock, no ~/.buzz/packs install location anywhere in the repo."
+ },
+ {
+  "id": "f-69",
+  "claim": "Required .buzzpack.sha256 checksum: verify before install, refuse on mismatch, fetch from same base URL",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "crates/buzz-cli/src/commands/pack.rs",
+    "lines": "1-3",
+    "quote": "These commands operate on local pack directories."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep -i 'sha256|checksum' crates/buzz-persona",
+    "Grep -i 'install|sha256|zip' crates/buzz-cli/src"
+   ],
+   "false_positives": "In buzz-persona, sha256/checksum appear only in the spec. buzz-cli sha256 usage (client.rs 7-98, 1135-1212) is Blossom media-upload hashing and media path validation — roughly 30 hits inspected, all unrelated to pack integrity. workflows.rs sha256 is approval-token hashing.",
+   "falsifier": "Install code that downloads/reads <pack>-<version>.buzzpack.sha256, compares digests, and aborts on mismatch."
+  },
+  "notes": "No pack install pipeline exists at all (see f-65), so no checksum generation, verification, or same-base-URL fetch exists either."
+ },
+ {
+  "id": "f-73",
+  "claim": "Phase 3 App Store UI: Buzz-hosted registry, OPS-API-compatible (details TBD)",
+  "status": "confirmed",
+  "evidence": [
+   {
+    "file": "desktop/src-tauri/src/managed_agents/types/catalog_source.rs",
+    "lines": "6-11",
+    "quote": "Where a persona copy came from in another owner's shared catalog."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep -i 'registry|app store|marketplace' desktop/src",
+    "grep -rni 'open-plugin-spec|open_plugin' --include=*.rs,*.ts,*.tsx,*.json"
+   ],
+   "false_positives": "11 desktop files matched: voice-model registry settings, huddle participant lists, keyboard shortcuts — none is a pack registry. 'open-plugin-spec' appears only as $schema URL strings in validate.rs:573 (test fixture) and examples/meadow-core/.plugin/plugin.json:2. The desktop 'catalog' (CatalogSource) is peer-to-peer persona sharing over Nostr publications, not a Buzz-hosted pack registry.",
+   "falsifier": "An in-app pack-store browser, a Buzz-hosted registry service, or an OPS-registry API client."
+  },
+  "notes": "Consistent with the spec: Phase 3 is explicitly TBD and nothing resembling a pack registry or in-app pack browser is implemented."
+ },
+ {
+  "id": "f-77",
+  "claim": "Persona packs and desktop snapshots are separate non-interchangeable formats; no conversion command either direction",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+    "lines": "33-34",
+    "quote": "[\".persona.md\", \".persona.json\", \".persona.png\", \".zip\"];"
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+    "lines": "41-43",
+    "quote": "Export an .agent.json or .agent.png snapshot instead."
+   },
+   {
+    "file": "desktop/src-tauri/src/managed_agents/team_snapshot.rs",
+    "lines": "18",
+    "quote": "**ZIP is NOT in v1** — consistent with the agent-snapshot policy."
+   },
+   {
+    "file": "desktop/src/features/agents/ui/AgentsView.tsx",
+    "lines": "648",
+    "quote": "accept=\".team.json,.team.png\""
+   },
+   {
+    "file": "crates/buzz-cli/src/lib.rs",
+    "lines": "1780-1791",
+    "quote": "pub enum PackCmd {"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'team\\.json|team\\.png|agent\\.json|agent\\.png|team-snapshot' desktop/src-tauri/src",
+    "Grep -i 'zip' desktop (frontend + tauri)",
+    "buzz-cli PackCmd enumeration (only Validate/Inspect)"
+   ],
+   "false_positives": "Desktop zip hits are managed-node bundle validation and generic file cards, not pack import. No command converts a pack to a snapshot or back.",
+   "falsifier": "A command/UI flow that ingests a pack directory/.zip as a snapshot, or exports a snapshot to .persona.md/pack layout."
+  },
+  "notes": "Agents import accepts .agent.json/.agent.png; legacy persona files AND .zip are rejected with an error directing users to snapshots (spec's wording says the team import rejects zip — in code the rejection lives in the agent-snapshot import path and the team file picker filters to .team.json/.team.png). Packs are inspected via `buzz pack validate`/`inspect` only; no conversion exists in either direction. Snapshot formats: agent_snapshot.rs 10-17 ('Zip is NOT in v1 — deferred to v2 for skills bundling'), team_snapshot.rs 1-18 (buzz-team-snapshot v1)."
+ },
+ {
+  "id": "f-81",
+  "claim": "[System] block contents: persona prompt, Team Instructions, available-skills list with load() usage line",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-acp/src/queue.rs",
+    "lines": "1438-1440",
+    "quote": "sections.push(format!(\"[System]\\n{sp}\"));"
+   },
+   {
+    "file": "crates/buzz-acp/src/queue.rs",
+    "lines": "1441-1447",
+    "quote": "sections.push(format!(\"[Team Instructions]\\n{team}\"));"
+   },
+   {
+    "file": "crates/buzz-acp/src/pool.rs",
+    "lines": "1273",
+    "quote": "(None, Some(sp)) => Some(format!(\"[System]\\n{sp}\")),"
+   },
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "239-247",
+    "quote": "out.push_str(\"\\n## Available Skills\\n\");"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'Available skills|load\\(source' repo-wide excluding the spec",
+    "grep -rn 'skill' crates/buzz-acp/src"
+   ],
+   "false_positives": "The 3 non-spec hits for the first pattern were unrelated identifiers (sourceMessages, sanitize source). buzz-acp contains no skills code.",
+   "falsifier": "buzz-acp appending 'Available skills: ...' and a load() usage line to its [System] block."
+  },
+  "notes": "The [System] block carries the persona prompt (user-message prefix for legacy agents; session/new systemPrompt for protocol v2 — spec Section 12 documents only the user-message path and PF-1 marks system-role injection as planned, but it exists). Team instructions ship as a separate '[Team Instructions]' labeled section, not '--- # Team Instructions' inside [System]. The available-skills list with the 'Load a skill with: load(source: ...)' line is entirely absent from buzz-acp; skill listing exists only in the buzz-agent runtime's own system prompt, using `load_skill`."
+ },
+ {
+  "id": "f-85",
+  "claim": "Hook security: hooks run with buzz-acp privileges; display hook commands before first execution (Phase 2)",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "343-346",
+    "quote": "Since hooks are not executed in this PR, we store them as-is."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "grep -ri 'hook' crates/buzz-acp/src",
+    "Grep -i 'SIGKILL|kill.*hook|hook.*timeout' repo-wide excluding the spec"
+   ],
+   "false_positives": "Same as f-49: one unrelated NIP-AM test comment in pool.rs; docs/MCP_DRIVEN_HOOKS.md is a distinct buzz-agent MCP-tool mechanism, not pack shell hooks; no hook-command display/confirmation surface exists anywhere.",
+   "falsifier": "Hook execution wiring in buzz-acp plus a first-run UI/log that displays hook commands before executing them."
+  },
+  "notes": "Hooks are never executed, so the privileges concern is not yet exercisable and the Phase-2 'display hook commands before first execution' feature does not exist. The spec itself frames the display as a Phase 2 feature; hook execution itself is also marked planned (Section 9 note) — nothing contradicts, but nothing is implemented."
+ },
+ {
+  "id": "f-89",
+  "claim": "Multi-pack skill name collision: first-installed pack wins silently under the no-overwrite rule",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "243-249",
+    "quote": "Returns a map of `persona_name → Vec<skill_name>`."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "grep -rni 'first-installed|no-overwrite|not overwritten|skipping pack' --include=*.rs",
+    "Grep '\\.agents/skills' + skill-copy greps (see f-25)",
+    "Grep -i 'buzzpack|buzz install' (see f-65)"
+   ],
+   "false_positives": "4 'not overwritten' hits are relay admin roles, desktop profile restore, and storage env-key merge — unrelated. resolve_skills (pack.rs 249-315) computes an in-memory name mapping only: no filesystem writes, no cross-pack awareness, no collision check (PF-3's collision WARN is also unimplemented — 'already exists ... skipping pack version' appears only in the spec).",
+   "falsifier": "Multi-pack installation plus skill-copy code with an existence check on $AGENT_CWD/.agents/skills (no-overwrite) — the collision behavior would then become observable."
+  },
+  "notes": "Neither pack installation nor skill copying exists, so the no-overwrite rule and its first-installed-wins consequence have no implementation anywhere. buzz-agent's discovery-time dedup (hints.rs 136-139: first directory scanned wins by name across .agents/.goose/.claude skill dirs) is a related but different mechanism operating on already-present directories, not installed packs."
+ },
+ {
+  "id": "f-02",
+  "claim": ".plugin/plugin.json manifest following OPS schema with Buzz extensions at top level",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "132",
+    "quote": "pack_root.join(\".plugin\").join(\"plugin.json\")"
+   },
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "126-129",
+    "quote": "an OPS superset and may carry fields from other tools"
+   },
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "102-120",
+    "quote": "pub pack_instructions: Option<String>,"
+   },
+   {
+    "file": "crates/buzz-persona/src/validate.rs",
+    "lines": "99-118",
+    "quote": "// Persona pack extensions"
+   }
+  ],
+  "notes": "PackManifest carries OPS fields (id/name/version/license/homepage/keywords/engines) plus top-level Buzz fields (personas, defaults, pack_instructions, mcp_config, hooks_config). Unknown fields tolerated (no deny_unknown_fields on RawManifest); validator warns on Buzz-unknown keys while whitelisting OPS keys incl. $schema."
+ },
+ {
+  "id": "f-06",
+  "claim": "pack_instructions manifest field pointing to instructions file",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "106-108",
+    "quote": "pub pack_instructions: Option<String>,"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "173-182",
+    "quote": "pack_instructions file not found: {rel}"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "33-34",
+    "quote": "Pack-owned instructions kept separate for the team model migration."
+   }
+  ],
+  "notes": "Field parsed, referenced file read (bounded) with hard error when path missing; falls back to instructions.md in pack root when field absent (pack.rs:184-191). Content flows into ResolvedPersona.pack_instructions."
+ },
+ {
+  "id": "f-10",
+  "claim": "Pack directory layout and conventions (agents/ flat, skills/ subdirs, .plugin/, optional hooks/, instructions.md, .mcp.json)",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "132-135",
+    "quote": "pack_root.join(\".plugin\").join(\"plugin.json\")"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "5-15",
+    "quote": "<name>.persona.md    ← one file per persona"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "159-160",
+    "quote": "for rel_path in &manifest.personas {"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "111-112",
+    "quote": "hooks_config is intentionally omitted: hooks are a runtime concern"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "184-232",
+    "quote": "let path = pack_root.join(\"instructions.md\");"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "129",
+    "quote": "`agents/` — all persona files. No nesting; flat directory."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'hooks_config|hooks\\.json' path=repo",
+    "Grep 'agents/' path=crates/buzz-persona/src"
+   ],
+   "false_positives": "hooks.json hits are spec text and manifest field parsing only; ~10 inspected, none read the file",
+   "falsifier": "Loader code enforcing an agents/ directory or reading hooks/hooks.json would flip the divergent parts"
+  },
+  "notes": "Implemented: .plugin/plugin.json required; skills/ one-subdir-per-skill enumerated; instructions.md and .mcp.json optional with root-default fallback; pack.lock ignored harmlessly. Divergent: 'agents/ flat, no nesting' is not enforced — persona files load from arbitrary manifest-relative paths (loader's own docs and tests use personas/); hooks/hooks.json is never read by any code despite the manifest field existing."
+ },
+ {
+  "id": "f-14",
+  "claim": "Persona skills frontmatter field (pack-relative skill directory paths)",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "121-123",
+    "quote": "pub skills: Vec<String>,"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "243-248",
+    "quote": "Skills listed in a persona's `skills:` array → only that persona"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "252-259",
+    "quote": "Normalize a persona skill path"
+   }
+  ],
+  "notes": "Frontmatter `skills:` parsed as pack-relative paths (doc comment: 'Pack-relative paths to skill directories'); resolve_skills implements the 'this agent only' scoping (claimed skills go only to the claiming persona; unclaimed shared to all), with path normalization to bare directory names. Runtime copying to $AGENT_CWD/.agents/skills/ is not implemented (spec itself marks it planned; resolve.rs:60 'reserved for future use, not yet wired')."
+ },
+ {
+  "id": "f-18",
+  "claim": "respond_to accepted as legacy alias for triggers (frontmatter and plugin.json defaults)",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "189-190",
+    "quote": "#[serde(alias = \"respond_to\")]"
+   },
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "62-63",
+    "quote": "alias = \"respond_to\")]"
+   },
+   {
+    "file": "crates/buzz-persona/src/validate.rs",
+    "lines": "124",
+    "quote": "\"respond_to\", // legacy alias — still accepted"
+   },
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "619-629",
+    "quote": "`respond_to:` is accepted as a legacy alias for `triggers:`."
+   }
+  ],
+  "notes": "Alias present on both the persona Frontmatter struct and BehavioralDefaults in the manifest; validator also checks defaults.respond_to (validate.rs:222-229). Tested in both parsers (manifest.rs:278-288)."
+ },
+ {
+  "id": "f-22",
+  "claim": "BUZZ_ACP_NO_BASE_PROMPT env var omits the [Base] section",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-acp/src/config.rs",
+    "lines": "402-405",
+    "quote": "#[arg(long, env = \"BUZZ_ACP_NO_BASE_PROMPT\")]"
+   },
+   {
+    "file": "crates/buzz-acp/src/lib.rs",
+    "lines": "1591-1597",
+    "quote": "base_prompt: if config.no_base_prompt {"
+   },
+   {
+    "file": "crates/buzz-acp/src/queue.rs",
+    "lines": "1394",
+    "quote": "base prompt (only for legacy agents without systemPrompt support)"
+   }
+  ],
+  "notes": "Flag/env sets ctx.base_prompt to None, omitting [Base] from both delivery paths (system-role at session/new for protocol v2 and user-message section for legacy agents). Companion BUZZ_ACP_BASE_PROMPT_FILE (config.rs:407-414) replaces the compiled-in default, per spec line 277-278."
+ },
+ {
+  "id": "f-26",
+  "claim": "Skills: reusable on-demand instruction sets in markdown",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "8",
+    "quote": "&[\".agents/skills\", \".goose/skills\", \".claude/skills\"];"
+   },
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "240-246",
+    "quote": "Use the `load_skill` tool to read the full content of a skill"
+   },
+   {
+    "file": "crates/buzz-agent/src/builtin.rs",
+    "lines": "3",
+    "quote": "`load_skill` — reads a skill's full SKILL.md body from disk"
+   },
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "478-482",
+    "quote": "skill body must not be inlined in system prompt"
+   }
+  ],
+  "notes": "In-repo agent runtime (buzz-agent) discovers SKILL.md files from the spec's three directories, lists name+description in the prompt, and lazily loads the body via the load_skill tool (frontmatter stripped, supporting files enumerable). Divergence detail only in the tool spelling: spec examples show load(source: ...) (goose-style); buzz-agent's tool is load_skill(name: ...)."
+ },
+ {
+  "id": "f-30",
+  "claim": "SKILL.md name: and description: required; missing/malformed frontmatter silently skips skill with no directory-name fallback",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "94-99",
+    "quote": ".filter(|s| !s.is_empty())"
+   },
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "100-105",
+    "quote": ".unwrap_or(\"\")"
+   },
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "133-135",
+    "quote": "parse_skill_frontmatter(&content) else {"
+   },
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "420-433",
+    "quote": "entry without name should be skipped"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "355-356",
+    "quote": "Both `name:` and `description:` are required fields"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'SkillMetadata' path=repo",
+    "Grep 'parse_skill_frontmatter|parse_frontmatter' path=repo"
+   ],
+   "false_positives": "The spec's SkillMetadata{name,description} struct exists nowhere in code; 13 SKILL.md-related files inspected",
+   "falsifier": "Making description required in parse_skill_frontmatter (returning None when absent) would match the spec"
+  },
+  "notes": "Matches spec: malformed/missing frontmatter or missing/empty name → skill silently skipped (else continue), and there is no fallback to the directory name. Diverges: description is NOT required — parse_skill_frontmatter defaults it to \"\" via unwrap_or(\"\"), so a SKILL.md with only name: is still discovered, contradicting spec lines 355-356/366-367."
+ },
+ {
+  "id": "f-34",
+  "claim": "SKILL.md file format (frontmatter + content); buzz pack validate does not yet enforce required metadata fields",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/validate.rs",
+    "lines": "426-429",
+    "quote": "differs from directory name"
+   },
+   {
+    "file": "crates/buzz-persona/src/validate.rs",
+    "lines": "402-405",
+    "quote": "None => continue,"
+   },
+   {
+    "file": "crates/buzz-persona/src/validate.rs",
+    "lines": "417-418",
+    "quote": "mapping.get(serde_yaml::Value::String(\"name\".into()))"
+   },
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "86-91",
+    "quote": "let rest = content.strip_prefix(\"---\\n\")?;"
+   }
+  ],
+  "notes": "Exactly as documented: advisory_check_skill_names warns when SKILL.md name differs from its directory name (tested at validate.rs:757-786), but a SKILL.md with malformed/missing frontmatter or missing name/description passes validation silently (every failure path is `continue`, never error/warn) — matching PF-5's 'remaining' status. Format (YAML frontmatter + markdown body) parsed by the runtime in hints.rs."
+ },
+ {
+  "id": "f-38",
+  "claim": "MCP merge rules: pack-level base set; name collision means per-persona entry wins entirely; merged set passed via NewSessionRequest.mcp_servers",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "270-275",
+    "quote": "Name collision: persona wins (replaces pack server with same name)."
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "295-300",
+    "quote": "by_name.insert(name.to_owned(), server);"
+   },
+   {
+    "file": "crates/buzz-acp/src/acp.rs",
+    "lines": "645-648",
+    "quote": "\"mcpServers\": mcp_servers,"
+   },
+   {
+    "file": "crates/buzz-acp/src/lib.rs",
+    "lines": "4280-4284",
+    "quote": "if config.mcp_command.is_empty() {"
+   },
+   {
+    "file": "crates/buzz-cli/src/commands/pack.rs",
+    "lines": "115-117",
+    "quote": "println!(\"    MCP servers: {}\", persona.mcp_servers.len());"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'ResolvedMcpServer|merge_mcp_servers' path=repo",
+    "Grep 'buzz_persona' path=crates/buzz-acp"
+   ],
+   "false_positives": "All merge_mcp_servers hits are inside buzz-persona (impl+tests); buzz-acp has zero buzz_persona usage",
+   "falsifier": "buzz-acp or desktop code feeding ResolvedPersona.mcp_servers into session_new_full's mcp_servers argument"
+  },
+  "notes": "Merge rules 1-2 are implemented and tested in buzz_persona::resolve::merge_mcp_servers (pack .mcp.json base, persona entry replaces whole server on name collision, no partial merge, ${VAR} literals preserved). Rule 3 diverges: buzz-acp does send an mcpServers array in session/new, but it is built solely from --mcp-command (single buzz dev-mcp server); the pack-merged set is consumed only by `buzz pack inspect` (a count) and never reaches NewSessionRequest."
+ },
+ {
+  "id": "f-42",
+  "claim": "Instruction delivery anti-patterns (.mdc, rules/, AGENTS.md) and AGENTS.md/.goosehints as secondary operator mechanism",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "63-64",
+    "quote": "let path = dir.join(\"AGENTS.md\");"
+   },
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "27-31",
+    "quote": "if current.join(\".git\").exists() {"
+   },
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "55-59",
+    "quote": "Prepend ~/AGENTS.md as global layer"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep '\\.mdc|goosehints|rules-dir|rules_dir' path=repo (case-insensitive)"
+   ],
+   "false_positives": "6 hits, all inside PERSONA_PACK_SPEC.md itself; zero code reads .mdc, rules/, or .goosehints",
+   "falsifier": "Any runtime code reading .mdc files or a rules/ directory would contradict the anti-pattern claims"
+  },
+  "notes": "The positive half is real: the in-repo runtime (buzz-agent) auto-loads AGENTS.md from cwd walking up to the git root plus ~/AGENTS.md, matching 'some agent runtimes auto-load AGENTS.md from $AGENT_CWD (walking up to git root)'. The negative half holds: no code anywhere reads .mdc/rules/. .goosehints is only relevant to the external goose runtime and is not read in-repo (consistent with 'some')."
+ },
+ {
+  "id": "f-46",
+  "claim": "Per-persona hooks override pack-level hooks for that agent",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "111-112",
+    "quote": "hooks_config is intentionally omitted: hooks are a runtime concern"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "57",
+    "quote": "Hooks (parsed, not executed — reserved for future use, not yet wired)"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'on_start|on_stop|on_message|hooks_config|hooks\\.json' path=repo",
+    "Grep -i 'hook' path=crates/buzz-acp",
+    "Grep -i 'hook' path=desktop/src-tauri/src"
+   ],
+   "false_positives": "~40 hits inspected: WebSocket on_message handlers (relay/pubsub/desktop transports), NIP-AM emit-hook test comment in buzz-acp, desktop pre_publish_test_hook, mcp_hooks discovery flag, MCP _Stop/_PostCompact tools — none load pack hooks.json or merge hook configs",
+   "falsifier": "Code that parses hooks/hooks.json (pack level) and applies per-persona Hooks over it — e.g. in buzz-persona's loader or a buzz-acp hook runner"
+  },
+  "notes": "Per-persona hooks ARE parsed from frontmatter (persona.rs Hooks struct with deny_unknown_fields) and carried into ResolvedHooks, but pack-level hooks.json is never read anywhere (manifest field is parsed then deliberately dropped by the pack loader), so there is no pack-level baseline and therefore no override semantics; no hooks execute at all."
+ },
+ {
+  "id": "f-50",
+  "claim": "on_stop crash caveat: does not fire on buzz-acp crash (SIGSEGV, OOM)",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "340-346",
+    "quote": "Since hooks are not executed in this PR, we store"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "510-511",
+    "quote": "Hooks are parsed and validated at pack load time but not yet executed."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'on_stop' path=repo",
+    "Grep -i 'hook' path=crates/buzz-acp",
+    "Grep 'Command::new|std::process' cross-checked against hook paths"
+   ],
+   "false_positives": "on_stop hits: buzz-persona parse/resolve/validate/tests and spec only; no process-spawning path receives a hook command",
+   "falsifier": "A hook executor that spawns on_stop shell commands at session teardown; the crash caveat would then be observable behavior"
+  },
+  "notes": "The caveat describes runtime behavior of hook execution, and hook execution does not exist anywhere in the repo (hooks parsed only). The spec's own implementation note concedes this. Nothing to diverge from — the documented on_stop lifecycle is entirely unimplemented."
+ },
+ {
+  "id": "f-54",
+  "claim": "Deploy-time resolution: defaults merged into per-persona effective config at pack load; defaults object never forwarded to runtime",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "119-121",
+    "quote": "3. Apply pack defaults to each persona (via merge logic)"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "410",
+    "quote": "let resolved = resolve_persona_config(&fm_json, pack_defaults);"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "92-100",
+    "quote": "pub personas: Vec<ResolvedPersona>,"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "359-365",
+    "quote": "Project persona config into agent subprocess env vars."
+   }
+  ],
+  "notes": "load_pack resolves defaults into each LoadedPersona at load time; ResolvedPack/ResolvedPersona expose only the resolved per-persona values (model/temperature/subscribe/triggers/env-var projection) — no defaults object exists on any resolved/runtime-facing type. Caveat: buzz-acp itself never loads packs (no buzz_persona dependency in its src); the deploy-time pipeline lives in buzz-persona and is currently exercised by buzz-cli pack validate/inspect."
+ },
+ {
+  "id": "f-58",
+  "claim": "Shallow replacement merge semantics: no deep merge; object and array fields replaced whole",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "127-131",
+    "quote": "triggers: SHALLOW REPLACEMENT."
+   },
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "143-145",
+    "quote": "Persona has triggers — use it directly (shallow replacement)."
+   },
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "328-341",
+    "quote": "pack keywords should be lost under shallow replacement"
+   },
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "105-125",
+    "quote": "Persona has a non-null array → use it directly (may be empty)."
+   }
+  ],
+  "notes": "Simple fields: first-defined wins (merge_behavioral_config); triggers object replaced whole with missing sub-fields falling to built-in defaults (mentions=true, keywords=[], all_messages=false — parse_triggers); subscribe array replaced whole with []-means-override and null-means-fall-through semantics. All spec examples (713-714 included) covered by tests."
+ },
+ {
+  "id": "f-62",
+  "claim": "Channel # prefix is display-only convention; stripped before relay API calls",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-core/src/channel.rs",
+    "lines": "15-18",
+    "quote": "name.trim_start_matches(|c: char| c == '#' || c.is_whitespace())"
+   },
+   {
+    "file": "crates/buzz-sdk/src/builders.rs",
+    "lines": "682",
+    "quote": "let name = buzz_core::channel::canonical_channel_name(name);"
+   },
+   {
+    "file": "crates/buzz-relay/src/handlers/ingest.rs",
+    "lines": "2484",
+    "quote": "let name = buzz_core::channel::canonical_channel_name(&name);"
+   },
+   {
+    "file": "crates/buzz-acp/src/config.rs",
+    "lines": "913-917",
+    "quote": "--channels entry is not a valid UUID and will be ignored"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "809-810",
+    "quote": "buzz-acp strips the leading `#` before making any relay API calls."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep \"trim_start_matches|starts_with\\('#'\\)\" path=crates",
+    "Grep \"'#'|\\\"#\\\"\" path=crates/buzz-acp/src",
+    "Grep 'subscribe' path=desktop/src-tauri/src/managed_agents"
+   ],
+   "false_positives": "buzz-acp '#' search: 0 code hits; other trim_start_matches hits are URL-scheme stripping",
+   "falsifier": "buzz-acp code calling canonical_channel_name (or stripping '#') on persona subscribe entries before relay requests"
+  },
+  "notes": "The convention itself is implemented — '#' is stripped by buzz_core::channel::canonical_channel_name applied in SDK event builders, relay ingestion, DB layer, and desktop (canonicalChannelName.ts). Divergence: the spec attributes the stripping to buzz-acp before relay calls, but buzz-acp contains no '#' handling at all — it identifies channels strictly by UUID and never consumes persona subscribe name strings."
+ },
+ {
+  "id": "f-66",
+  "claim": "buzz pack validate command (schema-validates plugin.json, identity fields, behavioral config; warns on unknown keys/name mismatches)",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-cli/src/lib.rs",
+    "lines": "1782-1787",
+    "quote": "/// Validate a persona pack directory"
+   },
+   {
+    "file": "crates/buzz-cli/src/commands/pack.rs",
+    "lines": "24",
+    "quote": "buzz_persona::validate::validate_pack(pack_dir);"
+   },
+   {
+    "file": "crates/buzz-persona/src/validate.rs",
+    "lines": "319-322",
+    "quote": "plugin.json unknown key \\\"{key}\\\""
+   },
+   {
+    "file": "crates/buzz-persona/src/validate.rs",
+    "lines": "426-429",
+    "quote": "differs from directory name"
+   },
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "220-227",
+    "quote": "ok_or(PersonaError::MissingField(\"display_name\".into()))?;"
+   }
+  ],
+  "notes": "Full pipeline: structural validation via load_pack (manifest required fields, persona identity fields name/display_name/description non-empty, typed behavioral config), semantic checks (zero personas, duplicate/invalid/overlong names), advisory warnings for unknown manifest/defaults/triggers keys and skill-name mismatches, plus defaults.respond_to type checks (validate.rs:236-286). Matches PF-2 'Implemented' including its stated gaps (no skills:/hooks: path existence check, no SKILL.md metadata enforcement)."
+ },
+ {
+  "id": "f-70",
+  "claim": "pack.lock Phase 1 format recording source, sha256, version, installed_at per pack id",
+  "status": "absent",
+  "evidence": [],
+  "search_method": {
+   "commands": [
+    "Grep 'pack.lock|pack_lock' path=repo",
+    "Grep 'buzzpack|buzz install|installed_at' path=repo",
+    "Read crates/buzz-cli/src/lib.rs PackCmd enum"
+   ],
+   "false_positives": "All pack.lock/buzzpack hits are inside PERSONA_PACK_SPEC.md itself; buzz-cli's pack subcommands are exactly [\"inspect\", \"validate\"] (asserted at crates/buzz-cli/src/lib.rs:2272) — no install/package command exists, and installed_at appears nowhere in code",
+   "falsifier": "A `buzz install`/pack packaging command that writes a pack.lock JSON keyed by pack id with source/sha256/version/installed_at"
+  },
+  "notes": "No install flow, no .buzzpack zip handling, no sha256 verification, no lockfile reader/writer anywhere in crates/, desktop/, or scripts. The pack loader also never looks for a pack.lock file."
+ },
+ {
+  "id": "f-74",
+  "claim": "Installed pack location ~/.buzz/packs/<pack-id>/, read by buzz-acp at agent startup",
+  "status": "absent",
+  "evidence": [],
+  "search_method": {
+   "commands": [
+    "Grep '\\.buzz/packs|buzzpack' path=repo",
+    "Grep 'packs' path=crates and path=desktop/src-tauri/src",
+    "Grep 'buzz_persona' path=crates/buzz-acp"
+   ],
+   "false_positives": "'packs' hits in crates are git packfile machinery in buzz-relay (upload_pack, hydrate_packs) and spec text; desktop hits are app-data 'agents/teams' directories (migration.rs:40) and TTS chunk packing — none reference ~/.buzz/packs. buzz-acp has zero buzz_persona usage in src, so it reads no pack directory at startup",
+   "falsifier": "Code joining the home directory with \".buzz/packs/<pack-id>\" and loading packs from it in buzz-acp or buzz-cli"
+  },
+  "notes": "The closest analog is the desktop's installed-team directory (app-data agents/teams/<team-id>/ holding *.persona.md and instructions.md), which is a different location and consumed by the desktop app, not buzz-acp."
+ },
+ {
+  "id": "f-78",
+  "claim": "buzz pack inspect command (inspection; resolved config usable as reference for manual recreation)",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-cli/src/lib.rs",
+    "lines": "1788-1791",
+    "quote": "Inspect a persona pack — show metadata and effective config"
+   },
+   {
+    "file": "crates/buzz-cli/src/commands/pack.rs",
+    "lines": "61-63",
+    "quote": "let pack = buzz_persona::resolve::resolve_pack(pack_dir)"
+   },
+   {
+    "file": "crates/buzz-cli/src/commands/pack.rs",
+    "lines": "71-72",
+    "quote": "Per-persona summary (fully resolved effective config)"
+   }
+  ],
+  "notes": "Prints the fully resolved (post-merge, post-model-split) per-persona config: model/provider, temperature, max_context_tokens, subscribe, triggers, thread/broadcast replies, MCP server count, skills, avatar, system-prompt preview, and projected env vars — sufficient as the manual-recreation reference the spec describes."
+ },
+ {
+  "id": "f-82",
+  "claim": "True system prompt injection planned (PF-1): extend_system_prompt() once at session creation instead of per-turn prefix",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-acp/src/acp.rs",
+    "lines": "649-651",
+    "quote": "params[\"systemPrompt\"] = serde_json::Value::String(sp.to_owned());"
+   },
+   {
+    "file": "crates/buzz-acp/src/pool.rs",
+    "lines": "894-896",
+    "quote": "Standard protocol-v2 agents receive it in `session/new`;"
+   },
+   {
+    "file": "crates/buzz-acp/src/acp.rs",
+    "lines": "692-693",
+    "quote": "Send Goose's custom system-prompt request after `session/new`."
+   },
+   {
+    "file": "crates/buzz-acp/src/queue.rs",
+    "lines": "1363-1366",
+    "quote": "they are injected as `[Base]` and `[System]` sections."
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1144",
+    "quote": "Current `[System]` prefix re-sends persona prompt on every turn"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'extend_system_prompt|on_new_session|create_agent_for_session' path=repo"
+   ],
+   "false_positives": "Only 2 hits, both in the spec itself — the named API does not exist in code",
+   "falsifier": "An extend_system_prompt() call, or spec text updated to describe the session/new systemPrompt mechanism as current"
+  },
+  "notes": "Spec says once-at-creation injection is planned via agent.extend_system_prompt() and that the per-turn [System] prefix is current behavior. Reality: once-at-creation injection is already implemented, but via different mechanisms — bare systemPrompt field in session/new (ACP protocol v2 / buzz-agent), _meta.systemPrompt {append} for claude-agent-acp, and goose's _goose/unstable system-prompt/set request. The per-turn [System]/[Base] prefix survives only as a fallback for legacy protocol<2 agents (queue.rs format_prompt gates on has_system_prompt_support)."
+ },
+ {
+  "id": "f-86",
+  "claim": "V6 (buzz-namespaced) to current format migration field mapping",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "174-175",
+    "quote": "#[serde(rename_all = \"snake_case\", deny_unknown_fields)]"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'V6|namespaced' path=crates",
+    "Grep -i 'V6|persona_v6|legacy_persona|buzz_namespaced' path=desktop/src-tauri/src",
+    "Read desktop/src-tauri/src/migration.rs:1102-1170"
+   ],
+   "false_positives": "IpAddr::V6 branches, kubernetes Api::namespaced, blurhash literals, and desktop's legacy-persona migrations which only rewrite runtime: sprout-agent → buzz-agent (migration.rs:1127-1138) — none map buzz.* namespaced fields to top-level fields",
+   "falsifier": "A converter (in buzz-persona, buzz-cli, or desktop migration) reading a `buzz:` frontmatter block or plugin.json `buzz` object and emitting flat top-level fields"
+  },
+  "notes": "The mapping table is documentation-only guidance for manual migration; no code implements it. Consistent with the spec's own line 1104 ('V6 namespaced buzz: block format is not supported'): deny_unknown_fields on the persona frontmatter parser makes a V6 `buzz:` key a hard parse error rather than something migrated."
+ },
+ {
+  "id": "f-90",
+  "claim": "Open questions and future work (session/set_model, CONTEXT_FILE_NAMES, skill versioning, pack signing, multi-pack conflicts, buzz pack init, hot reload, marketplace, dependencies, handoff)",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-agent/src/lib.rs",
+    "lines": "247-248",
+    "quote": "\"session/set_model\" => {"
+   },
+   {
+    "file": "crates/buzz-acp/src/pool.rs",
+    "lines": "1086-1088",
+    "quote": "acp.session_set_model(session_id, model_id).await"
+   },
+   {
+    "file": "crates/buzz-acp/src/config.rs",
+    "lines": "416-418",
+    "quote": "Applied to every new ACP session after creation."
+   },
+   {
+    "file": "crates/buzz-cli/src/lib.rs",
+    "lines": "2272",
+    "quote": "names(&cmd, \"pack\"), vec![\"inspect\", \"validate\"]"
+   },
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "136-138",
+    "quote": "if seen.contains(&name) {"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'set_model|setModel' path=repo",
+    "Grep -i 'CONTEXT_FILE_NAMES|pack init|hot.reload' path=repo",
+    "Grep -i 'marketplace|handoff|skill@|signing' path=crates"
+   ],
+   "false_positives": "signing hits are git/nostr event signing (git-sign-nostr, pubsub tests); handoff hits are MCP _PostCompact compaction handoff; hot-reload hits are Flutter/desktop dev tooling — none implement the pack-related future-work items",
+   "falsifier": "For remaining items: a `buzz pack init` subcommand, CONTEXT_FILE_NAMES injection, versioned skill load keys, pack signature verification, multi-pack conflict policy, skill hot-reload, registry/marketplace client, pack dependency resolution, or in-pack handoff protocol"
+  },
+  "notes": "Divergent because open question 1 is no longer open: session/set_model is fully implemented — buzz-agent handles the method (per-session model override) and buzz-acp calls it after session/new to apply --model/BUZZ_ACP_MODEL (ModelSwitchMethod::SetModel), exactly the alternative the spec defers. The other listed items are absent as documented: no CONTEXT_FILE_NAMES, no versioned skills (dedup is first-wins by name, matching the described silent behavior), no pack signing, no multi-pack conflict policy, no `buzz pack init`, no hot reload, no marketplace, no pack dependencies, no in-pack handoff."
+ },
+ {
+  "id": "f-03",
+  "claim": "OPS metadata manifest fields ($schema, id, name, version, description, author, license, homepage, keywords) parsed from .plugin/plugin.json",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "79-121",
+    "quote": "pub id: String,"
+   },
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "87-97",
+    "quote": "pub keywords: Vec<String>,"
+   },
+   {
+    "file": "crates/buzz-persona/src/validate.rs",
+    "lines": "99-118",
+    "quote": "\"$schema\","
+   },
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "155-169",
+    "quote": "return Err(ManifestError::MissingField(\"id (empty)\".into()));"
+   }
+  ],
+  "notes": "PackManifest parses id/name/version (required, non-empty enforced) plus description, author, license, homepage, keywords, engines. $schema is not stored as a typed field but the permissive RawManifest (no deny_unknown_fields, manifest.rs:126-129) accepts it and the validator whitelists it as a known OPS key."
+ },
+ {
+  "id": "f-07",
+  "claim": "mcp_config manifest field pointing to pack-level MCP config file",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "110-112",
+    "quote": "pub mcp_config: Option<String>,"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "201-211",
+    "quote": "let shared_mcp_config = match &manifest.mcp_config {"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "213-218",
+    "quote": "let path = pack_root.join(\".mcp.json\");"
+   }
+  ],
+  "notes": "load_pack resolves the mcp_config path (safe_resolve, size-bounded read, JSON parse with McpConfigParse error) and falls back to .mcp.json at the pack root when the manifest field is omitted."
+ },
+ {
+  "id": "f-11",
+  "claim": "Prohibited pack contents (working-dir state, secrets, build artifacts) enforced by tooling",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/validate.rs",
+    "lines": "155-162",
+    "quote": "advisory_check_manifest_keys(pack_dir, &mut report);"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "117-124",
+    "quote": "6. Validate all paths resolve within `pack_root` (no path traversal)"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep pattern='secret|\\.agents|artifact' path=crates/buzz-persona/src -i",
+    "Read crates/buzz-persona/src/validate.rs (full file)",
+    "Grep pattern='hook' path=crates/buzz-acp/src -i"
+   ],
+   "false_positives": "4 hits inspected and discarded: resolve.rs:499/505 are ${MY_SECRET} literal-passthrough test fixtures; pack.rs:599-600 is a symlink-escape test file named secret.txt. validate_pack's complete check list (semantic personas, manifest keys, respond_to types, skill names) contains no content-prohibition scan.",
+   "falsifier": "A validate_pack or load_pack check that errors/warns on .agents/ directories, embedded secret values, or build artifacts inside a pack would falsify this."
+  },
+  "notes": "The spec rule is normative guidance for authors only. No code anywhere (buzz-persona validator, loader, CLI, desktop) scans pack contents for working-dir state, secrets, or build artifacts. Adjacent-but-different protections exist: path traversal rejection and file size bounds."
+ },
+ {
+  "id": "f-15",
+  "claim": "Persona mcp_servers frontmatter field with name/command/args/env entries",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "68-79",
+    "quote": "pub struct McpServerConfig {"
+   },
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "125-127",
+    "quote": "pub mcp_servers: Vec<McpServerConfig>,"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "270-275",
+    "quote": "Name collision: persona wins (replaces pack server with same name)."
+   }
+  ],
+  "notes": "McpServerConfig has exactly name (required), command (required), args (default []), env (default {}). Per-persona entries are merged over pack-level .mcp.json in merge_mcp_servers with persona-wins-entirely collision semantics, as the spec's Section 7 merge rules describe."
+ },
+ {
+  "id": "f-19",
+  "claim": "Markdown body after closing --- is the persona prompt, embedded directly",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "3-4",
+    "quote": "followed by a markdown body that becomes the system prompt"
+   },
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "277-319",
+    "quote": "pub fn split_frontmatter(content: &str) -> Result<(&str, &str), PersonaError> {"
+   },
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "257",
+    "quote": "prompt: body.to_string(),"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "200",
+    "quote": "let system_prompt = lp.prompt.clone();"
+   }
+  ],
+  "notes": "Body after the closing --- (own-line delimiter enforced; '---junk' rejected) becomes PersonaConfig::prompt and flows verbatim into ResolvedPersona.system_prompt. No external-file dereferencing exists anywhere in the prompt path, matching 'embed directly'. Body capped at 256 KiB (MAX_BODY_BYTES, persona.rs:24)."
+ },
+ {
+  "id": "f-23",
+  "claim": "BUZZ_ACP_BASE_PROMPT_FILE env var replaces compiled-in base prompt with custom file read at startup",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-acp/src/config.rs",
+    "lines": "407-414",
+    "quote": "env = \"BUZZ_ACP_BASE_PROMPT_FILE\","
+   },
+   {
+    "file": "crates/buzz-acp/src/config.rs",
+    "lines": "873-887",
+    "quote": "let content = std::fs::read_to_string(path)?;"
+   },
+   {
+    "file": "crates/buzz-acp/src/lib.rs",
+    "lines": "1591-1597",
+    "quote": "Some(include_str!(\"base_prompt.md\"))"
+   }
+  ],
+  "notes": "Clap arg --base-prompt-file / BUZZ_ACP_BASE_PROMPT_FILE, mutually exclusive with BUZZ_ACP_NO_BASE_PROMPT (conflicts_with), read at startup with a 1 MB cap; when present it replaces the compiled-in base_prompt.md via Box::leak; no_base_prompt yields None."
+ },
+ {
+  "id": "f-27",
+  "claim": "Skill discovery under $AGENT_CWD with .agents/skills canonical; pack-root skills/ NOT scanned",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "8",
+    "quote": "&[\".agents/skills\", \".goose/skills\", \".claude/skills\"];"
+   },
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "204-217",
+    "quote": "scan_skill_dir(&cwd.join(dir_suffix), &mut seen, &mut skills);"
+   },
+   {
+    "file": "crates/buzz-agent/src/lib.rs",
+    "lines": "365-366",
+    "quote": "hints::build_hints_section(std::path::Path::new(&p.cwd))"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep pattern='\\.agents[/\\\\]skills|agents/skills' path=repo",
+    "Read crates/buzz-agent/src/hints.rs"
+   ],
+   "false_positives": "desktop nest.rs hits write only the built-in buzz-cli skill to ~/.buzz/.agents/skills — unrelated to pack skill discovery.",
+   "falsifier": "Adding 'skills' (bare) to SKILL_DIRS in hints.rs would falsify the 'root skills/ not scanned' half."
+  },
+  "notes": "Discovery lives in the in-repo buzz-agent runtime, keyed off session/new cwd (must be absolute, lib.rs:343-350) — matching the $AGENT_CWD definition. SKILL_DIRS contains exactly the three spec paths; bare 'skills' is absent so pack-root skills/ is never scanned. Extension beyond spec: ~/.agents/skills (home) is also scanned (hints.rs:212-214), with cwd winning on name conflicts."
+ },
+ {
+  "id": "f-31",
+  "claim": "Skill scoping: claimed skill copied only to that persona; unclaimed skills copied to all agents",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "243-248",
+    "quote": "Skills listed in a persona's `skills:` array → only that persona"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "294-315",
+    "quote": "let shared: Vec<String> = all_skills"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "60-61",
+    "quote": "Skills (bare names — reserved for future use, not yet wired)"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep pattern='resolve_skills' path=repo",
+    "Grep pattern='skills' path=crates/buzz-acp/src -i"
+   ],
+   "false_positives": "resolve_skills has 4 call sites — all inside pack.rs #[cfg(test)]. Zero hits for 'skills' in all of buzz-acp/src.",
+   "falsifier": "A production caller of resolve_skills that copies skill directories into $AGENT_CWD/.agents/skills would move this to implemented."
+  },
+  "notes": "Divergence: the scoping ALGORITHM (claimed-only vs unclaimed-shared, with path normalization) is fully implemented in buzz_persona::pack::resolve_skills and unit-tested, but the COPY the spec describes never happens — the function has no non-test callers and buzz-acp contains no skill code at all. Spec Section 6's own note admits runtime copying is planned; the scoping table's 'Copied' wording is therefore not yet true anywhere."
+ },
+ {
+  "id": "f-35",
+  "claim": "Two-level MCP configuration: pack-level .mcp.json shared plus per-persona entries merged",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "201-222",
+    "quote": "let path = pack_root.join(\".mcp.json\");"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "283-299",
+    "quote": "// 2. Per-persona servers (persona wins on name collision)"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "285",
+    "quote": "// .mcp.json format: { \"mcpServers\": { \"name\":"
+   }
+  ],
+  "notes": "Pack-level .mcp.json (mcpServers map) is the base set; persona frontmatter mcp_servers list merges on top with persona winning entirely on name collision; output sorted deterministically. Matches spec Section 7 merge rules 1-2. Downstream, buzz-acp passes MCP servers per session via session_new_full (crates/buzz-acp/src/pool.rs:916-927), though buzz-acp itself builds them from its own config rather than loading packs directly."
+ },
+ {
+  "id": "f-39",
+  "claim": "${VAR_NAME} MCP env interpolation not implemented; values passed through as literals",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "276",
+    "quote": "Env values are passed through as literals — no `${VAR}` interpolation."
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "494-506",
+    "quote": "assert_eq!(env[\"PATH\"], \"${HOME}/bin\");"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep pattern='interpolat|VAR_NAME' path=crates/buzz-acp -i",
+    "Grep pattern='\\$\\{|interpolat' path=crates/buzz-persona/src"
+   ],
+   "false_positives": "buzz-persona hits are all comments/tests asserting literal passthrough; zero hits in buzz-acp.",
+   "falsifier": "Code resolving ${VAR} from the process environment before session construction (with a startup error on unresolved vars) would make the spec's 'planned' half implemented."
+  },
+  "notes": "Code matches the spec's documented CURRENT behavior exactly: literals preserved end-to-end, verified by test mcp_env_literals_preserved. The startup-error-on-unresolved-vars behavior is explicitly future-tense in the spec ('When implemented') and does not exist anywhere — consistent, not divergent."
+ },
+ {
+  "id": "f-43",
+  "claim": "Hooks parsed and validated at pack load time but not yet executed",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "82-93",
+    "quote": "#[serde(rename_all = \"snake_case\", deny_unknown_fields)]"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "57",
+    "quote": "Hooks (parsed, not executed — reserved for future use, not yet wired)"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "340-347",
+    "quote": "Since hooks are not executed in this PR, we store"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "111-112",
+    "quote": "hooks_config is intentionally omitted: hooks are a runtime concern loaded"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep pattern='hook' path=crates/buzz-acp/src -i",
+    "Grep pattern='hooks_config' path=repo"
+   ],
+   "false_positives": "buzz-acp has one hit — a pool.rs test comment about NIP-AM 'emit-hook', unrelated. hooks_config hits are the manifest field, a whitelist entry, and the intentionally-omitted comment; no reader of hooks/hooks.json exists.",
+   "falsifier": "A loader that reads and validates hooks/hooks.json at pack load would resolve the pack-level half of the divergence."
+  },
+  "notes": "Per-persona frontmatter hooks match the spec claim exactly: parsed with deny_unknown_fields (typo like on_init is a hard error, test unknown_hook_key_errors persona.rs:425-430), stored as raw paths, never executed. Divergence: PACK-LEVEL hooks/hooks.json (spec Section 9) is never parsed or validated at all — pack.rs deliberately drops hooks_config, and the promised 'loaded separately by buzz-acp' code does not exist."
+ },
+ {
+  "id": "f-47",
+  "claim": "Hook points fired: on_start before session, on_stop after session ends, on_message before each dispatch",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "84-93",
+    "quote": "pub on_start: Option<String>,"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "76-82",
+    "quote": "pub struct ResolvedHooks {"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep pattern='hook' path=crates/buzz-acp/src -i",
+    "Grep pattern='on_start|on_stop|on_message' path=repo (files_with_matches)"
+   ],
+   "false_positives": "20 files hit; all inspected: buzz-persona files are parse/store only; desktop hits are unrelated UI/agent-lifecycle identifiers; buzz-relay connection.rs, buzz-pubsub, terminal_transport.rs use on_start/on_stop for their own internal lifecycles, not pack hooks. buzz-acp's single 'hook' hit is an unrelated NIP-AM test comment (pool.rs:6113). No code spawns a hook command process.",
+   "falsifier": "buzz-acp dispatch/session code invoking the resolved hook commands (e.g. via tokio::process::Command) at session start/stop or before message dispatch — including the documented 5s on_message timeout and exit-code semantics — would falsify this."
+  },
+  "notes": "The three hook point NAMES exist only as parsed config fields; none of the firing semantics (timing, stdin contract, timeout, exit-code handling, abort-on-on_start-failure) is implemented anywhere. Consistent with the spec's own Section 9 implementation note, but the feature as described (when hooks fire) is not implemented."
+ },
+ {
+  "id": "f-51",
+  "claim": "Missing defaults key in plugin.json: precedence level 4 skipped, fields fall through to built-in defaults",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "89-91",
+    "quote": "let defaults = pack_defaults.unwrap_or(&empty);"
+   },
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "38-39",
+    "quote": "const DEFAULT_THREAD_REPLIES: bool = true;"
+   },
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "277-287",
+    "quote": "let resolved = resolve_persona_config(&persona, None);"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "146-151",
+    "quote": "defaults: pm"
+   }
+  ],
+  "notes": "manifest defaults is Option; when absent, resolve_persona_config receives None, substitutes an empty object (level 4 becomes a no-op) and fields land on built-ins: thread_replies=true, broadcast_replies=false, triggers/model/temperature/subscribe → None. Test built_in_defaults_when_no_fields verifies the full fall-through."
+ },
+ {
+  "id": "f-55",
+  "claim": "null values treated as absent, falling through to next precedence level",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "66-71",
+    "quote": "Some(Value::Null) | None => default_val.clone(),"
+   },
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "43-46",
+    "quote": "- Empty array `[]` or object `{}`  → present, overrides default"
+   },
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "129-135",
+    "quote": "`None` (omitted or `null`) → fall through to pack default"
+   },
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "424-434",
+    "quote": "let persona = json!({ \"subscribe\": null });"
+   }
+  ],
+  "notes": "null persona values fall through to pack defaults for scalars (merge loop), subscribe (explicit null arm merge.rs:116-121) and triggers (null arm merge.rs:147). The complementary rule — empty [] / {} are present and override — is also implemented and tested (empty_array_overrides_default, triggers_empty_gets_builtins, subscribe_empty_overrides), matching the spec's rule of thumb exactly."
+ },
+ {
+  "id": "f-59",
+  "claim": "Canonical behavioral config field schema with built-in defaults, identical for defaults object and persona frontmatter",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "43-70",
+    "quote": "Same shape as the persona behavioral config fields."
+   },
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "177-198",
+    "quote": "fn parse_triggers(v: &serde_json::Value) -> Option<TriggersData> {"
+   },
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "94",
+    "quote": "let temperature = merged.get(\"temperature\").and_then(|v| v.as_f64());"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "767",
+    "quote": "| `temperature` | float | `0.7` |"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep pattern='0.7|DEFAULT_TEMPERATURE' path=crates/buzz-persona/src",
+    "Grep pattern='GOOSE_TEMPERATURE' path=repo"
+   ],
+   "false_positives": "All 0.7 hits are explicit test values, not defaults. GOOSE_TEMPERATURE is only emitted when temperature is Some (resolve.rs:389-391).",
+   "falsifier": "A DEFAULT_TEMPERATURE=0.7 fallback in merge.rs/resolve.rs would remove the divergence."
+  },
+  "notes": "Same-schema-both-places holds: BehavioralDefaults mirrors the persona behavioral fields (model, temperature, max_context_tokens, subscribe, triggers+respond_to alias, thread_replies, broadcast_replies), and both feed the same merge. Built-ins match the spec table for subscribe [], triggers.mentions true / keywords [] / all_messages false, thread_replies true, broadcast_replies false. Divergence: the spec's built-in temperature default of 0.7 does not exist — an unset temperature stays None and no GOOSE_TEMPERATURE is set, so the agent runtime's own default applies instead. Also, unknown keys in defaults are validate-time warnings as documented, but the spec's deploy-time 'WARN and ignore' log line is not emitted (serde silently ignores)."
+ },
+ {
+  "id": "f-63",
+  "claim": "Env var mapping: model split on first colon to GOOSE_PROVIDER/GOOSE_MODEL; GOOSE_TEMPERATURE; GOOSE_CONTEXT_LIMIT; omitted model sets nothing; values fully resolved first",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "324-329",
+    "quote": "match model.split_once(':') {"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "369-397",
+    "quote": "vars.push((\"GOOSE_MODEL\".to_owned(), model_id.to_owned()));"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "426-440",
+    "quote": "model: resolved.model,"
+   },
+   {
+    "file": "crates/buzz-acp/src/acp.rs",
+    "lines": "503-511",
+    "quote": "if std::env::var_os(key).is_none() {"
+   }
+  ],
+  "notes": "runtime_env_vars projects from LoadedPersona, which is built from resolve_persona_config output (levels 3-5 already merged) — env vars reflect fully-resolved values as spec 815-817 requires. Omitted model → no GOOSE_PROVIDER/GOOSE_MODEL (guarded by if let Some; test env_vars_empty_when_no_config). AcpClient::spawn skips injection when the parent env already has the key (operator precedence, level 1). Extensions beyond the spec table: runtime 'buzz-agent' emits BUZZ_AGENT_MODEL/BUZZ_AGENT_PROVIDER instead of GOOSE_* (resolve.rs:372-378), and a colonless model sets GOOSE_MODEL with no provider var."
+ },
+ {
+  "id": "f-67",
+  "claim": "buzz pack packaging command with --output producing .buzzpack archives",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "crates/buzz-cli/src/lib.rs",
+    "lines": "1780-1793",
+    "quote": "pub enum PackCmd {"
+   },
+   {
+    "file": "crates/buzz-cli/src/commands/pack.rs",
+    "lines": "1-3",
+    "quote": "`buzz pack` subcommands — local persona pack operations."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep pattern='buzzpack' path=repo -i (files_with_matches)",
+    "Grep pattern='pack|install' path=crates/buzz-cli/src/lib.rs -i",
+    "Read crates/buzz-cli/src/commands/pack.rs"
+   ],
+   "false_positives": "'buzzpack' matches exactly 1 file: PERSONA_PACK_SPEC.md itself. buzz-cli's PackCmd enum has only Validate and Inspect; commands/pack.rs defines only cmd_validate and cmd_inspect. 'install' hits in lib.rs are rustls crypto-provider installation, unrelated.",
+   "falsifier": "A PackCmd::Package (or similar) variant with an --output flag emitting a zip + .sha256 would falsify this."
+  },
+  "notes": "No packaging, no .buzzpack format, no sha256 checksum generation/verification, and no `buzz install` exist anywhere in the repo. Only `buzz pack validate` and `buzz pack inspect` are implemented."
+ },
+ {
+  "id": "f-71",
+  "claim": "Phase 2 git install syntaxes: github: shorthand, @tag pinning, git+https URLs",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "crates/buzz-cli/src/lib.rs",
+    "lines": "1780-1793",
+    "quote": "Inspect {"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep pattern='git\\+https|github:' path=crates (content)",
+    "Grep pattern='install' path=crates/buzz-cli/src/lib.rs -i",
+    "Grep pattern='pack.lock' path=repo -i"
+   ],
+   "false_positives": "5 hits for github:/git+https — all inside PERSONA_PACK_SPEC.md's own examples. No Install command exists in the buzz-cli Cmd enum, and pack.lock appears only in the spec.",
+   "falsifier": "An Install subcommand parsing github:owner/repo[@tag] or git+https URLs and writing pack.lock would falsify this."
+  },
+  "notes": "Spec labels this Phase 2; consistent with that, no install machinery of any kind (zip or git) exists in the repo."
+ },
+ {
+  "id": "f-75",
+  "claim": "Desktop Agents section import accepts .agent.json or .agent.png snapshots",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "desktop/src/features/agents/ui/UnifiedAgentsSection.tsx",
+    "lines": "135-141",
+    "quote": "accept=\".agent.json,.agent.png\""
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+    "lines": "36-47",
+    "quote": "Legacy persona files are no longer supported."
+   },
+   {
+    "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+    "lines": "10-11",
+    "quote": "`.agent.json` — canonical snapshot manifest"
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+    "lines": "232-241",
+    "quote": "if file_bytes.len() >= 4 && file_bytes[..4] == PNG_MAGIC {"
+   }
+  ],
+  "notes": "The Agents UI file input and drop zone accept exactly .agent.json/.agent.png; the backend decodes both (PNG via embedded buzz_agent_snapshot tEXt chunk, JSON directly) with size caps and preview/confirm flow. Matching the spec's surrounding text, legacy persona-pack formats (.persona.md/.persona.json/.persona.png/.zip) are rejected outright with an error directing users to snapshots (reject_legacy_persona_filename)."
+ },
+ {
+  "id": "f-79",
+  "claim": "Delivery summary: skill copy is the only filesystem write; other components via protocol, env vars, or user-message prefix",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-acp/src/pool.rs",
+    "lines": "916-927",
+    "quote": ".session_new_full("
+   },
+   {
+    "file": "crates/buzz-acp/src/queue.rs",
+    "lines": "1363-1365",
+    "quote": "base_prompt and system_prompt are delivered via the system"
+   },
+   {
+    "file": "crates/buzz-acp/src/queue.rs",
+    "lines": "1431-1440",
+    "quote": "sections.push(format!(\"[System]\\n{sp}\"));"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "359-364",
+    "quote": "Project persona config into agent subprocess env vars."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep pattern='skills' path=crates/buzz-acp/src -i",
+    "Grep pattern='resolve_skills' path=repo"
+   ],
+   "false_positives": "Zero 'skills' hits in buzz-acp; resolve_skills callers are test-only — the one documented filesystem write (skill copy) does not exist.",
+   "falsifier": "Skill-copy code in buzz-acp writing pack skills into $AGENT_CWD/.agents/skills would restore the summary table's first row."
+  },
+  "notes": "Three of the table's rows hold: MCP servers go via session/new (protocol, no .mcp.json written), model/provider via child-process env vars, behavioral config consumed by harness dispatch. Divergences: (1) the skill copy — the table's single '✅ Yes' filesystem write — is not implemented ('planned' per the table, so nothing is ever written); (2) persona-prompt delivery via `[System]` user-message prefix is now only the legacy path (protocol_version < 2); protocol-v2 agents get base+system+instructions once via the session/new system role, which Section 12's 'Current Implementation' text does not describe; (3) hooks row is moot (never fired)."
+ },
+ {
+  "id": "f-83",
+  "claim": "Anti-pattern reference table (nonexistent goose flags, .mdc files, root skills/, SSE, parent-process GOOSE_MODEL, defaults deep-merge)",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-agent/src/hints.rs",
+    "lines": "8",
+    "quote": "&[\".agents/skills\", \".goose/skills\", \".claude/skills\"];"
+   },
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "127-131",
+    "quote": "// triggers: SHALLOW REPLACEMENT."
+   },
+   {
+    "file": "crates/buzz-acp/src/acp.rs",
+    "lines": "469-471",
+    "quote": "Per-persona env vars (e.g., GOOSE_PROVIDER, BUZZ_AGENT_PROVIDER)."
+   },
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "328-341",
+    "quote": "pack keywords should be lost under shallow replacement"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep pattern='\\.mdc' path=repo (files_with_matches)",
+    "Grep pattern='SSE is unsupported|streamable_http|sse' path=crates -i"
+   ],
+   "false_positives": ".mdc matches only the spec itself — nothing in code reads .mdc files, consistent with the table. 'SSE is unsupported' appears only in the spec; the rejection is a property of the external ACP/goose runtime, not this repo.",
+   "falsifier": "In-repo code contradicting a row — e.g. scanning pack-root skills/, deep-merging defaults sub-keys, or reading .mdc rule files — would falsify the table."
+  },
+  "notes": "Documentation reference table; every row checkable in this repo is consistent with the code: root skills/ absent from SKILL_DIRS; defaults merging is shallow replacement (object/array replaced whole, tested); per-subprocess extra_env injection exists as the alternative to parent-process GOOSE_MODEL; nothing reads .mdc. Rows about goose CLI flags and the SSE error string describe external runtimes and are not verifiable in-repo."
+ },
+ {
+  "id": "f-87",
+  "claim": "Pre-V6 flat JSON persona to .persona.md migration mapping (system_prompt to markdown body, channels to subscribe)",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+    "lines": "33-34",
+    "quote": "[\".persona.md\", \".persona.json\", \".persona.png\", \".zip\"];"
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/media_download.rs",
+    "lines": "508",
+    "quote": "Team parsing rejects retired flat JSON and persona-pack ZIP inputs"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep pattern='system_prompt.*json|flat JSON|lep\\.json|persona\\.json|personas/.*\\.json' path=repo -i",
+    "Grep pattern='channels' path=crates/buzz-persona/src"
+   ],
+   "false_positives": "5 hits inspected: the spec's own mapping table; desktop rejection paths for retired flat JSON (import.rs, media_download.rs, snapshot tests); config_bridge/codex.rs system_prompt is codex TOML bridging, unrelated. No 'channels' field exists in buzz-persona. Nothing converts flat JSON to .persona.md.",
+   "falsifier": "A migration command/importer that reads flat persona JSON (system_prompt, channels, mcp_servers) and emits .persona.md would falsify this."
+  },
+  "notes": "The mapping is manual-migration guidance only. No conversion tooling exists anywhere; the desktop actively REJECTS legacy .persona.json (and .persona.md/.zip) imports rather than migrating them. (The desktop's migration.rs handles a different, unrelated migration: sprout-agent→buzz-agent runtime renames.)"
+ },
+ {
+  "id": "f-91",
+  "claim": "Planned features table PF-1 through PF-6, with PF-2 and PF-6 marked Implemented",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/validate.rs",
+    "lines": "143-164",
+    "quote": "pub fn validate_pack(pack_dir: &Path) -> ValidationReport {"
+   },
+   {
+    "file": "crates/buzz-cli/src/commands/pack.rs",
+    "lines": "24",
+    "quote": "let report = buzz_persona::validate::validate_pack(pack_dir);"
+   },
+   {
+    "file": "crates/buzz-acp/src/acp.rs",
+    "lines": "451-455",
+    "quote": "pub async fn spawn("
+   },
+   {
+    "file": "crates/buzz-acp/src/pool.rs",
+    "lines": "894-896",
+    "quote": "Standard protocol-v2 agents receive it in `session/new`;"
+   },
+   {
+    "file": "crates/buzz-acp/src/lib.rs",
+    "lines": "1599-1601",
+    "quote": "cwd: std::env::current_dir()"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep pattern='AGENT_CWD' path=repo (excluding spec)",
+    "Grep pattern='skills' path=crates/buzz-acp/src -i",
+    "Grep pattern='already exists' path=crates/buzz-persona/src"
+   ],
+   "false_positives": "AGENT_CWD: zero hits outside the spec — PF-4 correctly still unimplemented (cwd comes from current_dir with a '/' fallback, no refuse-to-start). No skill copy/collision/parse-warning code in buzz-acp — PF-3/PF-5 correctly still unimplemented.",
+   "falsifier": "For the PF-1 divergence: if session/new systemPrompt delivery were removed or shown to be dead code, PF-1's 'not yet implemented' would be accurate again."
+  },
+  "notes": "Verified accurate: PF-2 (buzz pack validate CLI wired end-to-end: schema/identity/behavioral checks, unknown-key warnings, skill-name-mismatch warnings) and PF-6 (AcpClient::spawn extra_env via Command::env with std::env::var_os operator-precedence check). Also accurate: PF-3, PF-4, PF-5 remain unimplemented. Divergence: PF-1's 'not yet implemented' is stale — for protocol_version >= 2 agents the harness delivers base+persona prompts ONCE at session creation via the session/new systemPrompt (system role), exactly the once-per-session injection PF-1 describes (mechanism differs: session/new parameter rather than extend_system_prompt()); the per-turn [System] prefix now applies only to legacy agents."
+ },
+ {
+  "id": "f-04",
+  "claim": "engines.buzz minimum-version negotiation; buzz-acp rejects packs requiring newer version",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "37-41",
+    "quote": "Semver range the Buzz runtime must satisfy (e.g. `\">=0.9.0\"`)."
+   },
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "180",
+    "quote": "engines: raw.engines,"
+   },
+   {
+    "file": "crates/buzz-persona/src/validate.rs",
+    "lines": "110-111",
+    "quote": "\"engines\","
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'engines' repo-wide (7 files)",
+    "Grep '\\.engines' glob *.rs repo-wide (2 hits, both manifest.rs)",
+    "Grep 'semver|VersionReq|version_req' -i repo-wide"
+   ],
+   "false_positives": "pnpm-lock.yaml, desktop CSS files, useRichTextEditor.ts, release scripts/workflows — unrelated to pack engines; validate.rs hit is only the known-key allowlist entry.",
+   "falsifier": "Any code comparing PackManifest.engines.buzz against a runtime Buzz version (e.g. a semver check in load_pack/validate_pack/an installer) that errors when unsatisfied."
+  },
+  "notes": "The engines.buzz field is parsed and stored (and whitelisted by the validator), but no code anywhere compares it to a Buzz version or rejects a pack. There is also no pack install path in buzz-acp at all (see f-68), so the documented rejection point does not exist."
+ },
+ {
+  "id": "f-08",
+  "claim": "hooks_config manifest field pointing to hooks file",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "114-116",
+    "quote": "/// Path to `hooks/hooks.json`.… pub hooks_config: Option<String>,"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "111-112",
+    "quote": "hooks_config is intentionally omitted: hooks are a runtime concern loaded"
+   },
+   {
+    "file": "crates/buzz-persona/src/validate.rs",
+    "lines": "116",
+    "quote": "\"hooks_config\","
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'hooks\\.json|hooks_config' glob *.rs repo-wide (7 hits, all buzz-persona)",
+    "Grep 'hooks' -i in crates/buzz-acp/src (0 hits)"
+   ],
+   "false_positives": "None beyond doc comments; all hits are the field declaration, validator allowlist, and the pack.rs omission comment.",
+   "falsifier": "Code that opens/parses the file named by manifest.hooks_config (e.g. reading hooks/hooks.json in load_pack or buzz-acp startup)."
+  },
+  "notes": "The manifest field is accepted, deserialized, and known to the validator, but the referenced hooks file is never read by any code: pack.rs deliberately drops the field and buzz-acp contains no hooks logic. Only per-persona frontmatter `hooks:` are parsed (persona.rs), never the pack-level hooks.json."
+ },
+ {
+  "id": "f-12",
+  "claim": ".persona.md file format: YAML frontmatter + markdown body",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "2-4",
+    "quote": "A `.persona.md` file is YAML frontmatter (between `---` delimiters)"
+   },
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "208-218",
+    "quote": "pub fn parse_persona_md(content: &str) -> Result<PersonaConfig, PersonaError>"
+   },
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "277-285",
+    "quote": "pub fn split_frontmatter(content: &str) -> Result<(&str, &str), PersonaError>"
+   }
+  ],
+  "notes": "Full implementation with size limits (1 MiB frontmatter / 256 KiB body), required identity fields, deny_unknown_fields, and the body stored as PersonaConfig::prompt. Extensive tests in the same file."
+ },
+ {
+  "id": "f-16",
+  "claim": "Behavioral config field group in frontmatter (subscribe, triggers, model, temperature, max_context_tokens, thread_replies, broadcast_replies), consumed entirely by harness",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "129-165",
+    "quote": "pub subscribe: Option<Vec<String>>, … pub triggers: Option<RespondTo>,"
+   },
+   {
+    "file": "crates/buzz-acp/src/filter.rs",
+    "lines": "1-6",
+    "quote": "Matching events against ordered subscription rules (first match wins)"
+   },
+   {
+    "file": "crates/buzz-acp/src/config.rs",
+    "lines": "1039-1040",
+    "quote": "Spawned desktop agents now carry a complete instance snapshot."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'thread_replies|broadcast_replies' repo-wide (39 files)",
+    "Grep 'buzz_persona::' repo-wide (only buzz-cli + buzz-persona tests)",
+    "Grep 'subscribe|respond_to|keywords|all_messages|thread_replies|broadcast_replies' in crates/buzz-acp/src/config.rs"
+   ],
+   "false_positives": "Mobile/desktop 'thread replies' UI code and buzz-db thread.rs are message-threading features, not persona config; buzz-acp's RespondTo (Anyone/OwnerOnly/Allowlist) is an access-control setting, not the spec's triggers object.",
+   "falsifier": "buzz-acp (or the desktop spawn path) reading a persona pack's resolved subscribe/triggers/thread_replies/broadcast_replies and using them to drive its subscription/dispatch logic."
+  },
+  "notes": "All seven fields are parsed and precedence-merged in buzz-persona and shown by `buzz pack inspect`, but buzz-acp never consumes them: no buzz_persona usage exists in buzz-acp code (dependency declared in Cargo.toml only), and its subscription/dispatch uses its own --channels/subscription-rule config (SubscribeMode, evalexpr SubscriptionRule) with no thread_replies/broadcast_replies concept anywhere."
+ },
+ {
+  "id": "f-20",
+  "claim": "Two-layer prompt architecture with fixed section order ([Base], [System], [Context], [Thread/Conversation Context], [Buzz event])",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-acp/src/queue.rs",
+    "lines": "1393-1399",
+    "quote": "0. `[Base]` … 1. `[System]` … 3. `[Context]` … 5. `[Event]` / `[Buzz events]`"
+   },
+   {
+    "file": "crates/buzz-acp/src/queue.rs",
+    "lines": "1434-1447",
+    "quote": "if !args.has_system_prompt_support { … sections.push(format!(\"[System]\\n{sp}\"));"
+   },
+   {
+    "file": "crates/buzz-acp/src/pool.rs",
+    "lines": "1304-1311",
+    "quote": "Some(format!(\"{prompt}\\n\\n[Team Instructions]\\n{instructions}\"))"
+   },
+   {
+    "file": "crates/buzz-acp/src/queue.rs",
+    "lines": "1534-1548",
+    "quote": "\"[Buzz event: {}]\\n{}\""
+   }
+  ],
+  "notes": "Section order exists in format_prompt() but diverges: (1) [Base]/[System] ride in the user message only for legacy agents (protocol_version < 2); modern agents get them via systemPrompt in session/new (pool.rs framed_system_prompt, lines 1262-1283); (2) team instructions render as a separate `[Team Instructions]` section, not the spec's `---\\n# Team Instructions` appended inside [System]; (3) extra sections exist ([Agent Memory — core], [Channel Canvas], [Workspace]); (4) multi-event batches use `[Buzz events — N events]`."
+ },
+ {
+  "id": "f-24",
+  "claim": "[System] layer: persona prompt, unique per agent",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-acp/src/pool.rs",
+    "lines": "1273",
+    "quote": "(None, Some(sp)) => Some(format!(\"[System]\\n{sp}\")),"
+   },
+   {
+    "file": "crates/buzz-acp/src/queue.rs",
+    "lines": "1438-1439",
+    "quote": "if let Some(sp) = args.system_prompt { sections.push(format!(\"[System]\\n{sp}\"));"
+   },
+   {
+    "file": "crates/buzz-acp/src/config.rs",
+    "lines": "272-284",
+    "quote": "env = \"BUZZ_ACP_SYSTEM_PROMPT\", … pub system_prompt_file: Option<PathBuf>,"
+   }
+  ],
+  "notes": "Each buzz-acp process carries one per-agent system prompt (--system-prompt/--system-prompt-file), rendered under the [System] header distinct from [Base]. Delivery differs by protocol version (see f-20/f-80), but the layer itself — per-agent persona prompt separate from the shared base — is implemented."
+ },
+ {
+  "id": "f-28",
+  "claim": "$AGENT_CWD resolution order: AGENT_CWD env var, then current_dir(), else refuse to start; stored as session.working_dir",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-acp/src/lib.rs",
+    "lines": "1599-1602",
+    "quote": "cwd: std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(\"/\"))"
+   },
+   {
+    "file": "crates/buzz-acp/src/pool.rs",
+    "lines": "1287-1289",
+    "quote": "the `/` fallback (`std::env::current_dir()` resolves to `/` on failure)"
+   },
+   {
+    "file": "crates/buzz-acp/src/acp.rs",
+    "lines": "645-648",
+    "quote": "\"cwd\": cwd,"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'AGENT_CWD' repo-wide (1 file: the spec itself)",
+    "Grep 'cwd|current_dir|working_dir' in crates/buzz-acp/src"
+   ],
+   "false_positives": "None; the only AGENT_CWD occurrences are in PERSONA_PACK_SPEC.md.",
+   "falsifier": "buzz-acp reading an AGENT_CWD environment variable, or exiting with an error when current_dir() fails, when computing session/new cwd."
+  },
+  "notes": "Divergence on all three steps: no AGENT_CWD env var exists anywhere in code (step 1 absent); current_dir() is used but on failure buzz-acp silently falls back to \"/\" instead of refusing to start (step 3 contradicted); the value is passed as session/new cwd. `session.working_dir` is agent-runtime-side and not in this repo."
+ },
+ {
+  "id": "f-32",
+  "claim": "Skill collision handling: existing skill not overwritten; buzz-acp must log WARN",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "243-249",
+    "quote": "Determine which skills go to which persona."
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1146",
+    "quote": "Skill collision warning: emit `WARN` when a pack skill is skipped"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'skipping pack|already exists at|skill collision|copy_skill|copy.*skill|skill.*copy' -i glob *.rs (2 hits, both unrelated)",
+    "Grep '\\.agents/skills|skill' -i in crates/buzz-acp/src (0 hits)",
+    "Grep 'resolve_skills' repo-wide (1 file: buzz-persona/src/pack.rs)"
+   ],
+   "false_positives": "relay_admin.rs 'already exists at any role' (role assignment); desktop nest.rs copies its own bundled buzz-cli SKILL.md, not pack skills.",
+   "falsifier": "Code that copies pack skills/ into an agent working directory's .agents/skills/ and skips-with-WARN on an existing same-named skill."
+  },
+  "notes": "No skill copying to agent working directories exists anywhere, so collision handling and the WARN cannot exist either. buzz-persona's resolve_skills() only computes a persona→skill-name map. The spec's own PF-3 marks this as planned."
+ },
+ {
+  "id": "f-36",
+  "claim": "MCP transport restriction: only stdio and streamable_http; SSE rejected causing session startup failure",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-acp/src/acp.rs",
+    "lines": "23-33",
+    "quote": "Corresponds to the `McpServerStdio` variant in the ACP schema."
+   },
+   {
+    "file": "crates/buzz-agent/src/lib.rs",
+    "lines": "302",
+    "quote": "\"mcpCapabilities\": { \"http\": false, \"sse\": false },"
+   },
+   {
+    "file": "crates/buzz-agent/README.md",
+    "lines": "289",
+    "quote": "**Transport: stdio only.** No HTTP, no SSE."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'streamable_http|streamable-http|\\bSSE\\b|server-sent' glob *.rs repo-wide (0 hits)",
+    "Grep 'streamable|\\bsse\\b' -i in crates/ (hits only in buzz-agent capabilities + the spec)",
+    "Grep 'transport' -i in crates/buzz-acp/src (all hits are WebSocket/steer transport, not MCP)"
+   ],
+   "false_positives": "buzz-acp/relay 'transport' hits refer to stdio/WebSocket error classes and steer transports; case-insensitive 'sse' matches 'assert'.",
+   "falsifier": "Code accepting a streamable_http MCP transport or emitting the error 'SSE is unsupported, migrate to streamable_http'."
+  },
+  "notes": "In-repo reality is stricter and different: buzz-acp's McpServer struct is stdio-only (no transport/type field), and the in-repo buzz-agent runtime advertises http:false, sse:false. streamable_http support and the quoted SSE-rejection error exist nowhere in this repo (the spec attributes them to the external ACP runtime)."
+ },
+ {
+  "id": "f-40",
+  "claim": "MCP delivery: no .mcp.json written to agent working directory",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-acp/src/acp.rs",
+    "lines": "645-648",
+    "quote": "\"cwd\": cwd, \"mcpServers\": mcp_servers,"
+   },
+   {
+    "file": "crates/buzz-persona/src/pack.rs",
+    "lines": "213-218",
+    "quote": "let path = pack_root.join(\".mcp.json\"); if path.exists() {"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep '\\.mcp\\.json' glob *.rs repo-wide (11 hits, all buzz-persona)",
+    "Inspected each hit for fs::write/create calls"
+   ],
+   "false_positives": "All hits are read-side (pack loading) or doc comments; the only fs::write of .mcp.json is inside a #[cfg(test)] fixture in pack.rs (line 513).",
+   "falsifier": "Any production code writing a .mcp.json file into an agent working directory at deploy/session time."
+  },
+  "notes": "MCP servers reach the agent exclusively as the mcpServers parameter of the session/new ACP request; .mcp.json is only ever read from pack directories, never written."
+ },
+ {
+  "id": "f-44",
+  "claim": "Hooks are entirely a harness (buzz-acp) feature; agent runtimes have no hook system",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "57",
+    "quote": "Hooks (parsed, not executed — reserved for future use, not yet wired)"
+   },
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "82-93",
+    "quote": "pub struct Hooks { … pub on_start: Option<String>,"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'hooks' -i in crates/buzz-acp/src (0 hits)",
+    "Grep 'on_start|on_stop|on_message' glob *.rs repo-wide (12 files, inspected)"
+   ],
+   "false_positives": "native_websocket.rs on_message is a Tauri WebSocket channel callback; terminal_transport.rs hit is a test-name substring; buzz-relay/buzz-pubsub hits are connection lifecycle, not pack hooks.",
+   "falsifier": "buzz-acp code that executes on_start/on_stop/on_message shell commands from a pack or persona."
+  },
+  "notes": "The claim that hooks are implemented in buzz-acp is not true of the code: buzz-acp contains zero hook logic. Hooks exist only as parsed data in buzz-persona (frontmatter Hooks struct, HooksData, ResolvedHooks) and are never fired. The spec's Section 9 implementation note itself concedes execution is planned; but even pack-level hooks.json parsing is absent (see f-08)."
+ },
+ {
+  "id": "f-48",
+  "claim": "Hook execution environment (buzz-acp user, cwd=$AGENT_CWD, agent env vars) and exit-code semantics",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "343-347",
+    "quote": "Since hooks are not executed in this PR, we store them as-is."
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "510-511",
+    "quote": "Hooks are parsed and validated at pack load time but not yet executed."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'hooks' -i in crates/buzz-acp/src (0 hits)",
+    "Grep 'on_start|on_stop|on_message' glob *.rs repo-wide (12 files, inspected)",
+    "Grep 'SIGKILL' in buzz-acp (only child-process kill paths, no hook timeout)"
+   ],
+   "false_positives": "Same as f-44: WebSocket/relay lifecycle callbacks and test-name substrings.",
+   "falsifier": "Code spawning hook commands with cwd/env setup and branching on exit status (abort startup on on_start failure, drop message on on_message failure)."
+  },
+  "notes": "No hook execution exists, so no execution environment or exit-code semantics exist. resolve.rs explicitly stores hook paths raw and defers even path-traversal validation to 'the PR that wires execution'."
+ },
+ {
+  "id": "f-52",
+  "claim": "Five-level configuration precedence model (operator env > desktop UI > persona frontmatter > pack defaults > built-in)",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "1-8",
+    "quote": "Handles levels 3–5 of the 5-level precedence model"
+   },
+   {
+    "file": "crates/buzz-acp/src/acp.rs",
+    "lines": "503-510",
+    "quote": "if std::env::var_os(key).is_none() { cmd.env(key, value); }"
+   },
+   {
+    "file": "desktop/src-tauri/src/managed_agents/effective_config/mod.rs",
+    "lines": "14-18",
+    "quote": "pub enum ConfigSource { Definition, Global, InstanceLegacy, }"
+   }
+  ],
+  "notes": "Levels 3–5 are implemented in buzz-persona (merge.rs/resolve.rs) and level 1 in AcpClient::spawn (parent env wins over extra_env). Level 2 (desktop UI per-agent overriding pack values) is not wired: the desktop's own precedence model is Definition > Global > InstanceLegacy over AgentDefinitions and never consumes persona packs, so the five levels never compose into one chain end-to-end."
+ },
+ {
+  "id": "f-56",
+  "claim": "Empty array semantics: subscribe: [] is an intentional override meaning subscribe to nothing",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "29-32",
+    "quote": "`Some([])`   = intentional \"subscribe to nothing\""
+   },
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "105-125",
+    "quote": "(Some(serde_json::Value::Array(arr)), _) => Some("
+   },
+   {
+    "file": "crates/buzz-persona/src/merge.rs",
+    "lines": "437-443",
+    "quote": "persona subscribe: [] → intentional \"subscribe to nothing\" — Some([])."
+   },
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "590-599",
+    "quote": "YAML [] should deserialize to Some(empty vec)"
+   }
+  ],
+  "notes": "Fully implemented with tests: [] blocks pack-default inheritance, null/absent falls through, and triggers:{} similarly overrides to built-ins. Minor caveat: LoadedPersona flattens the resolved Option (pack.rs:436 `resolved.subscribe.unwrap_or_default()`) after the override semantics have already been applied, so downstream consumers can't distinguish absent from empty — but the spec'd override behavior itself is correct."
+ },
+ {
+  "id": "f-60",
+  "claim": "Temperature validation: passed through without range validation; buzz pack validate checks type only",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "193",
+    "quote": "temperature: Option<f64>,"
+   },
+   {
+    "file": "crates/buzz-persona/src/validate.rs",
+    "lines": "121-130",
+    "quote": "const KNOWN_BEHAVIORAL_KEYS: &[&str] = &["
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "389-391",
+    "quote": "vars.push((\"GOOSE_TEMPERATURE\".to_owned(), temp.to_string()));"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'temperature' in crates/buzz-persona/src/validate.rs (1 hit: key allowlist)",
+    "Grep 'GOOSE_TEMPERATURE|temperature' in crates/buzz-acp/src (0 hits)"
+   ],
+   "false_positives": "None.",
+   "falsifier": "A range check (e.g. 0.0..=2.0 bounds) on temperature in validate.rs, merge.rs, or resolve.rs."
+  },
+  "notes": "Type checking happens implicitly via serde (Option<f64> in both frontmatter and manifest defaults); no range validation exists anywhere; the value is projected verbatim into GOOSE_TEMPERATURE. Matches the spec exactly."
+ },
+ {
+  "id": "f-64",
+  "claim": "Per-subprocess env injection via AcpClient::spawn extra_env with std::env::var parent-environment check (PF-6, implemented)",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-acp/src/acp.rs",
+    "lines": "451-456",
+    "quote": "pub async fn spawn( command: &str, args: &[String], extra_env: &[(String, String)],"
+   },
+   {
+    "file": "crates/buzz-acp/src/acp.rs",
+    "lines": "503-511",
+    "quote": "if std::env::var_os(key).is_none() { cmd.env(key, value); }"
+   },
+   {
+    "file": "crates/buzz-acp/src/acp.rs",
+    "lines": "2969-2972",
+    "quote": "async fn spawn_applies_runtime_env_defaults_with_extra_env_precedence()"
+   },
+   {
+    "file": "crates/buzz-acp/src/lib.rs",
+    "lines": "3871",
+    "quote": "extra_env: config.persona_env_vars.clone(),"
+   }
+  ],
+  "notes": "Implemented as specified with two nuances: the parent-env presence check uses std::env::var_os rather than std::env::var (functionally equivalent for the precedence rule), and Config.persona_env_vars is currently populated only with generated CODEX_CONFIG entries (config.rs:1041-1053) — pack-resolved GOOSE_* values are produced by buzz-persona's runtime_env_vars() but no caller feeds them into spawn (desktop agents 'carry a complete instance snapshot' instead)."
+ },
+ {
+  "id": "f-68",
+  "claim": "buzz install command accepting local .buzzpack path or HTTPS URL",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "crates/buzz-cli/src/lib.rs",
+    "lines": "2272",
+    "quote": "assert_eq!(names(&cmd, \"pack\"), vec![\"inspect\", \"validate\"]);"
+   },
+   {
+    "file": "crates/buzz-cli/src/lib.rs",
+    "lines": "2082-2105",
+    "quote": "let expected_groups: Vec<&str> = vec!["
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'buzz install|pack install|\\.buzzpack|pack\\.lock' repo-wide (1 file: the spec)",
+    "Grep 'install' in crates/buzz-cli/src/lib.rs (only rustls install_default)",
+    "Read crates/buzz-cli/src/commands/pack.rs (cmd_validate + cmd_inspect only)"
+   ],
+   "false_positives": "rustls crypto-provider install_default(); npm/node installer code in desktop agent_discovery.",
+   "falsifier": "A clap subcommand named 'install' (or 'pack install') in buzz-cli, or any code handling .buzzpack archives or their .sha256 checksums."
+  },
+  "notes": "The CLI's own inventory-stability tests pin the command groups: no 'install' group exists and the 'pack' group contains exactly inspect and validate. No packaging (.buzzpack), checksum verification, or HTTP-install code exists anywhere."
+ },
+ {
+  "id": "f-72",
+  "claim": "pack.lock for git installs records resolved commit SHA; verified on install",
+  "status": "absent",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "887",
+    "quote": "`pack.lock` for git installs records the resolved commit SHA:"
+   },
+   {
+    "file": "crates/buzz-cli/src/lib.rs",
+    "lines": "2272",
+    "quote": "assert_eq!(names(&cmd, \"pack\"), vec![\"inspect\", \"validate\"]);"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'pack\\.lock' repo-wide (1 file: the spec)",
+    "Grep 'buzz install|\\.buzzpack' repo-wide (1 file: the spec)",
+    "Grep 'resolved.*commit|github:' in crates/buzz-cli and crates/buzz-persona (no install-related hits)"
+   ],
+   "false_positives": "None.",
+   "falsifier": "Code writing or reading a pack.lock file, or any git-based pack install path that resolves and pins a commit SHA."
+  },
+  "notes": "There is no install pipeline at all (Phase 1 or Phase 2), so no lockfile, no git resolution, and no verification exist. pack.lock appears only in the spec document."
+ },
+ {
+  "id": "f-76",
+  "claim": "Desktop Agent teams import accepts .team.json/.team.png (buzz-team-snapshot v1); persona-pack .zip rejected with error",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "desktop/src-tauri/src/commands/team_snapshot.rs",
+    "lines": "33-35",
+    "quote": "Legacy team files are no longer supported. Export a buzz-team-snapshot v1"
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/team_snapshot.rs",
+    "lines": "59-63",
+    "quote": "Err(_) if file_bytes.starts_with(&ZIP_MAGIC_PREFIX) => { return Err(LEGACY_TEAM_ERROR.to_string());"
+   },
+   {
+    "file": "desktop/src-tauri/src/managed_agents/team_snapshot.rs",
+    "lines": "52",
+    "quote": "pub const FORMAT_DISCRIMINATOR: &str = \"buzz-team-snapshot\";"
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/media_download.rs",
+    "lines": "403-409",
+    "quote": "expected .agent.json, .agent.png, .team.json, or .team.png"
+   }
+  ],
+  "notes": "decode_team_snapshot_from_bytes accepts PNG (tEXt chunk) and JSON buzz-team-snapshot v1 payloads with size caps, and detects ZIP magic bytes (PK) to reject persona-pack zips with a migration-oriented error, exactly as documented. The Agents-section counterpart likewise rejects .persona.md/.persona.json/.persona.png/.zip (commands/personas/snapshot/import.rs:33-47)."
+ },
+ {
+  "id": "f-80",
+  "claim": "[System] block prepended to user message text by format_prompt() in queue.rs; NOT injected into actual system prompt",
+  "status": "divergent",
+  "evidence": [
+   {
+    "file": "crates/buzz-acp/src/queue.rs",
+    "lines": "1434-1440",
+    "quote": "if !args.has_system_prompt_support { … sections.push(format!(\"[System]\\n{sp}\"));"
+   },
+   {
+    "file": "crates/buzz-acp/src/acp.rs",
+    "lines": "650-652",
+    "quote": "params[\"systemPrompt\"] = serde_json::Value::String(sp.to_owned());"
+   },
+   {
+    "file": "crates/buzz-acp/src/queue.rs",
+    "lines": "2220-2240",
+    "quote": "assert!(!prompt.contains(\"[System]\"));"
+   },
+   {
+    "file": "crates/buzz-acp/src/queue.rs",
+    "lines": "1363-1366",
+    "quote": "base_prompt and system_prompt are delivered via the system role (session/new)"
+   }
+  ],
+  "notes": "The documented current state is now only the legacy fallback: format_prompt() prepends [System] to the user message solely for agents with protocol_version < 2. For modern agents the persona prompt IS injected into the actual system prompt via session/new systemPrompt (or _meta.systemPrompt for claude-agent-acp, or Goose's custom system-prompt request — acp.rs session_set_goose_system_prompt) — i.e., the spec's 'planned' PF-1 true injection is implemented, contradicting the 'NOT injected' claim."
+ },
+ {
+  "id": "f-84",
+  "claim": "Secret management: never embed secrets; ${VAR_NAME} references in env blocks; future refusal to start on unresolved vars",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "276",
+    "quote": "Env values are passed through as literals — no `${VAR}` interpolation."
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "494-506",
+    "quote": "${VAR_NAME} should pass through as-is (no interpolation in this PR)"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "1001-1003",
+    "quote": "`${VAR_NAME}` strings are passed through as literals to the agent runtime"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'interpolat' -i glob *.rs in crates/ (6 hits)",
+    "Grep 'refuse|unresolved' in crates/buzz-persona/src (0 relevant hits)"
+   ],
+   "false_positives": "buzz-db/git-sign-nostr 'interpolation' hits concern SQL/JSON string building, unrelated.",
+   "falsifier": "Harness-side ${VAR} resolution code, or a startup error on unresolved env references — either would move this beyond the documented current state."
+  },
+  "notes": "The spec's described current behavior (literal ${VAR_NAME} passthrough, interpolation and refusal-to-start explicitly future) matches the code exactly, including a pinning test. The 'never embed secrets' part is authoring guidance, not enforceable code."
+ },
+ {
+  "id": "f-88",
+  "claim": "Backward compatibility: V6 namespaced buzz: block format not supported; only flat top-level fields accepted",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "173-175",
+    "quote": "Unknown keys are rejected — typos cause parse errors instead of silent drops."
+   },
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "416-421",
+    "quote": "deny_unknown_fields: typos in frontmatter keys cause a parse error."
+   },
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "189",
+    "quote": "#[serde(alias = \"respond_to\")]"
+   },
+   {
+    "file": "crates/buzz-persona/src/manifest.rs",
+    "lines": "130-133",
+    "quote": "struct RawManifest {"
+   }
+  ],
+  "notes": "Persona frontmatter uses deny_unknown_fields, so a V6 `buzz:` block is a hard parse error; only flat top-level fields deserialize. RawManifest has no `buzz` field — a V6 plugin.json `buzz` block is ignored (validator emits an unknown-key warning per advisory_check_manifest_keys), so V6 manifests are not honored either. The legacy respond_to alias for triggers is accepted in both persona frontmatter and manifest defaults (manifest.rs:62), matching spec line 1104."
+ }
+]

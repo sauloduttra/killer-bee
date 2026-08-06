@@ -1,0 +1,341 @@
+{
+ "commit": "ed4b3e7afafb5f5a688c210f39b90d747e6f0f00",
+ "issue_key": "png-snapshot-format",
+ "claims": [
+  {
+   "claim": "(a) The agent/team snapshot is carried in a PNG tEXt chunk whose keyword is `buzz_agent_snapshot` (agent) or `buzz_team_snapshot` (team); the chunk text is base64-encoded JSON of the manifest.",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+     "lines": "52-53",
+     "quote": "pub const PNG_CHUNK_KEYWORD: &str = \"buzz_agent_snapshot\";"
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+     "lines": "160-163",
+     "quote": "`buzz_agent_snapshot` tEXt chunk of a `.agent.png` (base64-encoded)."
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/team_snapshot.rs",
+     "lines": "48-49",
+     "quote": "pub const PNG_CHUNK_KEYWORD: &str = \"buzz_team_snapshot\";"
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/media_snapshot_png.rs",
+     "lines": "11-14",
+     "quote": "const PNG_SNAPSHOT_KEYWORDS: [&[u8]; 2] = [b\"buzz_agent_snapshot\", b\"buzz_team_snapshot\"];"
+    },
+    {
+     "file": "crates/buzz-media/src/validation.rs",
+     "lines": "574-579",
+     "quote": "const PNG_SNAPSHOT_KEYWORDS: [&[u8]; 2] = [b\"buzz_agent_snapshot\", b\"buzz_team_snapshot\"];"
+    }
+   ],
+   "notes": "Two keywords exist; the relay-side media validator and the desktop-side sanitizer keep identical allowlists and the code comments say the two lists must stay in sync (media_snapshot_png.rs:8-9)."
+  },
+  {
+   "claim": "(a-writer) Writer code: `encode_chunk_payload_png` base64-encodes the manifest JSON and embeds it via the `png` crate's `add_text_chunk`, either into a fresh 1x1 transparent PNG (`make_png_with_text`), or re-encoded into the avatar image (`inject_text_chunk`), or into a transcoded non-PNG avatar (`transcode_avatar_to_png_with_text`).",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+     "lines": "320-348",
+     "quote": "let chunk_text = STANDARD.encode(json_bytes);"
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+     "lines": "329-337",
+     "quote": "let encoded_avatar = if bytes.starts_with(b\"\\x89PNG\") {"
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+     "lines": "424-440",
+     "quote": "enc.add_text_chunk(keyword.to_string(), text.to_string())"
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+     "lines": "457-495",
+     "quote": "Inject a tEXt chunk into an existing PNG by re-encoding it."
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/team_snapshot.rs",
+     "lines": "133-145",
+     "quote": "make_png_with_text(PNG_CHUNK_KEYWORD, &chunk_text)"
+    }
+   ],
+   "notes": "Team PNGs never carry a team-level avatar: the body is always the 1x1 placeholder (team_snapshot.rs:128-132, 142-144)."
+  },
+  {
+   "claim": "(a-reader) Reader code: `extract_chunk_payload_png` opens the PNG with the `png` crate `Decoder::read_info()`, finds the `uncompressed_latin1_text` entry whose keyword equals `buzz_agent_snapshot`, and base64-decodes it; the team equivalent is `decode_team_snapshot_png`. Absence of the chunk is a hard error.",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+     "lines": "354-371",
+     "quote": ".find(|c| c.keyword == PNG_CHUNK_KEYWORD)"
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+     "lines": "366",
+     "quote": "\"PNG does not contain a buzz_agent_snapshot tEXt chunk\".to_string()"
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+     "lines": "368-370",
+     "quote": ".decode(chunk_text.trim())"
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/team_snapshot.rs",
+     "lines": "148-167",
+     "quote": "\"PNG does not contain a buzz_team_snapshot tEXt chunk\".to_string()"
+    }
+   ],
+   "notes": "Because the reader uses `read_info()`, the tEXt chunk must appear BEFORE IDAT to be visible — this is stated explicitly where the sanitizer re-injects the chunk after IHDR (media_snapshot_png.rs:54-58)."
+  },
+  {
+   "claim": "(b) Format identification on import is by magic bytes / content sniffing, not the file extension: `parse_snapshot_payload_from_bytes` compares the first 4 bytes to the PNG signature and otherwise falls through to JSON. The team path does the same. A second-level discriminator (the manifest's `format` string) then selects plain vs locked.",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+     "lines": "213",
+     "quote": "const PNG_MAGIC: [u8; 4] = [0x89, 0x50, 0x4e, 0x47];"
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+     "lines": "217-219",
+     "quote": "Never trusts the file extension — only the bytes."
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+     "lines": "232-233",
+     "quote": "if file_bytes.len() >= 4 && file_bytes[..4] == PNG_MAGIC {"
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+     "lines": "263-271",
+     "quote": "// JSON path — apply size cap before serde allocation."
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+     "lines": "358-360",
+     "quote": "extension, so an incorrectly-named file is handled correctly."
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/team_snapshot.rs",
+     "lines": "32-48",
+     "quote": "if file_bytes.starts_with(&PNG_MAGIC) {"
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/team_snapshot.rs",
+     "lines": "457-461",
+     "quote": "_file_name: String,"
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/agent_snapshot_envelope.rs",
+     "lines": "174-195",
+     "quote": "None => Err(\"Snapshot payload has no format discriminator.\".to_string()),"
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/personas/snapshot/tests.rs",
+     "lines": "220-238",
+     "quote": "PNG bytes sniff as PNG → decoded via the PNG path."
+    }
+   ],
+   "search_method": {
+    "commands": [
+     "Grep pattern=\"file_name|ends_with|extension|Path::new\" path=desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+     "Grep pattern=\"file_name|ends_with|extension\" path=desktop/src-tauri/src/commands/team_snapshot.rs",
+     "Grep pattern=\"PNG_MAGIC|0x89, 0x50|starts_with\\\\(b\\\"\\\\x89PNG\\\"\\\\)|starts_with\\\\(SIG\\\\)\" path=desktop/src-tauri/src"
+    ],
+    "false_positives": "6 filename hits in import.rs and 6 in team_snapshot.rs were inspected and discarded as non-format-detection: import.rs:36-47 `reject_legacy_persona_filename` is a legacy-file REJECTION guard (matches `.persona.md/.persona.json/.persona.png/.zip`) run at import.rs:389 BEFORE decoding, not a format selector; import.rs:219/360 are doc comments; import.rs:374 is the command parameter forwarded only to that guard. team_snapshot.rs:252/383/404 are EXPORT-side output filename construction; team_snapshot.rs:424/433 are save-dialog names; team_snapshot.rs:460 `_file_name` is explicitly unused in the import preview command. Also discarded: media_download.rs:379 and qr_download.rs:14 PNG_MAGIC uses, which are unrelated download/QR paths.",
+    "falsifier": "A future change that dispatches on the filename — e.g. adding an `if file_name.ends_with(\".agent.png\")` branch inside `parse_snapshot_payload_from_bytes` (import.rs:232-281) or `decode_team_snapshot_from_bytes` (team_snapshot.rs:39-75), or replacing the `PNG_MAGIC` byte comparison with an extension check — would refute this claim."
+   },
+   "notes": "Nuance worth reporting: filename IS consulted once on the agent path, but only as a fail-closed rejection of retired persona formats (import.rs:36-47, called at 389). It never selects PNG vs JSON. On the team path the filename parameter is literally unused (`_file_name`)."
+  },
+  {
+   "claim": "(c) Desktop import path: the PNG image body becomes the imported agent's avatar. The previously cited range desktop/src-tauri/src/commands/personas/snapshot/import.rs:242-261 is still current and correct at this commit.",
+   "verdict": "partial",
+   "citations": [
+    {
+     "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+     "lines": "242-248",
+     "quote": "// The PNG image body is the portable avatar. It deliberately wins over"
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+     "lines": "251-252",
+     "quote": "if snapshot.profile.avatar_data_url.is_none() {"
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+     "lines": "253-259",
+     "quote": "snapshot.profile.avatar_data_url = Some(avatar_data_url);"
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/personas/snapshot/fidelity_tests.rs",
+     "lines": "183-190",
+     "quote": ".expect(\"PNG image body must become the effective portable avatar\");"
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+     "lines": "335-351",
+     "quote": "upload(avatar_bytes).await.map(Some)"
+    }
+   ],
+   "notes": "Verdict is 'partial' only because the claim as phrased is unconditional while the code is conditional. Line 242 is exactly the start of the comment block and line 261 is the closing brace of the `if let ChunkPayload::Plain` block — the cited range is byte-accurate. Three guards apply: (1) it runs only for `ChunkPayload::Plain`, never for locked envelopes (import.rs:249-251); (2) it applies only when the manifest has NO inline `avatar_data_url` — inline manifest bytes win, so trading-card artwork does not become the agent's face (import.rs:244-248 and fidelity_tests.rs:242-268); (3) it beats a manifest avatar *URL*, which is the deliberate design. The exact 1x1 transparent placeholder yields None and leaves the manifest fallback intact (snapshot_avatar.rs:27-29)."
+  },
+  {
+   "claim": "(d) Enforced limits on the PNG-body avatar: 2048 px max width/height, 2 MiB max re-encoded inline size, and a 32 MiB decode allocation cap — all in desktop/src-tauri/src/managed_agents/snapshot_avatar.rs. Separate caps exist on the export side (2 MiB inline) and on whole-file size (10 MiB PNG / 5 MiB JSON for agents; 50 MiB / 25 MiB for teams; 512 px for card manifest avatars).",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "desktop/src-tauri/src/managed_agents/snapshot_avatar.rs",
+     "lines": "5-7",
+     "quote": "const MAX_AVATAR_DIMENSION: u32 = 2048;"
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/snapshot_avatar.rs",
+     "lines": "5",
+     "quote": "const MAX_AVATAR_INLINE_BYTES: usize = 2 * 1024 * 1024;"
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/snapshot_avatar.rs",
+     "lines": "7",
+     "quote": "const MAX_AVATAR_DECODE_ALLOC: u64 = 32 * 1024 * 1024;"
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/snapshot_avatar.rs",
+     "lines": "17-23",
+     "quote": "limits.max_image_width = Some(MAX_AVATAR_DIMENSION);"
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/snapshot_avatar.rs",
+     "lines": "22-23",
+     "quote": "format!(\"Snapshot avatar exceeds safe decoding limits: {e}\")"
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/snapshot_avatar.rs",
+     "lines": "35-37",
+     "quote": "if clean_png.len() > MAX_AVATAR_INLINE_BYTES {"
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+     "lines": "55-57",
+     "quote": "const MAX_AVATAR_INLINE_BYTES: usize = 2 * 1024 * 1024; // 2 MB"
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+     "lines": "28-31",
+     "quote": "pub(crate) const MAX_SNAPSHOT_PNG_BYTES: usize = 10 * 1024 * 1024;"
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+     "lines": "234-239",
+     "quote": "PNG snapshots must be under 10 MiB."
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/team_snapshot.rs",
+     "lines": "27-30",
+     "quote": "pub(crate) const MAX_TEAM_SNAPSHOT_PNG_BYTES: usize = 50 * 1024 * 1024;"
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/personas/card.rs",
+     "lines": "66",
+     "quote": "const MANIFEST_AVATAR_MAX_DIM: u32 = 512;"
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/personas/snapshot/fidelity_tests.rs",
+     "lines": "242-246",
+     "quote": "2250px exceeds `snapshot_avatar`'s 2048px decode limit,"
+    }
+   ],
+   "notes": "Behavioral difference between the two limits: exceeding 2048 px is a HARD ERROR (`set_limits` fails, import aborts — snapshot_avatar.rs:21-23), while exceeding 2 MiB after re-encode is SOFT (returns Ok(None), the manifest avatar fallback is kept — snapshot_avatar.rs:35-37). Note also `agent_snapshot.rs:57 MAX_AVATAR_INLINE_BYTES` is a distinct export-side constant with the same value."
+  },
+  {
+   "claim": "(e) Minimal reproduction recipe an outsider could follow to make a PNG a valid snapshot carrier, and how the app detects it — every step grounded in cited code.",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+     "lines": "164-174",
+     "quote": "pub struct AgentSnapshot {"
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+     "lines": "59-63",
+     "quote": "pub const FORMAT_DISCRIMINATOR: &str = \"buzz-agent-snapshot\";"
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+     "lines": "387-407",
+     "quote": "return Err(format!(\"Unsupported snapshot version: {} (expected 1)\","
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+     "lines": "400-405",
+     "quote": "\"Snapshot profile.displayName is empty\".to_string()"
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+     "lines": "320-324",
+     "quote": "let chunk_text = STANDARD.encode(json_bytes);"
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/media_snapshot_png.rs",
+     "lines": "54-58",
+     "quote": "only exposes text chunks encountered before IDAT via"
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/media_snapshot_png.rs",
+     "lines": "37-41",
+     "quote": "&& payload[keyword.len()] == 0"
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+     "lines": "232-241",
+     "quote": "let chunk_json = extract_chunk_payload_png(file_bytes)?;"
+    },
+    {
+     "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+     "lines": "285-294",
+     "quote": "memory.level is 'none' but entries are present."
+    },
+    {
+     "file": "desktop/src-tauri/src/managed_agents/agent_snapshot_envelope.rs",
+     "lines": "174-196",
+     "quote": "Some(other) => Err(format!(\"Unsupported snapshot format: {other:?}\")),"
+    },
+    {
+     "file": "crates/buzz-media/src/validation.rs",
+     "lines": "592-622",
+     "quote": "if saw_snapshot_chunk || !is_snapshot_text_chunk(payload) {"
+    }
+   ],
+   "notes": "RECIPE (agent card). BUILD: (1) Compose the manifest JSON with camelCase keys — required top-level fields are `format`, `version`, `definition`, `profile`, `memory` (agent_snapshot.rs:164-174). Set format exactly to \"buzz-agent-snapshot\" and version to 1 (agent_snapshot.rs:59-63, validated at 387-399). `definition.name` and `profile.displayName` must be non-empty after trim (agent_snapshot.rs:400-405). `memory` must be `{\"level\":\"none\"}` — level \"none\" with a non-empty `entries` array is rejected before any write (import.rs:285-294). (2) Base64-encode (STANDARD alphabet) the raw JSON bytes; that base64 string is the tEXt chunk TEXT (agent_snapshot.rs:324, decoded at 368-370 with `.trim()` tolerance). (3) Build any valid PNG whose pixels are the avatar you want, and insert one tEXt chunk with keyword `buzz_agent_snapshot`, i.e. chunk payload = b\"buzz_agent_snapshot\" + 0x00 + <base64> (keyword/NUL layout asserted at media_snapshot_png.rs:37-41 and validation.rs:584-589). (4) Placement is load-bearing: the chunk must come BEFORE IDAT — the reference writer inserts it immediately after IHDR, because the `png` crate reader used on import only surfaces text chunks seen before IDAT (media_snapshot_png.rs:54-58; inject helper at 59-80). (5) Keep the image within 2048x2048 or the import errors out, and keep the re-encoded body under 2 MiB or the body simply will not be adopted as the avatar (snapshot_avatar.rs:6, 18-23, 35-37). Keep total file under 10 MiB (import.rs:234-239). DETECTION: the app reads the first 4 bytes; `[0x89,0x50,0x4e,0x47]` routes to the PNG branch, anything else to JSON — the filename is never consulted for this (import.rs:213, 232-233, 219). It then calls `extract_chunk_payload_png` (agent_snapshot.rs:354-371), which uses `Decoder::read_info()` and searches `uncompressed_latin1_text` for keyword == \"buzz_agent_snapshot\", base64-decoding the text. The decoded JSON is probed for its `format` field: \"buzz-agent-snapshot\" -> Plain, the locked discriminator -> Locked, anything else or missing -> error (agent_snapshot_envelope.rs:174-195). Finally, if `profile.avatarDataUrl` is absent, the PNG pixels are adopted as the avatar (import.rs:242-261). For a `.team.png`, substitute keyword `buzz_team_snapshot`, format \"buzz-team-snapshot\", and the TeamSnapshot shape `{format, version, team{name,...}, members[]}` (team_snapshot.rs:49, 52, 76-87). SEPARATE GATE if the PNG is uploaded through Buzz media: the relay-side validator permits exactly ONE tEXt chunk and only with an allowlisted snapshot keyword; a second snapshot chunk or any other tEXt/eXIf/zTXt/iTXt/iCCP chunk is rejected as forbidden metadata (validation.rs:592-625)."
+  },
+  {
+   "claim": "The snapshot PNG format is not documented anywhere under docs/ — the keywords and discriminators appear only in source.",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "desktop/src/features/agents/ui/AgentCardMintDialog.tsx",
+     "lines": "101-104",
+     "quote": "The saved PNG carries the agent's `buzz_agent_snapshot` chunk, so sharing"
+    }
+   ],
+   "search_method": {
+    "commands": [
+     "Grep pattern=\"buzz_agent_snapshot|buzz-agent-snapshot|agent\\\\.png\" path=docs (output_mode=files_with_matches) -> No files found",
+     "Grep pattern=\"buzz_agent_snapshot\" path=<repo root> (output_mode=files_with_matches) -> 7 files, all under desktop/src, desktop/src-tauri, crates/buzz-media",
+     "ls docs -> 16 entries (MCP_DRIVEN_HOOKS.md, admin, assets, bridge-channel-window.md, buzz-entity-links.md, buzz-shared-compute-dev.md, formal, git-on-object-storage.md, linux-rendering-troubleshooting.md, multi-tenant-conformance.md, multi-tenant-relay.md, nips, push-gateway-deployment.md, remote-agents.md, spec, welcome-kickoff-silent-failures.md)"
+    ],
+    "false_positives": "0 hits in docs/ to discard — the pattern returned no files at all. Of the 7 repo-wide hits for `buzz_agent_snapshot`, all 7 were inspected: 5 Rust source files (agent_snapshot.rs, agent_snapshot_envelope.rs, card.rs, card/tests.rs, media_snapshot_png.rs, validation.rs) and 1 TSX file (AgentCardMintDialog.tsx, a doc comment on a UI component, not user-facing documentation). None is a spec/doc file. Note the docs/ tree does contain `nips/` and `spec/` subdirectories, which were covered by the recursive grep.",
+    "falsifier": "Adding a spec file under docs/ (e.g. docs/spec/agent-snapshot-png.md) that names the `buzz_agent_snapshot` keyword or the `buzz-agent-snapshot` discriminator would refute this. So would documenting it in CHANGELOG-adjacent prose beyond the single PR line at CHANGELOG.md:293."
+   },
+   "notes": "The only prose trace outside source is CHANGELOG.md:293, a one-line PR entry about preserving snapshot tEXt chunks through media sanitization. Practical consequence: the format is discoverable only by reading Rust source, which is why the reproduction recipe above had to be reconstructed from the encoder/decoder rather than a spec."
+  }
+ ],
+ "extra_findings": "Additional context found while verifying, not requested but load-bearing for anyone acting on this:\n\n1. LOCKED CARDS. A second chunk-payload variant shares the same `buzz_agent_snapshot` tEXt keyword: an encrypted NIP-44 envelope. `parse_chunk_payload` (desktop/src-tauri/src/managed_agents/agent_snapshot_envelope.rs:174-196) dispatches on the JSON `format` string, so the same PNG keyword can carry either plaintext or ciphertext. Locked envelopes have their own size cap applied BEFORE typed deserialization (`MAX_LOCKED_ENVELOPE_JSON_BYTES`, lines 181-187) and fail closed with `LOCKED_CARD_REFUSAL` when neither of the envelope's two key endpoints is held locally (import.rs:318-333). The PNG-body-to-avatar override at import.rs:242-261 deliberately does NOT run for locked payloads.\n\n2. SANITIZER ROUND-TRIP. Uploading a snapshot PNG through Buzz media would normally destroy the chunk, because the upload sanitizer re-encodes. desktop/src-tauri/src/commands/media_snapshot_png.rs:22-80 extracts the raw chunk (length+type+payload+CRC) before the re-encode and re-injects it immediately after IHDR afterwards; the CRC stays valid because the chunk bytes are unchanged (comment at lines 54-58). The extractor walks chunk structure manually rather than decoding the image, so a malformed file yields None and falls through to normal sanitization. Entry point is desktop/src-tauri/src/commands/media.rs:267.\n\n3. RELAY-SIDE STRICTNESS is tighter than the desktop reader. crates/buzz-media/src/validation.rs:592-646 permits exactly one tEXt chunk with an allowlisted keyword and rejects everything else, including pHYs, which is explicitly excluded as an identity channel (comment at lines 626-628). So a PNG the desktop importer accepts may still be rejected on upload if it carries extra ancillary chunks.\n\n4. EXPORT-SIDE BODY SELECTION. desktop/src-tauri/src/commands/personas/snapshot.rs:313-315 and `resolve_png_body_avatar_bytes` at :333+ choose the PNG body separately from the manifest avatar source, so the body and the manifest avatar can intentionally differ (this is what makes trading cards work). desktop/src-tauri/src/commands/personas/card.rs:872-889 downsizes the manifest avatar to 512 px so the tEXt chunk stays small.\n\n5. TEAM PATH ASYMMETRY. Team snapshots have no envelope/locked variant and no body-avatar adoption — the body is always the 1x1 placeholder (team_snapshot.rs:128-144), and each member's avatar rides inside that member's own AgentSnapshot."
+}

@@ -187,6 +187,44 @@ promessa falsa de threshold). 33 correções aplicadas; o que ficou está priori
 próprio doc. Novidades: `killerbee inspect`, sha256 por artefato no catálogo e nas
 páginas, roteiro do vídeo sem credencial.
 
+### Sessão 2026-08-06 (Fase 2, blocos 1-4) — o custo do crossfire caiu para UMA chave
+
+- **§3.1 respondido no fonte:** "Mixed models" olha a STRING DO MODELO, nunca o provider
+  (`TeamIdentityCard.tsx:204-218` + `formatAgentModelLabel.ts:5-8`); credencial é por
+  provider (`readiness.rs:527-532`). **Uma chave OpenRouter roda os três agentes** com
+  três fabricantes distintos (D-033). Runbook reduzido em `LOCAL-SETUP.md` parte A;
+  protocolo pré-registrado (C1-C5) + roteiro de 90s em `docs/CROSSFIRE-RUN.md`. O pack
+  não mudou. A regra TOML de menção já era explícita com teste (D-007) — conferido.
+- **NCD sobre o catálogo** (`scripts/ncd_catalog.py`, zstd 19 + cross-check lzma 89,5%,
+  D-034): mediana 0,876, **76 pares abaixo de med−3·MAD**, e uma régua interna — o par
+  escrito à mão `adversary~guard` marca 0,780; 6 pares gerados ficam ABAIXO disso.
+  Lista com números e 3 opções de corte em `docs/CATALOG-AUDIT.md`. **Corte é decisão
+  do Saulo** (OPEN-QUESTIONS).
+- **P2 entregue:** `docs/SPEC-VS-IMPL.md` — 91 features do PERSONA_PACK_SPEC em 4
+  estados (43 ✅ · 25 divergentes · 21 ausentes · 2 futuros) + 13 na direção reversa.
+  Evidência bruta versionada em `docs/evidence/*.json`; markdown DERIVADO por
+  `scripts/evidence_to_docs.py`.
+- **P4 entregue, e mordeu a gente:** `docs/NEGATIVE-SPACE.md` — 68 negativas nossas
+  re-verificadas por céticos independentes: 60 confirmadas, 5 parciais, **3 REFUTADAS
+  publicadas** (drop zone existe no fonte; .team.png também tem URL pública; "zero
+  menções" era falso no literal). Corrigido em PROTOCOL-NOTES/HANDOFF/site; lição em
+  **D-035: grep de atributo não vê spread props — enumere o comportamento, não a
+  sintaxe.**
+- **4 issues prontas** em `docs/ISSUES-DRAFT.md` (inglês, citadas no pin, uma pergunta
+  objetiva cada) — a 3 ficou dupla: default surpreendente + README documentando formato
+  de TOML que `load_rules` ignora em silêncio. **Postar é 🔴 do Saulo.**
+- **P7:** PROTOCOL-NOTES ganhou a **§12 em inglês para o mantenedor**, 6 achados por
+  impacto, feita para recortar.
+- **P5 (anti-apodrecimento):** `scripts/verify_citations.py` (git show + string;
+  estados confirmada/deriva/quebrada/quebrada@pin/ilegível/local; NUNCA ok por omissão;
+  exit 2 se coleta falhar) + CI agendado `.github/workflows/verify-citations.yml`
+  (segundas, `--strict`: deriva também falha). Baseline: **175 confirmadas · 0
+  quebradas**; 18 atalhos ambíguos listados como débito (qualificar a 1ª menção).
+- Suíte: **427 Python** (405 + 12 do NCD + 10 do verificador, medida por `pytest`) ·
+  21 site. Pendências da fase:
+  P1 (tipagem em massa — começada nas seções novas), P3 (receitas por [OBSERVADO]),
+  P6 (protocol.json lido pelo emissor), corpus de PDFs (§7 — último da fila).
+
 ### `killerbee/` — o emissor
 
 Camadas puras (`model` → `profile` → `snapshot` → `pngtext` → `acp_rules` → `validate`),
@@ -313,9 +351,12 @@ alegação de novidade. E o teste: **tire a biologia — ainda se sustenta?** Re
 - **Importado não é rodando.** Falta credencial de provider e "Add to channel". **Medido
   no app:** o agente recém-importado mostra `Status: STOPPED`, `Start on launch: No` e aba
   Channels vazia.
-- **Não existe arrastar-e-soltar de snapshot.** A seção Agents não tem alvo de drop
-  (`tauri.conf.json:27` desliga o drop do webview; nenhum `onDrop=` na seção nem no dialog
-  de import). O site prometia o contrário e foi corrigido — [D-017](docs/DECISIONS.md).
+- **Arrastar-e-soltar de snapshot: a correção foi corrigida (2026-08-06).** O fonte TEM
+  alvo de drop na seção Agents — `useFileImportZone.ts:29-36` espalhado via
+  `{...dropHandlers}` em `UnifiedAgentsSection.tsx:105-137`. A "ausência confirmada"
+  anterior era grep de `onDrop=` (não vê spread props); e `dragDropEnabled: false`
+  desliga só o handler nativo do Tauri — é o que DEIXA o onDrop do DOM disparar. No app
+  rodando continua não testado. Ver [D-035](docs/DECISIONS.md) e PROTOCOL-NOTES §10.5.
 - **O import de team não deduplica.** Importar as personas e depois o team cria
   duplicatas. Oriente um ou outro — [D-018](docs/DECISIONS.md).
 - Campo extra em `.persona.md` é **erro fatal**; em snapshot é **descartado em silêncio**.

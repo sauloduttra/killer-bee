@@ -677,3 +677,71 @@ sobreviveram à primeira tentativa e precisaram de um segundo teste (concordânc
 na meia-largura).
 **Custo de reversão:** nenhum a considerar — são correções.
 **Suíte:** 391 (era 327).
+
+---
+
+## D-033 — Crossfire com uma chave: OpenRouter vira o quickstart, o pack não muda
+
+**Quando:** 2026-08-06, Fase 2 Bloco 1 (§3.1 do FASE-2.md)
+**O que:** a pergunta "o rótulo Mixed models olha modelo ou provider?" foi respondida
+no fonte: **modelo** (`TeamIdentityCard.tsx:204-218` deduplica a string de
+`persona.model`; `formatAgentModelLabel.ts:5-8` é trim-ou-"Auto"; provider não entra).
+Credencial é por provider (`readiness.rs:527-532`), OpenRouter é provider de primeira
+classe no runtime (`buzz-agent/src/config.rs:834-843`) e na UI
+(`buzzAgentConfig.ts:131-133`). Consequência: **uma chave OpenRouter roda os três
+agentes** com três modelos de três fabricantes, e o card continua "Mixed models".
+**Decisão:** o runbook (`LOCAL-SETUP.md` parte A) recomenda o caminho de uma chave
+como quickstart; o pack `crossfire-review` **continua declarando os três providers
+nativos** — o teste que trava três providers distintos não muda.
+**Alternativa considerada:** trocar as três personas para `openrouter:*`. Rejeitada:
+o pack documenta o ideal (independência também operacional — gateway único é ponto
+único de falha, billing e log); o quickstart documenta o barato. Mudar o pack
+apagaria a distinção em vez de ensiná-la.
+**Custo de reversão:** uma linha no runbook e este registro. O pack não foi tocado —
+custo zero lá.
+
+---
+
+## D-034 — NCD com zstandard: exceção ao "scripts stdlib-only"
+
+**Quando:** 2026-08-06, Fase 2 Bloco 2 (§4.1 do FASE-2.md)
+**O que:** `scripts/ncd_catalog.py` depende de `zstandard` (grupo dev). O comentário
+do `pyproject.toml` prometia scripts stdlib-only; o FASE-2 §4.1 fixa **zstd** como
+compressor do NCD. Precedência manda: FASE-2 acima de convenção local.
+**Mitigação no espírito do D-014:** o script cross-checka o ranking com `lzma`
+(stdlib) — sobreposição de 89,5% nos 76 pares do fundo. Se o zstd sumir, o lzma
+segura o detector com uma troca de função.
+**Alternativa considerada:** só lzma (stdlib puro). Rejeitada: contraria instrução
+explícita da fase; e ter os dois compressores é melhor detector que qualquer um só.
+**Custo de reversão:** trocar `zstd_size_bytes` por `lzma_size_bytes` no `main` e
+remover a dependência — minutos. Números mudam; o método não.
+**Suíte:** 405 → 417 (12 testes novos, cada um nomeando a mutação que mata).
+
+---
+
+## D-035 — Re-verificação adversarial do espaço negativo: 3 negativas nossas refutadas
+
+**Quando:** 2026-08-06, Fase 2 Bloco 2 (P4). 68 afirmações negativas dos nossos docs
+re-verificadas por céticos independentes contra o MESMO commit pinado (ed4b3e7a):
+60 confirmadas, 5 parciais, **3 refutadas** — e as 3 estavam publicadas.
+
+1. **"Não existe alvo de drop na seção Agents" — FALSO.** `UnifiedAgentsSection.tsx:105-137`
+   espalha `{...dropHandlers}` de `useFileImportZone.ts:29-36`. A "ausência confirmada"
+   veio de grep de `onDrop=`; **grep de atributo não enxerga spread props.** E
+   `dragDropEnabled: false` (tauri.conf.json:27) desliga o handler NATIVO do Tauri —
+   o que é pré-condição, não impedimento, para o onDrop do DOM.
+2. **"O .agent.png é o único instalável com URL pública" — FALSO.** `TeamShareDialog`
+   embrulha o mesmo dialog (`snapshotKind="team"`); o `.team.png` sobe pelo mesmo
+   caminho e é instalável (e2e `team-snapshot.spec.ts:314-457`).
+3. **"Zero menções a provider em buzz-acp/src" — FALSO no literal** (doc-comment em
+   `usage.rs:99-102` + testes). O substantivo sobrevive: nenhuma integração de SDK.
+
+**Lição nova, e vale para o repo todo:** "a enumeração devolveu resultado" (D-014) não
+basta quando **o padrão enumerado não cobre o mecanismo** — atributo JSX vs spread,
+menção literal vs integração, dialog único vs wrapper. Ausência confirmada exige
+enumerar o COMPORTAMENTO (quem monta os handlers, quem chama o upload), não a sintaxe.
+**Correções aplicadas em:** PROTOCOL-NOTES §5.2/§7/§10.5/§10.8, HANDOFF §6,
+`site/app/lib/install.ts` (v3 da constante — o site agora só afirma o que foi visto
+no app rodando). Registro completo com recibos de busca em
+[`NEGATIVE-SPACE.md`](NEGATIVE-SPACE.md).
+**Custo de reversão:** nenhum — são correções contra o fonte pinado.

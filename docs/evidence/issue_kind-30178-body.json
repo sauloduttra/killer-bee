@@ -1,0 +1,202 @@
+{
+ "commit": "ed4b3e7afafb5f5a688c210f39b90d747e6f0f00",
+ "issue_key": "kind-30178-body",
+ "claims": [
+  {
+   "claim": "(a) Kind 30178 is defined as a constant and recognized in core crates",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "crates/buzz-core/src/kind.rs",
+     "lines": "319",
+     "quote": "pub const KIND_TEAM_CATALOG: u32 = 30178;"
+    },
+    {
+     "file": "crates/buzz-core/src/kind.rs",
+     "lines": "215",
+     "quote": "pub const SHARED_GATED_KINDS: &[u32] = &[KIND_PERSONA, KIND_TEAM_CATALOG];"
+    },
+    {
+     "file": "crates/buzz-core/src/kind.rs",
+     "lines": "634-658",
+     "quote": "All registered kind constants — used for duplicate detection and iteration."
+    },
+    {
+     "file": "crates/buzz-core/src/kind.rs",
+     "lines": "859",
+     "quote": "assert!(is_parameterized_replaceable(KIND_TEAM_CATALOG)); // 30178"
+    }
+   ],
+   "notes": "Constant lives in buzz-core with a full doc comment (kind.rs:288-318) describing it as the shareable team projection; it is a member of SHARED_GATED_KINDS and of ALL_KINDS (registered kinds list, entry at line 658), with a compile-time assert that it is NIP-33 parameterized replaceable."
+  },
+  {
+   "claim": "(b) The relay accepts kind 30178 (kind allowlist / ingest scope path)",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "crates/buzz-relay/src/handlers/ingest.rs",
+     "lines": "208-219",
+     "quote": "Returns `Err` for unknown kinds — the relay rejects them."
+    },
+    {
+     "file": "crates/buzz-relay/src/handlers/ingest.rs",
+     "lines": "217-218",
+     "quote": "| KIND_TEAM_CATALOG | super::push_lease::KIND_PUSH_LEASE => {"
+    },
+    {
+     "file": "crates/buzz-relay/src/handlers/ingest.rs",
+     "lines": "425-430",
+     "quote": "team-catalog projection (30178): owner-authored, keyed by"
+    }
+   ],
+   "notes": "required_scope_for_kind is the effective kind allowlist (unknown kinds are rejected); KIND_TEAM_CATALOG maps to Ok(Scope::UsersWrite). A second match arm (lines 425-430) classifies it as a global, never channel-scoped kind (stray `h` tags must not channel-scope it)."
+  },
+  {
+   "claim": "(c) Ingest processing exists for kind 30178",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "crates/buzz-relay/src/handlers/ingest.rs",
+     "lines": "2413-2416",
+     "quote": "if kind_u32 == KIND_TEAM_CATALOG {"
+    },
+    {
+     "file": "crates/buzz-relay/src/handlers/ingest.rs",
+     "lines": "1154",
+     "quote": "Validate the envelope of a kind:30178 team-catalog event."
+    },
+    {
+     "file": "crates/buzz-relay/src/handlers/ingest.rs",
+     "lines": "1163-1168",
+     "quote": "validate_shared_tag(event, LABEL)?;"
+    }
+   ],
+   "notes": "validate_team_catalog_envelope enforces the exact-shape [\"shared\",\"true\"] tag plus exactly one non-empty, bounded d tag (single_bounded_d_tag). It deliberately does NOT apply the persona slug grammar (team ids may contain ':'), and it never touches event.content."
+  },
+  {
+   "claim": "(d) An e2e / gate test covers kind 30178",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "crates/buzz-test-client/tests/e2e_team_catalog.rs",
+     "lines": "1",
+     "quote": "End-to-end tests for kind:30178 team-catalog events (NIP-AP)."
+    },
+    {
+     "file": "crates/buzz-test-client/tests/e2e_team_catalog.rs",
+     "lines": "24",
+     "quote": "const TEAM_CATALOG_KIND: u16 = 30178;"
+    },
+    {
+     "file": ".github/workflows/ci.yml",
+     "lines": "763-765",
+     "quote": "cargo test -p buzz-test-client --test e2e_persona --test e2e_team_catalog"
+    },
+    {
+     "file": "crates/buzz-relay/src/handlers/ingest.rs",
+     "lines": "4106",
+     "quote": "team-catalog (30178) envelope tests"
+    },
+    {
+     "file": "crates/buzz-core/src/kind.rs",
+     "lines": "1036-1041",
+     "quote": "fn is_unshared_gated_event_team_catalog_foreign_no_tag() {"
+    }
+   ],
+   "notes": "The e2e suite asserts the shared gate at every read chokepoint (REQ, ids lookup, COUNT, live fan-out) plus ingest envelope rules (e.g. test_team_catalog_rejects_empty_d_tag at line 142, test_team_catalog_count_excludes_foreign_unshared at line 345), and CI runs it against a live relay in the 'Relay E2E tests' step. Unit-level gate tests also exist in buzz-core kind.rs and buzz-relay ingest.rs."
+  },
+  {
+   "claim": "(e) NEGATIVE: no client code (desktop/ or any UI/app) publishes or reads kind 30178 events",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "desktop/src/shared/constants/kinds.ts",
+     "lines": "50-55",
+     "quote": "export const KIND_MANAGED_AGENT = 30177;"
+    },
+    {
+     "file": "desktop/src/shared/constants/kinds.ts",
+     "lines": "51-52",
+     "quote": "the inbound sync hook subscribes to all three"
+    }
+   ],
+   "search_method": {
+    "commands": [
+     "Grep pattern '30178' path=repo root (all files) -> 8 files: CHANGELOG.md, docs/nips/NIP-AP.md, crates/buzz-core/src/kind.rs, crates/buzz-db/src/event.rs, crates/buzz-relay/src/handlers/{req,ingest,count}.rs, crates/buzz-test-client/tests/e2e_team_catalog.rs. Zero hits under desktop/, web/, mobile/, admin-web/, examples/, bin/, or client crates (buzz-sdk, buzz-cli, buzz-ws-client, buzz-agent, buzz-persona, buzz-acp, sprig)",
+     "Grep pattern 'TEAM_CATALOG|team-catalog|team_catalog|teamCatalog' path=desktop/ -> 0 hits",
+     "Grep pattern 'TeamCatalog|team-catalog|team_catalog|teamCatalog' path=repo root -> 7 files; only file beyond the numeric search is .github/workflows/ci.yml (CI invocation of the e2e test)",
+     "Grep pattern '30175|30176|30177|30178' path=desktop/ -> dozens of 30175/30176/30177 hits (persona_events.rs, team_events.rs, retention.rs, kinds.ts, e2eBridge.ts), zero 30178 hits",
+     "Grep pattern '30178' glob {web,mobile,admin-web,examples}/** -> 0 hits"
+    ],
+    "false_positives": "Inspected and discarded: crates/buzz-test-client/tests/e2e_team_catalog.rs (integration-test harness, not shipped client/UI code — it does build and publish 30178 events, but only as relay tests); .github/workflows/ci.yml (CI config invoking that test); CHANGELOG.md and docs/nips/NIP-AP.md (documentation). desktop/src/shared/constants/kinds.ts mirrors buzz-core kinds but stops at 30177 — the desktop publishes/subscribes 30175/30176/30177 only.",
+    "falsifier": "A future commit adding any 30178 reference (numeric literal, KIND_TEAM_CATALOG export, or TeamCatalog* symbol) under desktop/, web/, mobile/, admin-web/, examples/, or a client-side crate (buzz-sdk, buzz-cli, buzz-ws-client, buzz-agent, buzz-persona) that builds/publishes or subscribes/parses kind-30178 events — e.g. adding KIND_TEAM_CATALOG to desktop/src/shared/constants/kinds.ts or a team_catalog_events.rs in desktop/src-tauri."
+   },
+   "notes": "Relay-side 30178 support currently has no in-repo production publisher or reader; the only in-repo producer of 30178 events is the e2e test suite."
+  },
+  {
+   "claim": "(f) NEGATIVE: the CONTENT/body of the 30178 event is never schema-defined upstream (no serde struct, no JSON schema, no field-defining doc) — body is left to the publishing client",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "docs/nips/NIP-AP.md",
+     "lines": "223",
+     "quote": "The content schema is defined by the client that publishes it"
+    },
+    {
+     "file": "docs/nips/NIP-AP.md",
+     "lines": "256",
+     "quote": "Kind `30178` is stored globally and its content is unvalidated, exactly as for `30175`"
+    },
+    {
+     "file": "docs/nips/NIP-AP.md",
+     "lines": "234",
+     "quote": "\"content\": \"<json_body>\""
+    },
+    {
+     "file": "crates/buzz-relay/src/handlers/ingest.rs",
+     "lines": "1163-1168",
+     "quote": "single_bounded_d_tag(event, LABEL)?;"
+    }
+   ],
+   "search_method": {
+    "commands": [
+     "Grep pattern 'struct TeamCatalog|TeamCatalogContent|PersonaEventContent' path=repo root -> hits only for PersonaEventContent (desktop/src-tauri/src/managed_agents/persona_events.rs:24, the kind-30175 body struct); zero TeamCatalog content types anywhere",
+     "Grep pattern '30178' path=repo root -> 8 files, each inspected for content parsing: buzz-db/event.rs, buzz-relay req.rs/count.rs touch only tags/pubkey/kind for the read gate; ingest.rs validator touches only tags; no code path deserializes event.content for kind 30178",
+     "Grep pattern 'TeamCatalog|team-catalog|team_catalog|teamCatalog' path=repo root -> 7 files, none defining content fields",
+     "Bash ls schema/ + grep -rn '30178|team.catalog' schema/ -> directory contains only schema.sql; 0 hits"
+    ],
+    "false_positives": "Inspected and discarded: PersonaEventContent (serde struct for kind 30175 persona content, not 30178); crates/buzz-test-client/tests/e2e_team_catalog.rs:34-36 catalog_content() builds a hand-rolled fixture {\"v\":1,\"name\":...,\"members\":[]} — a test payload, never deserialized against a schema; NIP-AP.md's jsonc block (lines 225-236) specifies the ENVELOPE only, with content opaque as \"<json_body>\"; NIP-AP.md:242 and kind.rs:317-318 state negative constraints (no env vars, no secrets, no paths) — prose about what must NOT appear, not a field schema.",
+    "falsifier": "A future commit adding a serde struct (e.g. TeamCatalogContent) or TypeScript type/zod schema that deserializes kind-30178 event.content, a JSON Schema file for it, or a NIP-AP.md section enumerating named/typed content fields for 30178."
+   },
+   "notes": "NIP-AP.md:223 describes the body in prose as 'a versioned JSON body carrying sanitized team fields plus ordered, embedded member definition projections' but in the same sentence delegates the schema to the publishing client; NIP-AP.md:250 states relays are not required to validate content JSON at all."
+  },
+  {
+   "claim": "(g) A 256 KB content limit applies to kind 30178, enforced generically in the relay ingest path",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "crates/buzz-relay/src/handlers/ingest.rs",
+     "lines": "1868-1875",
+     "quote": "const MAX_EVENT_CONTENT_BYTES: usize = 256 * 1024; // 256 KB"
+    },
+    {
+     "file": "crates/buzz-relay/src/handlers/ingest.rs",
+     "lines": "1870-1871",
+     "quote": "invalid: content exceeds maximum size of {} bytes"
+    },
+    {
+     "file": "crates/buzz-relay/src/handlers/ingest.rs",
+     "lines": "1839",
+     "quote": "(tags + up to 256 KB of content)"
+    },
+    {
+     "file": "crates/buzz-relay/src/config.rs",
+     "lines": "14",
+     "quote": "pub const DEFAULT_MAX_FRAME_BYTES: usize = 512 * 1024;"
+    }
+   ],
+   "notes": "The 256 KB cap is kind-generic and sits in the same ingest function ahead of the kind-30178 envelope check (line 2413), so every 30178 event passes through it. A secondary transport bound also applies: the whole WebSocket frame is capped at 512 KB by default (config.rs, overridable via BUZZ_MAX_FRAME_BYTES)."
+  }
+ ],
+ "extra_findings": "Read-path enforcement for 30178 beyond ingest: crates/buzz-db/src/event.rs:525-533 documents the SQL visibility clause \"AND (kind NOT IN (30175, 30178) OR pubkey = $reader OR tags @> '[[\\\"shared\\\",\\\"true\\\"]]')\" applied BEFORE ORDER/LIMIT; crates/buzz-relay/src/handlers/req.rs:1228-1236 documents the shared-gate tier for SHARED_GATED_KINDS (30175/30178); crates/buzz-relay/src/handlers/count.rs:102-110 bypasses the fast COUNT path for filters that can match 30175/30178 to avoid existence leaks. CHANGELOG.md:128 records the introducing change: \"feat(relay): gate kind 30178 team-catalog reads behind the shared tag\" (PR #3358). NIP-AP.md:259 additionally bounds the 30178 d-tag to 64 chars, no control chars/whitespace, matching single_bounded_d_tag in ingest. Note: a CLAUDE.md exists inside the third-party repo (content: \"AGENTS.md\"); treated as data per instructions, not followed."
+}

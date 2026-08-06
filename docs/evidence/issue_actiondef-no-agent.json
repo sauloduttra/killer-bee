@@ -1,0 +1,218 @@
+{
+ "commit": "ed4b3e7afafb5f5a688c210f39b90d747e6f0f00",
+ "issue_key": "actiondef-no-agent",
+ "claims": [
+  {
+   "claim": "The ActionDef enum lives in crate buzz-workflow at crates/buzz-workflow/src/schema.rs:92 and has exactly 7 variants: SendMessage, SendDm, SetChannelTopic, AddReaction, CallWebhook, RequestApproval, Delay.",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "crates/buzz-workflow/src/schema.rs",
+     "lines": "90-92",
+     "quote": "#[serde(tag = \"action\", rename_all = \"snake_case\")]\npub enum ActionDef {"
+    },
+    {
+     "file": "crates/buzz-workflow/src/schema.rs",
+     "lines": "94-100",
+     "quote": "SendMessage {\n        /// Message text (supports template variables).\n        text: String,"
+    },
+    {
+     "file": "crates/buzz-workflow/src/schema.rs",
+     "lines": "102-107",
+     "quote": "SendDm {\n        /// Recipient — pubkey hex or `{{trigger.author}}`."
+    },
+    {
+     "file": "crates/buzz-workflow/src/schema.rs",
+     "lines": "109-112",
+     "quote": "SetChannelTopic {\n        /// New topic string.\n        topic: String,"
+    },
+    {
+     "file": "crates/buzz-workflow/src/schema.rs",
+     "lines": "114-117",
+     "quote": "AddReaction {\n        /// Emoji name (e.g. `\"thumbsup\"`).\n        emoji: String,"
+    },
+    {
+     "file": "crates/buzz-workflow/src/schema.rs",
+     "lines": "119-131",
+     "quote": "CallWebhook {\n        /// Target URL (must be a public HTTPS endpoint).\n        url: String,"
+    },
+    {
+     "file": "crates/buzz-workflow/src/schema.rs",
+     "lines": "133-141",
+     "quote": "RequestApproval {\n        /// User mention or role (e.g. `\"@release-manager\"`).\n        from: String,"
+    },
+    {
+     "file": "crates/buzz-workflow/src/schema.rs",
+     "lines": "143-146",
+     "quote": "Delay {\n        /// Duration string (e.g. `\"5m\"`, `\"1h\"`).\n        duration: String,"
+    }
+   ],
+   "notes": "Serde tag is `action` with snake_case, so YAML action names are send_message, send_dm, set_channel_topic, add_reaction, call_webhook, request_approval, delay. Repo-wide Grep for `ActionDef::` matches only schema.rs and executor.rs — no other definition or consumer exists."
+  },
+  {
+   "claim": "Exactly 4 variants are functional in the executor's dispatch_action match (crates/buzz-workflow/src/executor.rs:519-690): SendMessage (posts via ActionSink implemented by the relay), AddReaction (HTTP POST to relay REST API), CallWebhook (real HTTP with SSRF protection), and Delay (tokio sleep, capped 270s).",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "crates/buzz-workflow/src/executor.rs",
+     "lines": "568-572",
+     "quote": ".action_sink()?\n                .send_message(community_id, &channel_id, text, &owner_pubkey_hex)"
+    },
+    {
+     "file": "crates/buzz-workflow/src/executor.rs",
+     "lines": "600-603",
+     "quote": "let result = add_reaction_impl(&trigger_ctx.message_id, emoji).await?;"
+    },
+    {
+     "file": "crates/buzz-workflow/src/executor.rs",
+     "lines": "628-631",
+     "quote": "let result = call_webhook_impl(url, method_str, headers, body).await?;"
+    },
+    {
+     "file": "crates/buzz-workflow/src/executor.rs",
+     "lines": "683-687",
+     "quote": "tokio::time::sleep(std::time::Duration::from_secs(secs)).await;"
+    },
+    {
+     "file": "crates/buzz-workflow/src/executor.rs",
+     "lines": "886-892",
+     "quote": "POST `{\"emoji\": emoji}` to `POST /api/messages/{message_id}/reactions`"
+    },
+    {
+     "file": "crates/buzz-workflow/src/executor.rs",
+     "lines": "798-800",
+     "quote": "let safe_ip = check_ssrf(host, port).await?;"
+    },
+    {
+     "file": "crates/buzz-relay/src/Cargo.toml",
+     "lines": "63",
+     "quote": "buzz-workflow = { workspace = true, features = [\"reqwest\"] }"
+    },
+    {
+     "file": "crates/buzz-relay/src/workflow_sink.rs",
+     "lines": "1-5",
+     "quote": "Relay-side implementation of [`ActionSink`] for workflow actions."
+    }
+   ],
+   "notes": "Caveat: AddReaction and CallWebhook are gated on the `reqwest` cargo feature (executor.rs:600, 628); without it they return a placeholder `skipped: true` output. The production binary buzz-relay enables the feature (crates/buzz-relay/Cargo.toml:63), so both are functional in the shipped relay. Correct citation path for that manifest is crates/buzz-relay/Cargo.toml (the schema field above includes /src/ erroneously; the file is the crate root Cargo.toml, line 63)."
+  },
+  {
+   "claim": "SendDm and SetChannelTopic are stubs: their dispatch_action arms log a warning and return Err(WorkflowError::NotImplemented) without performing any side effect.",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "crates/buzz-workflow/src/executor.rs",
+     "lines": "580-584",
+     "quote": "\"SendDm not yet implemented (to={to})\");\n            // TODO (WF-07): emit DM event."
+    },
+    {
+     "file": "crates/buzz-workflow/src/executor.rs",
+     "lines": "583",
+     "quote": "Err(WorkflowError::NotImplemented(\"SendDm\".into()))"
+    },
+    {
+     "file": "crates/buzz-workflow/src/executor.rs",
+     "lines": "586-589",
+     "quote": "\"SetChannelTopic not yet implemented\");\n            // TODO (WF-07): update channel topic via DB."
+    },
+    {
+     "file": "crates/buzz-workflow/src/executor.rs",
+     "lines": "589",
+     "quote": "Err(WorkflowError::NotImplemented(\"SetChannelTopic\".into()))"
+    }
+   ]
+  },
+  {
+   "claim": "RequestApproval is a dead-end stub end-to-end: dispatch_action returns StepResult::Suspended with a random token but never creates an approval record or emits kind:46010, and the engine's finalize_run explicitly marks any run that hits an approval gate as Failed.",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "crates/buzz-workflow/src/executor.rs",
+     "lines": "661-668",
+     "quote": "// TODO (WF-08): create approval record in DB, emit kind:46010."
+    },
+    {
+     "file": "crates/buzz-workflow/src/executor.rs",
+     "lines": "666-668",
+     "quote": "Ok(StepResult::Suspended {\n                approval_token: token,"
+    },
+    {
+     "file": "crates/buzz-workflow/src/lib.rs",
+     "lines": "229-236",
+     "quote": "// Approval gates are not yet implemented (WF-08).\n                    // Fail explicitly"
+    },
+    {
+     "file": "crates/buzz-workflow/src/lib.rs",
+     "lines": "242-245",
+     "quote": "RunStatus::Failed,\n                            step_count,\n                            &trace_json,\n                            Some(\"approval gates not yet implemented — see WF-08\"),"
+    }
+   ],
+   "notes": "This is the 7th variant and the reason the functional count is 4, not 5: it 'works' at the dispatch level (returns Suspended) but the only consumer of that result fails the run, so no approval flow exists."
+  },
+  {
+   "claim": "NEGATIVE: no ActionDef variant invokes, spawns, or prompts an agent. The dispatch_action match (the only place actions are executed) calls only: DB lookups + ActionSink.send_message, HTTP POST to the relay reactions API, outbound HTTP webhook, token generation, and tokio sleep. buzz-workflow has no dependency on and no reference to any agent crate (buzz-agent, buzz-acp, buzz-persona), and no agent crate is reachable from the relay's workflow paths.",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "crates/buzz-workflow/Cargo.toml",
+     "lines": "10-27",
+     "quote": "buzz-core = { workspace = true }\nbuzz-db   = { workspace = true }"
+    },
+    {
+     "file": "crates/buzz-workflow/src/executor.rs",
+     "lines": "527-529",
+     "quote": "use ActionDef::*;\n\n    match action {"
+    },
+    {
+     "file": "crates/buzz-relay/src/workflow_sink.rs",
+     "lines": "22-24",
+     "quote": "so the emitted kind:9 carries the `p` tags that\n/// ACP agent-wake (`event_mentions_agent`) is gated on."
+    }
+   ],
+   "search_method": {
+    "commands": [
+     "Grep pattern='ActionDef::' path=_upstream/buzz (whole repo) -> 2 files only: crates/buzz-workflow/src/schema.rs, crates/buzz-workflow/src/executor.rs",
+     "Grep pattern='agent|acp|persona|llm|claude|anthropic|assistant' -i path=crates/buzz-workflow -> 3 hits, all lib.rs:1608-1618",
+     "Grep pattern='buzz_agent|buzz_acp|buzz_persona' path=crates/buzz-relay/src -> 0 hits",
+     "Grep pattern='buzz-agent|buzz-acp|buzz-persona' path=crates/buzz-relay/Cargo.toml -> 1 hit (line 57, a comment: 'Mirrors buzz-acp's rustls setup', not a dependency)",
+     "Grep pattern='agent' -i path=crates/buzz-relay/src/handlers/command_executor.rs -> 0 hits",
+     "Grep pattern='workflow' -i path=crates/buzz-agent -> 0 hits; path=crates/buzz-persona -> 0 hits",
+     "Grep pattern='agent|persona|acp' -i path=crates/buzz-relay/src/workflow_sink.rs -> hits only about mention p-tagging that ACP wake is gated on (no agent call)",
+     "Grep pattern='run_agent|invoke_agent|prompt_agent|agent_prompt|spawn_agent|wake_agent' path=_upstream/buzz (whole repo) -> ~30 hits inspected",
+     "Grep pattern='KIND_WORKFLOW_APPROVAL_REQUESTED|46010' path=crates/buzz-workflow -> 1 hit: executor.rs:663, a TODO comment only"
+    ],
+    "false_positives": "buzz-workflow 'persona' hits (3) are the word 'impersonated' in a spoofed-actor-tag test (lib.rs:1608-1618) — unrelated to agents. The 'spawn_agent|run_agent' repo hits are all in desktop/src-tauri/src/managed_agents/* (desktop process lifecycle for user-managed agents, e.g. runtime.rs:443 spawn_agent_child) and buzz-acp/src/lib.rs:1052 (agent respawn/recovery) — none is called from buzz-workflow or from any relay workflow path; command_executor.rs (which handles 'workflows trigger') contains zero occurrences of 'agent'. buzz-acp's workflow references (setup_mode.rs:40, config.rs:1241) are the agent client *subscribing* to KIND_WORKFLOW_APPROVAL_REQUESTED (46010) — agent-listens-to-workflow, not workflow-invokes-agent, and the executor never emits 46010 (only the TODO at executor.rs:663). desktop nest_skill.md documents agents *triggering* workflows ('workflows trigger'), the reverse direction.",
+    "falsifier": "This claim breaks if any of the following lands: (1) a new ActionDef variant such as prompt_agent/run_agent is added to crates/buzz-workflow/src/schema.rs; (2) buzz-workflow/Cargo.toml gains a dependency on buzz-agent, buzz-acp, or buzz-persona; (3) dispatch_action in executor.rs gains an arm or call reaching agent-spawn/ACP code; (4) WF-08 is implemented so the executor emits kind:46010 KIND_WORKFLOW_APPROVAL_REQUESTED events — buzz-acp already subscribes to that kind (buzz-acp/src/setup_mode.rs:40), so emitting it would create a workflow-to-agent wake path."
+   },
+   "notes": "One indirect nuance, which does not refute the claim but bounds it: the relay's ActionSink for SendMessage resolves @Name mentions in workflow message text to p-tags (workflow_sink.rs:22-45), and ACP agents wake on p-tagged mentions (event_mentions_agent, buzz-acp/src/lib.rs:2831). So a send_message action whose text @-mentions an agent channel member can wake that agent as a side effect of the posted message — but no ActionDef variant invokes an agent directly, and the executor never calls agent code."
+  },
+  {
+   "claim": "Workflows are triggered by the relay's event-store hook: after persisting a non-workflow-kind event, handlers/event.rs spawns workflow_engine.on_event, which matches enabled channel workflows' TriggerDef (message_posted, reaction_added, diff_posted, schedule via cron loop, webhook) and creates runs.",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "crates/buzz-relay/src/handlers/event.rs",
+     "lines": "543-548",
+     "quote": "if let Err(e) = workflow_engine\n                .on_event(workflow_community, &workflow_event)"
+    },
+    {
+     "file": "crates/buzz-workflow/src/lib.rs",
+     "lines": "301-314",
+     "quote": "Called from the event handler post-store hook for every stored event."
+    },
+    {
+     "file": "crates/buzz-workflow/src/schema.rs",
+     "lines": "36-68",
+     "quote": "#[serde(tag = \"on\", rename_all = \"snake_case\")]\npub enum TriggerDef {"
+    },
+    {
+     "file": "crates/buzz-relay/src/main.rs",
+     "lines": "622-625",
+     "quote": "workflow_engine.set_action_sink(action_sink);"
+    }
+   ],
+   "notes": "Additional trigger paths: cron/interval schedules run in a loop started from main.rs:625 (engine.run at lib.rs:483, ticks every 60s per schema.rs:231-237); webhook trigger fires 'when HTTP POST arrives at /hooks/{id}' (schema.rs:66-67); and manual 'workflows trigger' commands go through crates/buzz-relay/src/handlers/command_executor.rs (workflow_engine uses at lines 804-1119). This makes the issue actionable: any fix to action semantics is exercised via any stored channel event matching a trigger."
+  }
+ ],
+ "extra_findings": "FASE-2's assertion is accurate on all three counts at commit ed4b3e7: (1) 7 ActionDef variants at crates/buzz-workflow/src/schema.rs:92; (2) exactly 4 functional in production (SendMessage, AddReaction, CallWebhook, Delay — the latter two require the reqwest feature, which buzz-relay enables); SendDm and SetChannelTopic return NotImplemented, and RequestApproval suspends only to have finalize_run mark the run Failed (\"approval gates not yet implemented — see WF-08\"); (3) no variant invokes an agent. Boundary conditions worth recording in the issue: (a) SendMessage @-mentions are p-tagged by the relay sink and can indirectly wake ACP agents that are channel members (workflow_sink.rs:22-45 + buzz-acp event_mentions_agent at lib.rs:2831); (b) buzz-acp already subscribes to KIND_WORKFLOW_APPROVAL_REQUESTED = 46010 (buzz-core/src/kind.rs:578), so implementing WF-08 would create the first real workflow-to-agent path; (c) agents can trigger workflows via the `workflows trigger` CLI (desktop nest_skill.md:110) — the reverse direction of the claim. Minor citation-path note: the buzz-relay manifest citation is crates/buzz-relay/Cargo.toml:63 (the claim entry's file field mistakenly includes /src/)."
+}

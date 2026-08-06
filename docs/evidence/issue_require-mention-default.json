@@ -1,0 +1,176 @@
+{
+ "commit": "ed4b3e7afafb5f5a688c210f39b90d747e6f0f00",
+ "issue_key": "require-mention-default",
+ "claims": [
+  {
+   "claim": "(a) The TOML rule struct SubscriptionRule carries require_mention with a serde default attribute, so a hand-written rule that omits the key deserializes with mention OFF (bool default = false).",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "crates/buzz-acp/src/filter.rs",
+     "lines": "82-93",
+     "quote": "#[serde(default)]\n    pub require_mention: bool,"
+    },
+    {
+     "file": "crates/buzz-acp/src/filter.rs",
+     "lines": "116-122",
+     "quote": "require_mention: false,"
+    },
+    {
+     "file": "crates/buzz-acp/src/config.rs",
+     "lines": "1155-1159",
+     "quote": "struct TomlConfig { #[serde(default)] rules: Vec<SubscriptionRule>"
+    }
+   ],
+   "notes": "The struct is #[derive(Debug, serde::Deserialize)] (filter.rs:82); serde's #[serde(default)] on a bool yields false when the TOML key is absent. The explicit Default impl (filter.rs:122) also sets require_mention: false. Rules are parsed from [[rules]] tables in the file given by --config / BUZZ_ACP_CONFIG (default ./buzz-acp.toml, config.rs:336-337) via load_rules (config.rs:1161)."
+  },
+  {
+   "claim": "(b) Three subscribe modes exist: Mentions (default), All, Config. subscribe=config means per-channel NIP-01 filters are derived by merging the [[rules]] loaded from the TOML config file instead of a synthesized built-in rule.",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "crates/buzz-acp/src/config.rs",
+     "lines": "50-55",
+     "quote": "pub enum SubscribeMode { Mentions, All, Config, }"
+    },
+    {
+     "file": "crates/buzz-acp/src/config.rs",
+     "lines": "319-325",
+     "quote": "env = \"BUZZ_ACP_SUBSCRIBE\", default_value = \"mentions\""
+    },
+    {
+     "file": "crates/buzz-acp/src/lib.rs",
+     "lines": "1521-1527",
+     "quote": "SubscribeMode::Config => { ... config::load_rules(&config.config_path)?"
+    },
+    {
+     "file": "crates/buzz-acp/src/config.rs",
+     "lines": "1287-1322",
+     "quote": "SubscribeMode::Config => { for ch in discovered_channels {"
+    },
+    {
+     "file": "crates/buzz-acp/src/config.rs",
+     "lines": "1376-1382",
+     "quote": "Same merge logic as resolve_channel_filters() Config branch"
+    }
+   ],
+   "notes": "resolve_channel_filters (config.rs:1234-1326) builds a ChannelFilter {kinds, require_mention} per channel. Config branch: kinds are unioned across matching rules (empty = wildcard, config.rs:1298-1306); channels with no matching rule are omitted entirely (config.rs:1312, and resolve_single_channel_filter returns None, config.rs:1403-1407). In config mode --kinds, --channels and --no-mention-filter are ignored with warnings (config.rs:889-899)."
+  },
+  {
+   "claim": "(c) Runtime consequence of require_mention=false in a config-mode rule: the merged ChannelFilter starts at require_mention=true but any matching rule with false flips it (most-permissive-wins); the relay REQ then omits the #p mention tag filter, so the relay delivers every channel event of the subscribed kinds; match_event then skips the mention check for that rule, so the agent is queued/prompted for every such event from any author allowed by the inbound author gate (default owner-only), not just @mentions.",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "crates/buzz-acp/src/config.rs",
+     "lines": "1288-1310",
+     "quote": "if !rule.require_mention { require_mention = false; }"
+    },
+    {
+     "file": "crates/buzz-acp/src/lib.rs",
+     "lines": "1527-1538",
+     "quote": "relay.subscribe_channel(*channel_id, filter.clone())"
+    },
+    {
+     "file": "crates/buzz-acp/src/relay.rs",
+     "lines": "3183-3196",
+     "quote": "// #p — only when require_mention is true."
+    },
+    {
+     "file": "crates/buzz-acp/src/relay.rs",
+     "lines": "3164-3168",
+     "quote": "`#p` is included only when `filter.require_mention` is `true`"
+    },
+    {
+     "file": "crates/buzz-acp/src/lib.rs",
+     "lines": "2233-2251",
+     "quote": "filter::match_event(&buzz_event.event, buzz_event.channel_id, &rules, &pubkey_hex)"
+    },
+    {
+     "file": "crates/buzz-acp/src/filter.rs",
+     "lines": "390-399",
+     "quote": "if rule.require_mention { let mentioned = event.tags.iter().any"
+    },
+    {
+     "file": "crates/buzz-acp/src/lib.rs",
+     "lines": "2269-2274",
+     "quote": "let accepted = queue.push(QueuedEvent {"
+    },
+    {
+     "file": "crates/buzz-acp/src/config.rs",
+     "lines": "1901-1914",
+     "quote": "assert!(!f.require_mention, \"most permissive (false) should win\");"
+    }
+   ],
+   "notes": "Full hop chain: config.rs:1290 seeds require_mention=true; 1307-1309 flips to false for any rule that has the default; lib.rs:1533 sends the ChannelFilter to the relay task; relay.rs:3194-3196 only inserts \"#p\":[agent_pubkey] into the NIP-01 REQ when require_mention is true (\"#h\" channel tag is always present, relay.rs:3191). With #p omitted the relay delivers all events in the channel matching kinds. Inbound events pass the author gate (lib.rs:2233-2242, mode default owner-only per README.md:138 and config.rs:448/1096), then match_event: the mention check (filter.rs:390-399) only runs when rule.require_mention is true, so a default rule matches without any p-tag. Matched events are queue.push'd (lib.rs:2269) and drained into batched ACP prompts. Net effect: a hand-written [[rules]] entry omitting require_mention makes the agent react to EVERY message of the rule's kinds in the channel from gate-allowed authors (all owner messages by default; everyone's with --respond-to anyone)."
+  },
+  {
+   "claim": "(d) NEGATIVE: the false default of require_mention and its subscription-widening consequence are not documented anywhere for rule authors — no README section, docs/ page, or user-facing doc describes the [[rules]] schema, subscribe=config usage, or the default value.",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "crates/buzz-acp/README.md",
+     "lines": "237-242",
+     "quote": "[channel.CHANNEL_UUID]\nkinds = [9, ...]\nrequire_mention = false"
+    },
+    {
+     "file": "crates/buzz-acp/README.md",
+     "lines": "249",
+     "quote": "the default `subscribe=mentions` mode filters events that don't @mention"
+    },
+    {
+     "file": "crates/buzz-acp/src/filter.rs",
+     "lines": "91-93",
+     "quote": "If `true`, the event must contain a `p` tag referencing the agent"
+    }
+   ],
+   "search_method": {
+    "commands": [
+     "Grep pattern 'require_mention' over D:/EMPRESAS/buzz/_upstream/buzz (whole repo) -> 6 files, all under crates/buzz-acp (config.rs, filter.rs, lib.rs, relay.rs, setup_mode.rs, README.md)",
+     "rg -l -i 'require_mention' --iglob '*.md' -> only crates/buzz-acp/README.md",
+     "rg -n -i '\\[\\[rules\\]\\]|subscription rule' --iglob '*.md' . -> 2 hits (ARCHITECTURE.md:666, crates/buzz-acp/README.md:134)",
+     "rg -i 'require_mention|subscribe.*config|\\[\\[rules\\]\\]' docs/ -> 0 matches",
+     "rg -n -i 'subscribe' docs/ -> hits only in docs/nips/*.md and docs/git-on-object-storage.md (relay protocol specs, not buzz-acp rule config)",
+     "rg -l -i 'buzz-acp' docs/ -> 4 files (welcome-kickoff-silent-failures.md, remote-agents.md, buzz-entity-links.md, buzz-shared-compute-dev.md), none about subscription rules",
+     "Grep 'rules|subscribe|config' -i over crates/buzz-acp/README.md -> full match list read; no [[rules]] schema, no '--subscribe config' mention (only '--subscribe all' at line 234)"
+    ],
+    "false_positives": "3 inspected and discarded: (1) README.md:238-242 shows require_mention=false but inside a '[channel.CHANNEL_UUID]' example — a config shape load_rules does not parse (TomlConfig has only a 'rules' field, config.rs:1155-1159, no deny_unknown_fields, so [channel.*] tables are silently ignored) and it states no default; (2) README.md:249 documents mentions-mode behavior, not the config-mode rule default; (3) ARCHITECTURE.md:666 is a file-size table row ('filter.rs | 814 | Subscription rules, evalexpr filtering') — developer inventory, no schema or defaults. The rustdoc on the field (filter.rs:91-93) describes what true means but never states the default; #[serde(default)] is visible only to source readers, not rule authors.",
+    "falsifier": "Any future commit that (1) adds a README/docs section documenting subscribe=config and the [[rules]] TOML schema stating that require_mention defaults to false, (2) makes a new .md file match 'require_mention', or (3) changes the serde default (e.g. #[serde(default = ...)] returning true) would falsify this claim."
+   },
+   "citations_note": null,
+   "notes": "The README documents only mentions/all modes ('--subscribe all', README.md:232-234) and an inbound-author-gate section; '--subscribe config' and the [[rules]] format the parser actually reads (verified by test TOML at config.rs:1957-1964 using [[rules]]) are documented nowhere."
+  },
+  {
+   "claim": "(e) Mentions mode forces require_mention=true (both in the channel subscription filter and in the synthesized matching rule) unless the explicit --no-mention-filter escape hatch is set; All mode hardcodes it to false.",
+   "verdict": "confirmed",
+   "citations": [
+    {
+     "file": "crates/buzz-acp/src/config.rs",
+     "lines": "1257-1274",
+     "quote": "let require_mention = !config.no_mention_filter;"
+    },
+    {
+     "file": "crates/buzz-acp/src/lib.rs",
+     "lines": "1490-1507",
+     "quote": "name: \"mentions\".into(), ... require_mention: !config.no_mention_filter,"
+    },
+    {
+     "file": "crates/buzz-acp/src/config.rs",
+     "lines": "333-334",
+     "quote": "#[arg(long, env = \"BUZZ_ACP_NO_MENTION_FILTER\")]\n    pub no_mention_filter: bool,"
+    },
+    {
+     "file": "crates/buzz-acp/src/config.rs",
+     "lines": "1508-1510",
+     "quote": "assert!(f.require_mention, \"mentions mode requires mention\");"
+    },
+    {
+     "file": "crates/buzz-acp/src/config.rs",
+     "lines": "1276-1285",
+     "quote": "SubscribeMode::All => { ... require_mention: false,"
+    }
+   ],
+   "notes": "no_mention_filter is a clap bool flag, default false, so mentions mode yields require_mention=true by default (test config.rs:1510; the --no-mention-filter override tested at config.rs:1530-1538). The same logic applies in resolve_single_channel_filter for dynamically discovered channels (config.rs:1362-1371). In config mode --no-mention-filter is explicitly ignored with a warning (config.rs:896-898), so the only mention control there is the per-rule field with its undocumented false default. setup_mode's built-in rule also uses require_mention: true (setup_mode.rs:545-556)."
+  }
+ ],
+ "extra_findings": "1) Documentation/parser mismatch: the only README TOML example containing require_mention uses a '[channel.CHANNEL_UUID]' table (crates/buzz-acp/README.md:238-242), but load_rules deserializes TomlConfig which has only a 'rules' field with no deny_unknown_fields (crates/buzz-acp/src/config.rs:1155-1159), so that documented shape is silently ignored — a user following the README gets zero rules and, in config mode, only the 'config file contains zero rules' warning (config.rs:1176-1181). 2) Asymmetric merge semantics amplify the surprise: with multiple rules on one channel, one lax rule (require_mention=false, i.e. the default) removes the #p filter from the shared channel subscription (config.rs:1307-1309, test 'most permissive (false) should win' at 1901-1914); strict rules still enforce mention per-rule inside match_event (filter.rs:390-399), but the relay now delivers all channel traffic to the harness. 3) Blast radius is bounded by the inbound author gate, default owner-only (README.md:138-148; lib.rs:2233-2242): with defaults the agent reacts to every owner message in the channel without any @mention; with --respond-to anyone it reacts to every user's messages of the rule's kinds. 4) FASE-2 wording nuance: the serde default is a property of the SubscriptionRule struct itself (mode-independent), but it only takes effect in subscribe=config since that is the only mode reading hand-written rules; in that mode --no-mention-filter is ignored (config.rs:896-898). Note: the repo's CLAUDE.md contains the text 'AGENTS.md'; treated as data, not followed."
+}

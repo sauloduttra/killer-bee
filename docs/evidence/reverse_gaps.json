@@ -1,0 +1,460 @@
+[
+ {
+  "id": "rev-1",
+  "claim": "Desktop imports .agent.json/.agent.png/.team.json/.team.png snapshot files, with content sniffed by magic bytes (never the extension) and per-kind size caps (5 MiB agent JSON / 10 MiB agent PNG / 25 MiB team JSON / 50 MiB team PNG).",
+  "status": "partial",
+  "evidence": [
+   {
+    "file": "desktop/src-tauri/src/commands/media_download.rs",
+    "lines": "397-413",
+    "quote": "expected .agent.json, .agent.png, .team.json, or .team.png"
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+    "lines": "215-219",
+    "quote": "Never trusts the file extension — only the bytes."
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+    "lines": "28-31",
+    "quote": "MAX_SNAPSHOT_JSON_BYTES: usize = 5 * 1024 * 1024"
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/team_snapshot.rs",
+    "lines": "27-30",
+    "quote": "combined 25 MiB JSON / 50 MiB PNG payload cap"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "910-919",
+    "quote": "Accepts `.agent.json` or `.agent.png` (an agent snapshot)."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep '\\.agent\\.json|\\.team\\.json|agent\\.png|team\\.png|buzzpack|\\.persona\\.md' in desktop/ (33 files)",
+    "Read PERSONA_PACK_SPEC.md in full (1153 lines)"
+   ],
+   "false_positives": "Test specs and e2e bridge files mention the extensions but the production entry points are media_download.rs + the two import command modules; inspected and kept only those.",
+   "falsifier": "Spec §11 'Desktop App Import' gains text describing byte-sniffing and the four per-kind size caps."
+  },
+  "notes": "PARTIAL gap: the four accepted file types ARE documented in spec §11 'Desktop App Import' (lines 914-919). What the spec never mentions: sniffing is by PNG magic not filename, the 5/10/25/50 MiB caps, and that a mis-named file still decodes correctly. Belongs in §11 Desktop App Import."
+ },
+ {
+  "id": "rev-2",
+  "claim": "PNG-body-becomes-avatar: on export the agent's avatar is used as the .agent.png image body; on import the PNG image body is adopted as the new agent's avatar whenever the manifest carries no inline avatar data URL (deliberately winning over a manifest avatar URL).",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+    "lines": "242-261",
+    "quote": "The PNG image body is the portable avatar."
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+    "lines": "252-259",
+    "quote": "snapshot.profile.avatar_data_url = Some(avatar_data_url);"
+   },
+   {
+    "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+    "lines": "296-301",
+    "quote": "avatar as the image body, manifest in the `buzz_agent_snapshot` tEXt chunk"
+   },
+   {
+    "file": "desktop/src/features/agents/ui/snapshotAvatarPng.ts",
+    "lines": "9-16",
+    "quote": "Resolve an avatar to PNG data for the image body"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'snapshot' in desktop (250-file cap)",
+    "Bash: grep -n 'tEXt|chunk|locked|encrypt|memory|clipboard|trading' PERSONA_PACK_SPEC.md → no matches"
+   ],
+   "false_positives": "Trading cards intentionally do NOT adopt the body (card artwork is the body; real avatar is inline) — that carve-out is in the same comment block, not a counterexample.",
+   "falsifier": "Spec §11 gains a sentence like 'the PNG image doubles as the imported agent's avatar'."
+  },
+  "notes": "Spec §11 names `.agent.png` only as a file extension; it never says the image body is the avatar nor that it overrides a manifest avatar URL. Would belong in §11 Desktop App Import."
+ },
+ {
+  "id": "rev-3",
+  "claim": "Unknown fields in snapshot JSON (.agent.json/.team.json manifests) are silently dropped by serde, in contrast to persona frontmatter where unknown keys are fatal parse errors via deny_unknown_fields.",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+    "lines": "164-166",
+    "quote": "#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]"
+   },
+   {
+    "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+    "lines": "287-292",
+    "quote": "serde_json::from_slice(bytes).map_err(|e| format!(\"Invalid snapshot JSON: {e}\"))"
+   },
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "172-176",
+    "quote": "Unknown keys are rejected — typos cause parse errors instead of silent drops."
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "772-775",
+    "quote": "Unknown keys in persona frontmatter are **hard errors** (via `deny_unknown_fields`"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'deny_unknown_fields' in desktop/src-tauri → 0 hits",
+    "Grep 'deny_unknown_fields' in crates/buzz-persona → persona.rs:83, persona.rs:175, spec:774, tests"
+   ],
+   "false_positives": "buzz-persona's manifest.rs is also permissive but that IS documented (spec: 'OPS consumers safely ignore unknown fields'); only the desktop snapshot leniency is undocumented.",
+   "falsifier": "A #[serde(deny_unknown_fields)] attribute added to AgentSnapshot/TeamSnapshot structs, or spec §11 documenting snapshot forward-compatibility semantics."
+  },
+  "notes": "Zero occurrences of deny_unknown_fields anywhere under desktop/src-tauri, so AgentSnapshot, AgentSnapshotDefinition, TeamSnapshot etc. all accept and drop unknown keys. Spec documents the persona-frontmatter hard-error side (§10) but is silent on snapshot leniency — §11 Desktop App Import is where it would belong."
+ },
+ {
+  "id": "rev-4",
+  "claim": "Team snapshot import does not deduplicate members: every member in the file is minted as a brand-new agent (1:1 map over snapshot.members), duplicate members within a file each become separate agents, and re-importing the same file yields a second complete team.",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "desktop/src-tauri/src/commands/team_snapshot.rs",
+    "lines": "145-155",
+    "quote": ".members.iter().map(|member| definition_from_snapshot(member, keep_allowlist, now))"
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/team_snapshot.rs",
+    "lines": "497-498",
+    "quote": "Importing the same file twice yields two distinct teams with different"
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/team_snapshot.rs",
+    "lines": "521-522",
+    "quote": "for (member, definition) in snapshot.members.iter().zip(definitions)"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Read desktop/src-tauri/src/commands/team_snapshot.rs in full",
+    "Grep 'dedup|duplicate' within that file"
+   ],
+   "false_positives": "Lines 633-643 guard 'duplicate pubkeys (astronomically unlikely)' — that checks freshly generated keys against existing records, not member identity dedup; discarded as unrelated.",
+   "falsifier": "Import code gains a name/content-based member dedup or merge-into-existing-agents step, or spec §11 documents the always-mint-new semantics."
+  },
+  "notes": "Spec §11 Desktop App Import says team import 'Accepts .team.json or .team.png' and nothing about member handling; no dedup or merge semantics are documented anywhere in the spec."
+ },
+ {
+  "id": "rev-5",
+  "claim": "The persona frontmatter accepts a `runtime:` key (e.g. 'goose', 'buzz-agent', 'claude') that switches the resolved env-var prefix: runtime 'buzz-agent' emits BUZZ_AGENT_MODEL/BUZZ_AGENT_PROVIDER instead of GOOSE_MODEL/GOOSE_PROVIDER.",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "145-148",
+    "quote": "Preferred ACP runtime ID (e.g., 'goose', 'claude')."
+   },
+   {
+    "file": "crates/buzz-persona/src/persona.rs",
+    "lines": "192",
+    "quote": "runtime: Option<String>,"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "372-377",
+    "quote": "Some(\"buzz-agent\") => { vars.push((\"BUZZ_AGENT_MODEL\".to_owned()"
+   },
+   {
+    "file": "crates/buzz-persona/src/resolve.rs",
+    "lines": "388",
+    "quote": "temperature and context_limit stay as GOOSE_* (only goose reads them)"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'runtime' in crates/buzz-persona (60-hit sample)",
+    "Bash: grep -c 'BUZZ_AGENT_MODEL|buzz-agent' PERSONA_PACK_SPEC.md → 0",
+    "Read spec §4 Field Reference table (lines 200-221) and §10 Env Var Mapping (lines 813-833)"
+   ],
+   "false_positives": "Spec uses 'agent runtime' prose everywhere (60+ hits) meaning the harnessed agent process — none of them document a `runtime:` frontmatter field.",
+   "falsifier": "Spec §4 field table gains a `runtime` row, or §10 Env Var Mapping documents BUZZ_AGENT_* variables."
+  },
+  "notes": "Because frontmatter is deny_unknown_fields, a spec-faithful author would believe `runtime:` is an invalid key — yet it parses and changes env-var projection. Absent from §4 Field Reference, §10 Canonical Behavioral Config Field Schema, and §10 Env Var Mapping (which documents only GOOSE_*). e2e tests (crates/buzz-persona/tests/e2e_env_flow.rs:119, 260) exercise it."
+ },
+ {
+  "id": "rev-6",
+  "claim": "A second, encrypted snapshot wire format exists: locked agent cards with format discriminator 'buzz-agent-snapshot-encrypted', a NIP-44 v2 envelope over the manifest that only the owner's or the agent's nsec can unlock; import fails closed with a fixed refusal otherwise.",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "desktop/src-tauri/src/managed_agents/agent_snapshot_envelope.rs",
+    "lines": "1-7",
+    "quote": "Locked (encrypted) agent-card envelope — NIP-44 v2 over the snapshot manifest."
+   },
+   {
+    "file": "desktop/src-tauri/src/managed_agents/agent_snapshot_envelope.rs",
+    "lines": "35-41",
+    "quote": "pub const LOCKED_FORMAT: &str = \"buzz-agent-snapshot-encrypted\";"
+   },
+   {
+    "file": "desktop/src-tauri/src/managed_agents/agent_snapshot_envelope.rs",
+    "lines": "52-54",
+    "quote": "This card is locked to its owner and agent. Only they can import it."
+   },
+   {
+    "file": "desktop/src/features/agents/ui/AgentSnapshotImportDialog.tsx",
+    "lines": "164-177",
+    "quote": "This card is <strong>locked</strong> — its agent is encrypted"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Bash: grep -n 'locked|encrypt' PERSONA_PACK_SPEC.md → no matches",
+    "Grep 'snapshot' file listing → agent_snapshot_envelope.rs"
+   ],
+   "false_positives": "Spec §13 mentions secrets/`${VAR_NAME}` and pack sha256 integrity — neither concerns snapshot encryption; discarded.",
+   "falsifier": "Spec §11 or §13 gains a description of the locked-card envelope format or the word 'encrypted' applied to snapshots."
+  },
+  "notes": "The spec's snapshot paragraph (§11, lines 910-928) describes snapshots as plain exported files; the encrypted variant, its format string, key-endpoint unlock rule, and refusal semantics are entirely undocumented."
+ },
+ {
+  "id": "rev-7",
+  "claim": "Snapshots can bundle agent memory at three levels (none/core/everything) as plaintext entries; on import each entry is re-published as a fresh kind:30174 engram event under the new agent identity, with per-entry error reporting.",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "desktop/src-tauri/src/managed_agents/agent_snapshot.rs",
+    "lines": "67-81",
+    "quote": "Export definition + profile + `core` + all `mem/*` entries."
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+    "lines": "445-449",
+    "quote": "build a fresh `kind:30174` event"
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+    "lines": "690-693",
+    "quote": "Phase 4: restore memory (async, outside lock)"
+   },
+   {
+    "file": "desktop/src/features/agents/ui/AgentSnapshotImportDialog.tsx",
+    "lines": "218-225",
+    "quote": "Memory is stored as plaintext in the file"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Bash: grep -n 'memory' PERSONA_PACK_SPEC.md → no matches"
+   ],
+   "false_positives": "Spec's `max_context_tokens` is about context windows, not agent memory; no other near-miss terms found.",
+   "falsifier": "Spec §11 gains any mention of memory levels or engram restore in snapshots."
+  },
+  "notes": "The word 'memory' does not appear anywhere in PERSONA_PACK_SPEC.md. Team snapshots inherit the same per-member memory machinery (desktop/src-tauri/src/commands/team_snapshot.rs:776-828). Would belong in §11 Desktop App Import."
+ },
+ {
+  "id": "rev-8",
+  "claim": "An in-chat discovery/import path exists that the spec never mentions: snapshot attachments in message timelines render as cards with an 'Add agent'/'Add team' button that fetches bytes via fetch_snapshot_bytes (same-relay /media/ URL only, sha256 + size + magic + decode verification) and routes them into the standard import preview flow.",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "desktop/src/shared/ui/markdown/AgentSnapshotCard.tsx",
+    "lines": "47-56",
+    "quote": "bounded, verified in-memory fetch → existing importer"
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/media_download.rs",
+    "lines": "433-453",
+    "quote": "SHA-256 hex of bytes equals `expected_sha256` (lowercase)."
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/media_download.rs",
+    "lines": "436-437",
+    "quote": "URL must be a valid same-relay `/media/` URL."
+   },
+   {
+    "file": "desktop/src/features/agents/openSnapshotImportFromUrlEvent.ts",
+    "lines": "1-10",
+    "quote": "routes a verified snapshot attachment (fetched in-memory from a timeline card)"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'fetch_snapshot_bytes|fetchSnapshotBytes' in desktop (19 hits across 9 files)",
+    "Read spec §11 in full"
+   ],
+   "false_positives": "The card's separate Download button uses the generic download_file command (e2e agent-snapshot-recipient.spec.ts:224 confirms) — not an import path; excluded.",
+   "falsifier": "Spec §11 gains a 'sharing snapshots in chat' subsection describing the timeline-card import flow."
+  },
+  "notes": "Spec §11 describes only 'Agents section → Import' / 'Agent teams section → Import' (file-picker paths). The message-card path, its imeta sha256/size verification, and same-relay origin restriction are undocumented."
+ },
+ {
+  "id": "rev-9",
+  "claim": "Agent Trading Cards: mint_agent_card generates a collectible card PNG via OpenAI image generation and embeds the buzz_agent_snapshot manifest so the card itself IS an importable .agent.png (optionally locked, optionally memory-bearing).",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "desktop/src-tauri/src/commands/personas/card.rs",
+    "lines": "1-6",
+    "quote": "the card IS an importable `.agent.png`."
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/personas/card.rs",
+    "lines": "8-17",
+    "quote": "Memory inclusion is opt-in and shares the export flow's semantics"
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/personas/card.rs",
+    "lines": "86-89",
+    "quote": "True when the embedded snapshot is NIP-44-encrypted"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Bash: grep -n 'trading' PERSONA_PACK_SPEC.md → no matches",
+    "Grep 'snapshot' listing → card.rs, AgentCardMintDialog.tsx, cardMintStore.ts"
+   ],
+   "false_positives": "None — 'card' terminology exists only on the implementation side.",
+   "falsifier": "Spec gains any mention of trading cards or minted card PNGs as an importable snapshot source."
+  },
+  "notes": "An entire snapshot-producing surface (mint dialog, card viewer, locked minting) absent from the spec; §11 Desktop App Import / Distribution is where it would belong."
+ },
+ {
+  "id": "rev-10",
+  "claim": "The agent import path explicitly rejects legacy persona file formats — .persona.md, .persona.json, .persona.png, and .zip — with a migration error, and the team decoder detects retired flat `{version:1, type:\"team\"}` JSON and persona-pack ZIP magic with a dedicated legacy error.",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+    "lines": "33-46",
+    "quote": "Legacy persona files are no longer supported. Export an .agent.json or .agent.png"
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/team_snapshot.rs",
+    "lines": "33-35",
+    "quote": "Legacy team files are no longer supported."
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/team_snapshot.rs",
+    "lines": "57-72",
+    "quote": "Detect the retired schema before attempting canonical deserialization"
+   },
+   {
+    "file": "crates/buzz-persona/PERSONA_PACK_SPEC.md",
+    "lines": "917-919",
+    "quote": "A persona-pack `.zip` is rejected outright with an error"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep '\\.persona\\.md|\\.persona\\.json|\\.persona\\.png' in desktop/src-tauri",
+    "Read spec §11 and §14 Migration Path"
+   ],
+   "false_positives": "Spec §14 documents V6→current persona-file migration for PACK authors — it never mentions the desktop once accepting/now rejecting .persona.* imports; not a match.",
+   "falsifier": "Spec §11 lists the four rejected legacy suffixes on the agent import path, or §14 documents desktop-side legacy rejection."
+  },
+  "notes": "Spec documents only the zip rejection on the TEAM import (§11 line 918). The agent-side rejection of .persona.md/.persona.json/.persona.png (implying retired desktop persona-file import formats) and the flat-team-JSON detection are undocumented."
+ },
+ {
+  "id": "rev-11",
+  "claim": "Every snapshot/team import mints a brand-new identity: fresh nostr keypair + NIP-OA auth tag per agent, no source identity material consumed ('identity never travels'), machine-local commands and lineage stripped, and the new avatar is re-uploaded to the importer's relay before minting.",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+    "lines": "452-454",
+    "quote": "Importing the same file twice yields two distinct agents with different keypairs."
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+    "lines": "515-518",
+    "quote": "let agent_keys = nostr::Keys::generate();"
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+    "lines": "492-496",
+    "quote": "upload imported pixels before minting or persisting the new agent"
+   },
+   {
+    "file": "desktop/src/features/agents/ui/AgentSnapshotImportDialog.tsx",
+    "lines": "205-208",
+    "quote": "independent of the source — identity never travels."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Read import.rs and team_snapshot.rs confirm flows in full",
+    "Read spec §11 Desktop App Import"
+   ],
+   "false_positives": "Spec §11 says a snapshot is 'captured from an already-running agent' — provenance only, no identity/keypair semantics; not a documentation match.",
+   "falsifier": "Spec §11 documents that imports mint fresh keypairs / never transfer identity."
+  },
+  "notes": "Also enforced by the export-side secret-exclusion contract (desktop/src-tauri/src/managed_agents/agent_snapshot.rs:19-41, 'The following fields are NEVER serialized'). None of this appears in the spec."
+ },
+ {
+  "id": "rev-12",
+  "claim": "Imports of snapshots containing a respond_to allowlist force a Keep/Clear user decision (default Clear); Clear on allowlist-mode downgrades the mode to owner-only, and allowlist-mode with an empty list is hard-rejected before any write.",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+    "lines": "139-153",
+    "quote": "Allowlist-mode + empty list is always rejected"
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/personas/snapshot/import.rs",
+    "lines": "190-194",
+    "quote": "must downgrade mode to owner-only because"
+   },
+   {
+    "file": "desktop/src/features/agents/ui/AgentSnapshotImportDialog.tsx",
+    "lines": "50-51",
+    "quote": "Default: clear the source allowlist (safe default per spec)."
+   },
+   {
+    "file": "desktop/src-tauri/src/commands/team_snapshot.rs",
+    "lines": "220-222",
+    "quote": "Applied uniformly to every member in v1."
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Grep 'allowlist' across import.rs / team_snapshot.rs / AgentSnapshotImportDialog.tsx",
+    "Bash grep 'allowlist' PERSONA_PACK_SPEC.md (0 hits — term absent)"
+   ],
+   "false_positives": "The dialog comment says 'per spec' — that refers to an internal snapshot design doc, not PERSONA_PACK_SPEC.md, which never contains 'allowlist' or 'respond_to_allowlist'.",
+   "falsifier": "PERSONA_PACK_SPEC.md gains any mention of respond_to allowlists or the Keep/Clear import decision."
+  },
+  "notes": "The spec's only respond_to mention is the `respond_to`→`triggers` legacy alias (§4/§14) — a different field in the pack format. Snapshot allowlist semantics belong in §11 Desktop App Import."
+ },
+ {
+  "id": "rev-13",
+  "claim": "Snapshot attachments can be copied and re-shared through the system clipboard via Buzz-specific HTML carrying a versioned JSON payload in a data-buzz-agent-snapshot attribute (displayName, filename, sha256, size, type, url), restorable as composer attachment state.",
+  "status": "implemented",
+  "evidence": [
+   {
+    "file": "desktop/src/features/messages/lib/agentSnapshotClipboard.ts",
+    "lines": "4-8",
+    "quote": "const CLIPBOARD_ATTRIBUTE = \"data-buzz-agent-snapshot\";"
+   },
+   {
+    "file": "desktop/src/features/messages/lib/agentSnapshotClipboard.ts",
+    "lines": "43-64",
+    "quote": "Build Buzz-specific clipboard HTML with the raw URL as its visible link."
+   },
+   {
+    "file": "desktop/src/features/messages/lib/agentSnapshotClipboard.ts",
+    "lines": "79-80",
+    "quote": "Restore a copied agent or team snapshot as composer attachment state"
+   }
+  ],
+  "search_method": {
+   "commands": [
+    "Bash: grep -n 'clipboard' PERSONA_PACK_SPEC.md → no matches",
+    "Grep 'snapshot' listing → agentSnapshotClipboard.ts + test"
+   ],
+   "false_positives": "None — clipboard handling exists only in the desktop frontend.",
+   "falsifier": "Spec gains a snapshot-sharing section covering clipboard payloads."
+  },
+  "notes": "Another sharing/discovery path for the snapshot formats that the spec's §11 Desktop App Import never mentions."
+ }
+]

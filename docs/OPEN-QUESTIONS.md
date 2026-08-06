@@ -160,3 +160,31 @@ site não promete esse número em lugar nenhum.
 **Custo de errar:**
 - Se estiver certo e eu não verificar: perde-se um número bom de vídeo.
 - Se estiver errado e for publicado: repete-se D-017, e aí com reincidência.
+
+## Q-010 — Cortar quantas personas do catálogo, e quais?
+
+O NCD sobre os 51 prompts ([`CATALOG-AUDIT.md`](CATALOG-AUDIT.md), 2026-08-06) achou 6
+pares gerados MAIS parecidos entre si que o par-controle escrito à mão
+(`adversary~guard`, 0,780): o cluster de rates {g2pp, hjm, shortrate, lmm}, o par de
+autodiff {autograd-lab, nanograd} e o par de banco central {focus-quant, fomc-quant}.
+
+**Recomendação.** Opção 1 do doc: corte mínimo 51 → 48 (remover `hjm-lab`, um de cada
+par), ~20 minutos, e reescrever depois os 5 recorrentes do fundo (var-lab & cia.) em vez
+de cortá-los. A decisão é sua porque é curadoria do produto, não fato de código.
+
+**Custo de errar:**
+- Cortar demais: catálogo menor sem ganho de credibilidade proporcional.
+- Não cortar nada: a zona A fica publicada num site cujo produto declarado é "todo
+  prompt legível antes de instalar" — auditável por qualquer um com zstd e 20 minutos.
+
+## Q-011 — Rodar o crossfire com uma chave OpenRouter ou três nativas?
+
+O runbook ([`LOCAL-SETUP.md`](LOCAL-SETUP.md) A) e o D-033 documentam os dois caminhos.
+
+**Recomendação.** Primeira rodada com UMA chave OpenRouter (custo mínimo, mesmos três
+fabricantes, card continua "Mixed models"); se a tese sobreviver à rodada, a segunda
+com as três nativas vira o vídeo definitivo — independência também operacional.
+
+**Custo de errar:** praticamente nulo — os dois caminhos são reversíveis em minutos;
+o registro em CROSSFIRE-RUN.md pede o provider/modelo por agente justamente para as
+rodadas serem comparáveis.

@@ -38,19 +38,21 @@ export const IMPORT_STEPS = [
 export const IMPORT_CLICK_COUNT = "4 clicks plus the OS file picker";
 
 /**
- * Não há atalho. A versão anterior desta constante prometia que arrastar o
- * arquivo sobre a seção Agents pulava dois cliques — **é falso**, e o site
- * chegou a publicar isso.
- *
- * Duas fontes independentes concordam: `desktop/src-tauri/tauri.conf.json:27`
- * traz `"dragDropEnabled": false`, e a enumeração completa de `onDrop=` em
- * `desktop/src` devolve dez handlers — avatar, backup, chave Nostr e composer de
- * mensagem — nenhum na seção Agents nem em `AgentSnapshotImportDialog.tsx`.
- * A enumeração devolveu resultados, então a ausência é confirmada, não coleta
- * falha (D-014).
+ * A história desta constante é uma aula barata de epistemologia:
+ * v1 prometia o atalho de arrastar e soltar (publicado sem verificar);
+ * v2 NEGOU o atalho citando `dragDropEnabled: false` e uma enumeração de
+ * `onDrop=` que "confirmou ausência". A enumeração estava errada de método:
+ * grep de atributo não enxerga handler espalhado por spread —
+ * `UnifiedAgentsSection.tsx:105-137` espalha `{...dropHandlers}` vindos de
+ * `useFileImportZone.ts:29-36`, com overlay "Drop .agent.json or .agent.png
+ * to import". E `dragDropEnabled: false` desliga o handler NATIVO do Tauri,
+ * que é justamente o que deixa o `onDrop` do DOM disparar. Ver D-035.
+ * v3 (esta): o site afirma o caminho conferido no app rodando (4 cliques) e
+ * registra que o fonte carrega o drop zone — sem prometer nem negar o atalho
+ * até alguém soltar um arquivo num app rodando.
  */
 export const IMPORT_SHORTCUT =
-  "There is no drag-and-drop shortcut: the Agents section has no drop target.";
+  "The four-click path above is the one verified in the running app; the source also carries an Agents-section drop zone.";
 
 /**
  * O que ainda falta depois de importar. `import.rs:610` grava `agent_command`

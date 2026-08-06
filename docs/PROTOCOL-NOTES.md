@@ -358,13 +358,18 @@ link nativo.
 comunidade; "Add agent" cria uma **cópia local** com `catalogSource`.
 
 **(b) Snapshots de arquivo.** `.agent.json` / `.agent.png` e `.team.json` / `.team.png`,
-pelo file-picker, ou compartilhados via chat (upload Blossom + card clicável que navega
-para Agents e abre o preview de import). ~~ou por drag-drop~~ — corrigido em
-[§10.5](#105-quantos-cliques--o-número-que-vai-no-site): **não existe drop target**.
+pelo file-picker, por drag-and-drop sobre a seção Agents (`[FONTE]` no pin — a negação
+anterior foi corrigida em [§10.5](#105-quantos-cliques--o-número-que-vai-no-site),
+2026-08-06), ou compartilhados via chat (upload Blossom + card clicável que navega
+para Agents e abre o preview de import).
 
 O "Copy link" do `PersonaShareDialog` produz **URL HTTPS Blossom do relay**, e
 `require_media_get_auth` tem default `false` — esse `.agent.png` é publicamente
-baixável hoje. **É o único artefato instalável que já tem URL pública.**
+baixável hoje. **Correção 2026-08-06: não é o único.** O `TeamShareDialog` embrulha o
+MESMO dialog com `snapshotKind="team"` (`TeamShareDialog.tsx:6` e `:30-39`) e o "Copy
+link" sobe o `.team.png` pelo mesmo caminho (`PersonaShareDialog.tsx:354-361`) — **o
+`.team.png` também é instalável por URL pública**, travado por e2e
+(`team-snapshot.spec.ts:314-457`).
 
 ### 5.3 Autenticação
 
@@ -406,9 +411,12 @@ em todo cliente.
 
 ## 7. Model-agnostic: meia-verdade
 
-- **`buzz-acp` é genuinamente agnóstico.** Zero menções a anthropic/openai/openrouter em
-  `crates/buzz-acp/src/`. Ele faz spawn de um binário arbitrário
-  (`BUZZ_ACP_AGENT_COMMAND`) e fala ACP.
+- **`buzz-acp` não tem integração de SDK de provider.** (Correção 2026-08-06: a forma
+  anterior — "zero menções a anthropic/openai/openrouter em `crates/buzz-acp/src/`" —
+  era literalmente falsa: 1 menção em doc-comment de produção (`usage.rs:99-102`) e ~12
+  em módulos `#[cfg(test)]` e copy de setup (`setup_mode.rs:711-746`, `acp.rs:4434`).
+  O ponto substantivo sobrevive: nenhuma é integração — ele faz spawn de um binário
+  arbitrário (`BUZZ_ACP_AGENT_COMMAND`), fala ACP e repassa env keys opacamente.)
 - **`buzz-agent` tem enum fechado de 5 providers** (`config.rs:679-691`): `Anthropic`,
   `OpenAi`, `Databricks`, `DatabricksV2`, **`OpenRouter`**. Resolvido por match de string
   com erro em valor desconhecido (`config.rs:1053-1077`), despachado por um único
@@ -417,6 +425,41 @@ em todo cliente.
 - Escape hatch: `provider=openai` + `OPENAI_COMPAT_BASE_URL` aponta para qualquer
   endpoint OpenAI-compatível.
 - **OpenRouter é suportado nativamente** — bom para a Fase 4.
+
+### O rótulo "Mixed models" olha o MODELO, não o provider — uma chave OpenRouter basta
+
+Verificado em 2026-08-06 @ ed4b3e7a. A pergunta que destrava o crossfire: o time
+precisa de três **contas** ou de três **modelos**?
+
+- `[FONTE]` O rótulo vem de `getTeamFooterModelLabel`
+  (`desktop/src/features/agents/ui/TeamIdentityCard.tsx:204-218`): mapeia
+  `persona.model` por `formatAgentModelLabel`, deduplica **a string do modelo** em
+  minúsculas e devolve `"Mixed models"` sse existe mais de uma string única.
+- `[FONTE]` `formatAgentModelLabel` é trim-ou-"Auto"
+  (`desktop/src/features/agents/lib/formatAgentModelLabel.ts:5-8`). **O provider não
+  entra em nenhum ponto da cadeia do rótulo.**
+- `[FONTE]` A credencial é por provider, não por agente: com `provider=openrouter` o
+  único requisito de chave que o desktop verifica é `OPENROUTER_API_KEY`
+  (`desktop/src-tauri/src/managed_agents/readiness.rs:527-532` e `:640-646`).
+- `[FONTE]` O runtime resolve OpenRouter como provider de primeira classe:
+  `OPENROUTER_API_KEY` + modelo por agente via `BUZZ_AGENT_MODEL` — "set by the desktop
+  from the persona/record" (`crates/buzz-agent/src/config.rs:794-798` e `:834-843`),
+  wire format Chat Completions em `https://openrouter.ai/api/v1`.
+- `[FONTE]` A UI de configuração conhece `openrouter` por agente
+  (`desktop/src/features/agents/ui/buzzAgentConfig.ts:131-133`).
+
+**Consequência:** três agentes com `provider=openrouter` e três strings de modelo
+distintas (ex.: `anthropic/claude-sonnet-5`, `openai/gpt-5`,
+`deepseek/deepseek-chat`) rodam com **uma conta e uma chave**, continuam sendo três
+modelos de três fabricantes — os blind spots continuam não sobrepostos — e o card do
+time continua exibindo "Mixed models", porque as strings diferem. O pack
+`crossfire-review` mantém os três providers nativos como ideal declarado; o caminho de
+uma chave é o quickstart documentado em `docs/LOCAL-SETUP.md` (decisão D-033).
+
+`[INFERIDO]` O que se perde no caminho de uma chave: um único gateway é ponto único de
+falha, de billing e de log — a independência **operacional** dos três reviewers cai,
+a independência **de modelo** permanece. Cadeia: os pesos são de fabricantes distintos;
+o transporte é que converge.
 
 ### BYOH
 
@@ -723,7 +766,8 @@ Chunk **`tEXt`** (não `iTXt`, não `zTXt`) — o encoder usa `add_text_chunk`
 - Corpo da imagem: avatar do agente no `.agent.png`; 1×1 transparente no `.team.png`
 
 **Gerável com qualquer biblioteca PNG.** O `.agent.png` é o formato mais interessante para
-o Waggle: é o único artefato instalável que já tem URL pública hoje (via Blossom, §5.2).
+o Waggle: tem URL pública hoje via Blossom (§5.2) — e, correção 2026-08-06, o
+`.team.png` também (mesmo dialog de share, `snapshotKind="team"`).
 
 **Adendo 2026-08-06 (segunda rodada de leitura, verificada por segundo leitor):**
 
@@ -751,18 +795,23 @@ o Waggle: é o único artefato instalável que já tem URL pública hoje (via Bl
 Arquivo em disco: sidebar **Agents** → card **`+`** → **Import** → seletor de arquivo do
 SO → dialog de preview → **Import**. **4 cliques no app + 1 no seletor.**
 
-- O card **não se chama "New agent"**. É um card `+` que abre um menu de três entradas:
-  **Create agent**, **Discover agents**, **Import**. Em teams o menu tem duas: **Create
-  team** e **Import**.
-- ~~Arrastar e soltar sobre a seção Agents pula 2 cliques.~~ **FALSO.** Não existe alvo de
-  drop na seção Agents. `desktop/src-tauri/tauri.conf.json:27` traz
-  `"dragDropEnabled": false`, e a enumeração completa de `onDrop=` em `desktop/src`
-  devolve dez handlers — dois de avatar em `AgentCreationPreview.tsx:446` e `:789`,
-  `NostrKeyImportForm.tsx:354`, dois de `BackupTestFlow`, `ChannelPane.tsx:607`,
-  `ForumComposer.tsx:457`, `MessageComposer.tsx:901`, `AvatarUpload.tsx:138` e
-  `ProfileAvatarEditor.tsx:546` — **nenhum** em `UnifiedAgentsSection.tsx` ou
-  `AgentSnapshotImportDialog.tsx`. A enumeração devolveu resultado, então isto é ausência
-  confirmada, não coleta falha ([D-014](DECISIONS.md)). Esta linha chegou ao site e foi
+- O card **não exibe o texto "New agent"**. É um card `+` (só o ícone Plus) que abre um
+  menu de três entradas: **Create agent**, **Discover agents**, **Import**. Em teams o
+  menu tem duas: **Create team** e **Import**. Nuance 2026-08-06: na camada de
+  acessibilidade ele **é** "New agent" — `aria-label="New agent"`, test id
+  `new-agent-card` (`UnifiedAgentsSection.tsx:452`); leitores de tela e seletores e2e
+  o chamam assim.
+- ~~Arrastar e soltar sobre a seção Agents pula 2 cliques.~~ → **corrigido de novo em
+  2026-08-06: EXISTE alvo de drop no fonte.** A rodada anterior "confirmou ausência"
+  enumerando `onDrop=` (dez handlers, nenhum na seção) e citando
+  `"dragDropEnabled": false` (`tauri.conf.json:27`). Dois erros de método, ambos
+  instrutivos: **grep de atributo não enxerga handler espalhado por spread** —
+  `UnifiedAgentsSection.tsx:105-137` espalha `{...dropHandlers}` vindos de
+  `useFileImportZone.ts:29-36`, com overlay "Drop .agent.json or .agent.png to import"
+  — e `dragDropEnabled: false` desliga o handler NATIVO do Tauri, que é exatamente o
+  que deixa o `onDrop` do DOM disparar. Estado: `[FONTE]` no pin ed4b3e7a;
+  comportamento no app 0.5.5 `[NÃO VERIFICADO]` — ninguém soltou um arquivo num app
+  rodando ainda. Lição registrada em [D-035](DECISIONS.md). Esta linha chegou ao site e foi
   publicada; agora há teste que impede o retorno.
 - ⚠️ **NÃO VERIFICADO:** "recebido por chat: card com **Add agent** → dialog → **Import**
   = 2 cliques". Nunca foi exercitado num app rodando; só lido no fonte.
@@ -951,3 +1000,71 @@ e também nos torna os únicos responsáveis por ela estar certa.
 (§10.1), removendo o que a `NIP-AP:242` manda sanitizar. Assim o mesmo objeto serve às
 duas camadas, L2 e L3, e um leitor futuro do 30178 reconstrói um `.agent.json` sem
 tradução.
+
+---
+
+## 12. To the Buzz maintainers — findings you may want, ordered by impact
+
+*This section is written in English, addressed to whoever at `block/buzz` reads one
+document from this repo. Everything below was verified against
+`ed4b3e7afafb5f5a688c210f39b90d747e6f0f00` by direct reading plus an independent
+adversarial pass; every negative claim's search receipt is in
+[`NEGATIVE-SPACE.md`](NEGATIVE-SPACE.md). Each item ends with one objective
+question — the section exists to be cut and pasted.*
+
+**1. `subscribe=config` + omitted `require_mention` silently subscribes an agent to
+the whole channel.** `#[serde(default)]` on the rule field (`buzz-acp/src/filter.rs:82-93`)
+plus most-permissive-wins merging (`config.rs:1288-1310`) means one hand-written rule
+that forgets one key drops the `#p` filter from the NIP-01 REQ (`crates/buzz-acp/src/relay.rs:3183-3196`).
+Compounding it, the only README example showing `require_mention` uses a
+`[channel.*]` table shape that `load_rules` never reads (`README.md:237-242` vs
+`config.rs:1155-1159`) — a user following the README gets zero rules and a warning.
+*Question: is most-permissive-wins the intended merge semantic, or an artifact worth
+changing while nobody depends on it?*
+
+**2. Kind 30178 is relay-complete and client-absent, and its body is anyone's to
+define.** Ingest scope, envelope validation, shared-gating at REQ/ids/COUNT, and an
+e2e suite all exist (`ingest.rs:2413-2416`, `req.rs:1228-1236`, `count.rs:102-110`,
+`e2e_team_catalog.rs`); no client publishes or reads it, and NIP-AP.md:223 delegates
+the content schema to the publishing client. The first external publisher (us, at the
+moment) defines the de-facto format unilaterally — which is a fork risk wearing a
+convenience costume. We published our projection as a JSON Schema and would rather
+track one you own. *Question: would you take a NIP-AP amendment or a
+`TeamCatalogContent` struct PR?*
+
+**3. Workflow actions cannot touch agents — except through an undocumented string
+side-channel.** 7 `ActionDef` variants (`buzz-workflow/src/schema.rs:90-131`): 4
+functional, `SendDm`/`SetChannelTopic` are `NotImplemented` stubs, `RequestApproval`
+suspends into a run-failure (`executor.rs:661-668`, `lib.rs:229-245`). None invokes an
+agent — but a `send_message` whose text @-mentions an agent gets p-tagged by
+`workflow_sink.rs:22-45` and wakes it. *Question: is the mention side-channel
+intended, and is a first-class agent action on the WF-07/WF-08 roadmap?*
+
+**4. The snapshot-PNG trading-card format lives only in source.** Keyword
+`buzz_agent_snapshot`, base64 JSON in a tEXt chunk that must precede IDAT
+(`media_snapshot_png.rs:54-58`), magic-bytes routing (`import.rs:213,232-233`),
+body-becomes-avatar with asymmetric limits (`snapshot_avatar.rs:18-37`), and a
+relay-side validator stricter than the desktop reader
+(`buzz-media/src/validation.rs:592-646`). Zero files under `docs/` mention any of it.
+We reconstructed a spec with a reproduction recipe
+([`ISSUES-DRAFT.md`](ISSUES-DRAFT.md), issue 4). *Question: do you want it as
+`docs/spec/agent-snapshot-png.md`?*
+
+**5. `PERSONA_PACK_SPEC.md` is 43/91 implemented, and the biggest gap is hooks.**
+Full four-state table in [`SPEC-VS-IMPL.md`](SPEC-VS-IMPL.md): 21 features absent, 25
+divergent. The sharpest cluster: pack-level `hooks_config` is parsed then deliberately
+dropped (`manifest.rs:114-116`), per-persona hooks are parsed and never executed
+anywhere, yet the spec documents a full execution contract (stdin, 5s SIGKILL,
+exit-code semantics). Smaller but surprising: `engines.buzz` is parsed and never
+compared to anything; `$AGENT_CWD` resolution silently falls back to `/` where the
+spec says refuse-to-start (`buzz-acp/src/lib.rs:1599-1602`). *Question: is the spec
+aspirational-by-design (worth a status column?) or should divergences be issues?*
+
+**6. One stale-doc trap we fell into ourselves, offered as a warning.** We publicly
+claimed the Agents section has no drag-and-drop target after enumerating `onDrop=`
+handlers — and missed `{...dropHandlers}` spread from `useFileImportZone.ts:29-36`
+into `UnifiedAgentsSection.tsx:105-137`. Attribute greps do not see spread props;
+`dragDropEnabled: false` in tauri.conf.json disables only Tauri's native handler and
+is precisely what lets the DOM `onDrop` fire. If your docs ever assert UI absences,
+enumerate the behavior, not the syntax. *(No question — just the receipt, in
+[D-035](DECISIONS.md).)*
