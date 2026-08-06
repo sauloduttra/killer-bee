@@ -145,8 +145,10 @@ O runbook está pronto em [`docs/LOCAL-SETUP.md`](docs/LOCAL-SETUP.md). São sei
    com beats nos tempos exatos do roteiro (10/18/25/33/40/48/55/63/70/85/90).
    `media/` é gitignored (artefato pesado); o script de composição é versionado.
 
-Com o 15 fechado, **o gate do BACKLOG abre** — condicionado à aprovação do corte
-pelo Saulo (ver nota no DOD).
+Com o 15 fechado, **o gate do BACKLOG abre** — e a condição se cumpriu: o Saulo
+**postou o vídeo no X em 2026-08-06**, marcando @jack, com o link do Cloudflare.
+Corte aprovado pelo ato de publicar. O projeto agora tem audiência pública:
+issue, reply e PR merecem resposta rápida, e main verde deixou de ser estética.
 
 Só depois disso o gate do [`BACKLOG.md`](docs/BACKLOG.md) abre.
 
