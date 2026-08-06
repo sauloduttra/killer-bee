@@ -1,0 +1,39 @@
+name: Bug report
+description: Something the CLI, a pack, or the site does that it should not
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: >-
+        Include the exact command and its output. If a tool reported an
+        absence ("no leaks", "0 packs"), say whether it actually collected
+        data — collection failure and absence are different findings, and
+        this project treats them differently (DECISIONS D-014).
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: From a fresh clone if possible.
+      placeholder: |
+        uv sync
+        uv run python -m killerbee validate packs/...
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Python/uv versions; Node version if the site is involved.
+      placeholder: "Windows 11 · uv 0.8.22 · Python 3.11 · Node 22.12"
+    validations:
+      required: false

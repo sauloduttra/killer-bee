@@ -716,9 +716,14 @@ Runtime do agente importado mostra `ACP command: buzz-acp`, e quem esperasse cam
 ali leria como bug. O comentário em `:607-608` explica: comandos de máquina se derivam do
 catálogo de runtime, nunca se fabricam a partir do snapshot.
 
-Para rodar, o agente ainda precisa de `BUZZ_AGENT_PROVIDER` + `BUZZ_AGENT_MODEL` + chave
-do provider, vindos da configuração global do app. E o import **não coloca o agente em
-canal nenhum** — "Add to channel" é ação separada, no painel de perfil.
+Para rodar, o agente ainda precisa da **chave do provider**, vinda da configuração
+global do app. `model` e `provider`, quando presentes no snapshot, **viajam com ele** e
+são gravados no import (`import.rs:620-621`; confirmado no app em §10.9, linhas
+"Mixed models") — `BUZZ_AGENT_PROVIDER`/`BUZZ_AGENT_MODEL` globais entram como fallback
+quando o snapshot os omite. (Correção 2026-08-06: a redação anterior dizia que provider
+e model vinham da config global, contradizendo o §10.9 deste mesmo documento; flagrada
+por segundo leitor adversarial.) E o import **não coloca o agente em canal nenhum** —
+"Add to channel" é ação separada, no painel de perfil.
 
 **O site tem que dizer isso.** "Importar" não é "rodando": são três passos, e o terceiro
 depende de credencial que o usuário fornece.

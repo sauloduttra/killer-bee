@@ -180,6 +180,21 @@ valid — the format is theirs, not ours.
 independent community work, maintained by pavlenex, MIT-licensed. See
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
+## Security
+
+A pack is executable configuration: its prompt runs with *your* provider credential,
+and a `.agent.png` is a program that looks like a picture. The threat model, the
+private reporting channels, and what review does and does not guarantee are in
+[`SECURITY.md`](SECURITY.md); what the maintainer checks on every pack PR is public in
+[`docs/PACK-REVIEW.md`](docs/PACK-REVIEW.md). The one-command version:
+
+```bash
+uv run python -m killerbee inspect the-file.agent.png --prompt
+```
+
+reads everything inside an artifact — anyone's, not just ours — **before** it is
+imported.
+
 ## Author
 
 Built by **Saulo Duttra** —

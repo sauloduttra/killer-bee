@@ -516,3 +516,30 @@ tolerável agora; quando houver domínio definitivo, ele vira o canonical único
 host aponta para ele (uma linha de env no build de cada lado).
 **Automação futura:** deploy do Cloudflare no CI exigiria `CLOUDFLARE_API_TOKEN` como
 secret do repo — criação/movimentação de credencial é 🔴, fica para o Saulo decidir.
+
+## D-026 — Governança pública: SECURITY.md, PACK-REVIEW, scaffold de contribuidor
+
+**Quando:** 2026-08-06, gate do backlog aberto (vídeo postado), audiência pública ativa
+**O que:** (1) `SECURITY.md` com modelo de ameaça em três fatos verificados
+(prompt de terceiro roda com credencial do usuário; `.agent.png` é programa com cara
+de imagem; import valida forma, nunca conteúdo) + canais privados de report;
+(2) **private vulnerability reporting HABILITADO** no repo via API;
+(3) `docs/PACK-REVIEW.md` com adversários A1-A5, checklist mantenedor/CI e o que
+review NÃO garante; (4) `packs/TEMPLATE/` com `killerbee.yaml.example` — regra
+canônica "pack = diretório com killerbee.yaml" agora aplicada TAMBÉM no ci.yml
+(antes o glob pegava qualquer diretório); (5) JSON Schema do manifesto como contrato
+de editor, com três divergências deliberadas (mais estrito) documentadas no próprio
+schema; teste de concordância cruzada com 13 mutações quebradas caindo nos dois lados;
+(6) ISSUE/PR templates.
+**Alternativa:** SECURITY.md apontando só e-mail (sem toggle no repo); template fora
+de packs/; schema como validador de runtime.
+**Motivo:** governança que se demonstra era a maior peça sem dependência externa
+(AUDIT 2026-08-06, prioridade média); o repo é público e PR de terceiro virou cenário
+real. Schema em runtime criaria segunda verdade — como contrato de editor + teste de
+concordância, não.
+**Custo de reversão:** PVR = um toggle/API call; ci.yml = reverter guarda de 1 linha;
+schema/template/docs = deletar arquivos. Tudo barato.
+**Recibo do segundo leitor:** o verify adversarial do recon (wf_10af8aac-ae4) flagrou
+3 imprecisões em citações e 1 contradição interna em PROTOCOL-NOTES:719 (provider/model
+viajam no snapshot, import.rs:620-621; da config global vem a chave) — corrigida no
+próprio doc com nota datada.

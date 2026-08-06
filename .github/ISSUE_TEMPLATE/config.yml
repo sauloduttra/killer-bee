@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability (private)
+    url: https://github.com/sauloduttra/killer-bee/security/advisories/new
+    about: >-
+      Please do not open a public issue for anything you believe is
+      exploitable. This link is private to the maintainer; SECURITY.md
+      has the threat model and an email alternative.

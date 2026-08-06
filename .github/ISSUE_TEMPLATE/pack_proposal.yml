@@ -1,0 +1,35 @@
+name: Pack proposal
+description: Pitch a pack before building it — optional, but saves round-trips
+labels: [pack-proposal]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Packs arrive as PRs (start from `packs/TEMPLATE/`, its README is the
+        10-minute path). This issue form exists for when you want a sanity
+        check on the idea first. What the eventual PR will be reviewed
+        against is public: `docs/PACK-REVIEW.md`.
+  - type: textarea
+    id: what
+    attributes:
+      label: What the pack does
+      description: One paragraph. Who imports this, and what do they get?
+    validations:
+      required: true
+  - type: textarea
+    id: personas
+    attributes:
+      label: Personas and profiles
+      description: >-
+        Roughly: how many personas, and why those threshold / recruitment /
+        persistence values. High fan-out + low threshold + all channels
+        needs a written reason (PACK-REVIEW, adversary A4).
+    validations:
+      required: true
+  - type: input
+    id: license
+    attributes:
+      label: License
+      placeholder: Apache-2.0
+    validations:
+      required: true
