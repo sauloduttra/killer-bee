@@ -60,7 +60,7 @@ Os clones ficam fora da raiz justamente porque `.gitignore` não impede que o
 ### Comandos
 
 ```bash
-uv sync && uv run pytest -q && uv run ruff check .
+uv sync && uv run pytest -q && uv run ruff check . && uv run ruff format --check .
 uv run python -m killerbee validate packs/crossfire-review
 uv run python -m killerbee build packs/crossfire-review
 cd site && npm ci && npm run build && node --test tests/rendered-html.test.mjs

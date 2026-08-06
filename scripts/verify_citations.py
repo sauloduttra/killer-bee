@@ -311,9 +311,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\npin={pin[:12]} at={args.at}  {parts}")
 
     hard_fail = (
-        counts.get("quebrada", 0)
-        + counts.get("quebrada@pin", 0)
-        + counts.get("local-quebrada", 0)
+        counts.get("quebrada", 0) + counts.get("quebrada@pin", 0) + counts.get("local-quebrada", 0)
     )
     if args.strict:
         hard_fail += counts.get("deriva", 0)

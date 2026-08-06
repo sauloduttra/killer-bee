@@ -173,9 +173,7 @@ def main() -> None:
         "max": max(values),
         "mad": mad,
         "limiar_mediana_menos_3mad": threshold,
-        "pares_abaixo_do_limiar": [
-            {"ncd": round(v, 4), "a": a, "b": b} for v, a, b in flagged
-        ],
+        "pares_abaixo_do_limiar": [{"ncd": round(v, 4), "a": a, "b": b} for v, a, b in flagged],
         "top20_mais_proximos": [
             {"ncd": round(v, 4), "a": a, "b": b} for v, a, b in zstd_pairs[:20]
         ],

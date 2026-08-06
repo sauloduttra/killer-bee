@@ -137,9 +137,7 @@ def main() -> int:
             print(f"ERRO: falta {ev_dir / name} — nada gerado (falha ruidosa, não doc vazio)")
             return 2
     (repo_root / "docs" / "SPEC-VS-IMPL.md").write_text(render_spec(ev_dir), encoding="utf-8")
-    (repo_root / "docs" / "NEGATIVE-SPACE.md").write_text(
-        render_negative(ev_dir), encoding="utf-8"
-    )
+    (repo_root / "docs" / "NEGATIVE-SPACE.md").write_text(render_negative(ev_dir), encoding="utf-8")
     print("gerados: docs/SPEC-VS-IMPL.md e docs/NEGATIVE-SPACE.md")
     return 0
 

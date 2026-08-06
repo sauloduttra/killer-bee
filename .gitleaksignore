@@ -15,3 +15,8 @@
 9ba019b7d71c258e274df0037bbb8754b72777a2:tests/test_scan_secrets.py:generic-api-key:75
 9ba019b7d71c258e274df0037bbb8754b72777a2:tests/test_scan_secrets.py:generic-api-key:78
 9ba019b7d71c258e274df0037bbb8754b72777a2:tests/test_scan_secrets.py:generic-api-key:96
+
+# Falso positivo 2026-08-06: o campo JSON chama-se literalmente "issue_key" e o
+# "segredo" é o slug "kind-30178-body" (entropia 3,6) — evidência da rodada de
+# verificação da Fase 2, não credencial. Regra generic-api-key, blob de a1f470e.
+a1f470e82f7bc894c430da7cf4b7473d7177ce32:docs/evidence/issue_kind-30178-body.json:generic-api-key:3

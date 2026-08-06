@@ -49,17 +49,25 @@ def upstream_repo(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, str, 
     (repo / "unico.toml").write_text("a = 1\n", encoding="utf-8")
     _git(repo, "add", "-A")
     _git(repo, "commit", "-qm", "v1")
-    pin = subprocess.run(
-        ["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, check=True
-    ).stdout.decode().strip()
+    pin = (
+        subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, check=True
+        )
+        .stdout.decode()
+        .strip()
+    )
 
     (src / "lib.rs").write_text("l1\nl2-MUDOU\nl3\nl4\nl5\n", encoding="utf-8")
     (src / "gone.rs").unlink()
     _git(repo, "add", "-A")
     _git(repo, "commit", "-qm", "v2")
-    head = subprocess.run(
-        ["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, check=True
-    ).stdout.decode().strip()
+    head = (
+        subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, check=True
+        )
+        .stdout.decode()
+        .strip()
+    )
     return repo, pin, head
 
 
@@ -77,7 +85,7 @@ def test_parse_citations_intervalo_e_linha_unica():
 
 
 def test_slice_lines_bordas():
-    """Mata: off-by-one no recorte (start-1) e o None de estouro virar ''. """
+    """Mata: off-by-one no recorte (start-1) e o None de estouro virar ''."""
     assert slice_lines("a\nb\nc\n", 2, 2) == "b"
     assert slice_lines("a\nb\nc\n", 2, 99) == "b\nc"
     assert slice_lines("a\nb\nc\n", 4, 5) is None
@@ -105,9 +113,7 @@ def test_resolve_path_unico_ambiguo_ausente():
 # ── contra o git real ────────────────────────────────────────────────────────
 
 
-def test_verify_doc_produz_os_cinco_estados(
-    upstream_repo: tuple[Path, str, str], tmp_path: Path
-):
+def test_verify_doc_produz_os_cinco_estados(upstream_repo: tuple[Path, str, str], tmp_path: Path):
     """End-to-end: cada estado aparece exatamente onde deveria.
     Mata: cache de show vazando entre commits, e qualquer estado engolido."""
     repo, pin, head = upstream_repo
