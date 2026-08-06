@@ -109,12 +109,22 @@ jobs:
         working-directory: site
       - run: npm run lint
         working-directory: site
+      # PAGES_BASE_PATH="" EXPLÍCITO no build e no teste: dentro do Actions,
+      # GITHUB_REPOSITORY está sempre definido e o next.config derivaria
+      # basePath=/killer-bee em silêncio — o build saía prefixado e o teste,
+      # sem o env, cobrava links sem prefixo (falhou nos DOIS primeiros runs
+      # da história do repo, 2026-08-06). Este job testa o modo raiz;
+      # o modo com basePath é testado no pages.yml, com o env nos dois passos.
       - run: npm run build
         working-directory: site
+        env:
+          PAGES_BASE_PATH: ""
       # Os testes rodam sobre out/, não sobre o fonte: é o que prova que o export
       # estático realmente contém o catálogo e os prompts na íntegra.
       - run: node --test tests/rendered-html.test.mjs
         working-directory: site
+        env:
+          PAGES_BASE_PATH: ""
 
   secrets:
     name: gitleaks + scanner próprio

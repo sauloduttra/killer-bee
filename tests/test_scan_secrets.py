@@ -6,10 +6,14 @@ classificador se testa com string literal, sem fixture e sem infraestrutura.
 Os segredos aqui são **sintéticos**, construídos para casar com o padrão e nada
 mais. Nenhum veio de arquivo real, e nenhum é válido em serviço nenhum.
 
-Cada linha com um segredo sintético carrega `scan-secrets: allow`. Sem isso, a
+Cada linha com um segredo sintético carrega o marcador `gitleaks:allow` — que o
+scanner próprio TAMBÉM aceita, então um comentário serve aos dois gates (o
+gitleaks não conhece `scan-secrets: allow`; usar só o nosso marcador deixou o
+primeiro scan de histórico completo vermelho, 2026-08-06). Sem marcador, a
 suíte que prova que o gate funciona seria a mesma que deixa o gate vermelho para
 sempre — e a saída fácil (excluir o arquivo do scanner) é exatamente como
-segredo de verdade passa despercebido.
+segredo de verdade passa despercebido. Blobs históricos, que marcador nenhum
+alcança, estão em `.gitleaksignore` por fingerprint.
 """
 
 from __future__ import annotations
@@ -51,7 +55,7 @@ def test_pega_nsec_bech32():
 
 def test_pega_hex_nomeado_como_chave_privada():
     assert "hex_privkey_64" in rules_for(
-        f'private_key = "{FAKE_HEX64}"'  # scan-secrets: allow
+        f'private_key = "{FAKE_HEX64}"'  # gitleaks:allow
     )
 
 
@@ -61,7 +65,7 @@ def test_pega_bloco_pem():
 
 def test_pega_credencial_atribuida():
     assert "generic_assignment" in rules_for(
-        'api_key = "s3cr3t-value-longa"'  # scan-secrets: allow
+        'api_key = "s3cr3t-value-longa"'  # gitleaks:allow
     )
 
 
@@ -72,33 +76,33 @@ def test_pega_token_por_sufixo_do_nome():
     passar. Regressão coberta aqui.
     """
     assert "generic_assignment" in rules_for(
-        'SEMGREP_TOKEN: "abc123def456ghi"'  # scan-secrets: allow
+        'SEMGREP_TOKEN: "abc123def456ghi"'  # gitleaks:allow
     )
     assert "generic_assignment" in rules_for(
-        'BUZZ_S3_SECRET_KEY = "r4nd0m-s3cr3t-v4l"'  # scan-secrets: allow
+        'BUZZ_S3_SECRET_KEY = "r4nd0m-s3cr3t-v4l"'  # gitleaks:allow
     )
 
 
 def test_pega_senha_em_string_de_conexao():
     assert "connection_string" in rules_for(
-        "postgres://buzz:hunter2hunter2@db:5432/buzz"  # scan-secrets: allow
+        "postgres://buzz:hunter2hunter2@db:5432/buzz"  # gitleaks:allow
     )
 
 
 def test_pega_cpf():
-    assert "cpf" in rules_for("cliente 123.456.789-00 cadastrado")  # scan-secrets: allow
+    assert "cpf" in rules_for("cliente 123.456.789-00 cadastrado")  # gitleaks:allow
 
 
 def test_pega_credencial_sem_aspas_estilo_dotenv():
     """`API_KEY=valor` sem aspas é a forma NATIVA do `.env` — a regra que só
     aceitava valor entre aspas não via o formato do arquivo que mais carrega
     segredo. Auditoria 2026-08-06."""
-    assert "generic_assignment" in rules_for("API_KEY=abcdef123456789")  # scan-secrets: allow
-    assert "generic_assignment" in rules_for("DB_PASSWORD=hunter2hunter2")  # scan-secrets: allow
+    assert "generic_assignment" in rules_for("API_KEY=abcdef123456789")  # gitleaks:allow
+    assert "generic_assignment" in rules_for("DB_PASSWORD=hunter2hunter2")  # gitleaks:allow
 
 
 def test_pega_ncryptsec():
-    fake = "ncryptsec1" + BECH32  # scan-secrets: allow
+    fake = "ncryptsec1" + BECH32  # gitleaks:allow
     assert "nostr_ncryptsec" in rules_for(f"backup: {fake}")
 
 
@@ -140,7 +144,7 @@ def test_getenv_nao_e_credencial():
 def test_placeholder_nao_promove_severidade_media():
     assert (
         severity_of(
-            'api_key = "your-api-key-here"',  # scan-secrets: allow
+            'api_key = "your-api-key-here"',  # gitleaks:allow
             "generic_assignment",
         )
         == "baixa"
@@ -201,21 +205,21 @@ def test_numero_da_linha_e_1_indexado_e_aponta_a_linha_certa():
 
 def test_e_deterministico():
     """Mesma entrada, mesma saída. Sem relógio, sem aleatoriedade, sem estado."""
-    text = f'api_key = "abcdefgh12345678"\n{PEM_HEADER}'  # scan-secrets: allow
+    text = f'api_key = "abcdefgh12345678"\n{PEM_HEADER}'  # gitleaks:allow
     primeiro = scan_text(text)
     for _ in range(5):
         assert scan_text(text) == primeiro
 
 
 def test_ordem_de_achados_segue_a_ordem_das_linhas():
-    text = f'api_key = "abcdefgh12345678"\n\n{PEM_HEADER}'  # scan-secrets: allow
+    text = f'api_key = "abcdefgh12345678"\n\n{PEM_HEADER}'  # gitleaks:allow
     linhas = [f.line_number for f in scan_text(text)]
     assert linhas == sorted(linhas)
 
 
 def test_linha_absurdamente_longa_nao_trava():
     """Dado serializado numa linha só não pode degradar o regex nem estourar tempo."""
-    text = "x" * 100_000 + ' api_key = "abcdefgh12345678"'  # scan-secrets: allow
+    text = "x" * 100_000 + ' api_key = "abcdefgh12345678"'  # gitleaks:allow
     scan_text(text)  # basta não pendurar nem levantar
 
 
@@ -229,5 +233,5 @@ def test_segredo_depois_da_coluna_4000_e_encontrado():
 
 def test_allow_marker_depois_da_coluna_4000_tambem_vale():
     """O marcador é checado na linha INTEIRA, antes de qualquer janela."""
-    text = "x" * 5000 + " " + PEM_HEADER + "  # scan-secrets: allow"
+    text = "x" * 5000 + " " + PEM_HEADER + "  # gitleaks:allow"
     assert scan_text(text) == []

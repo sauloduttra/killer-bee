@@ -1,0 +1,17 @@
+# Fingerprints de FIXTURES SINTÉTICAS em blobs históricos — história de git é
+# imutável, então o marcador inline não alcança commits antigos. Cada linha
+# abaixo é um segredo FALSO de tests/test_scan_secrets.py (construído para
+# casar com o padrão e nada mais; inválido em qualquer serviço), flagrado pelo
+# scan de histórico completo. Blobs novos carregam `gitleaks:allow` inline,
+# que o scanner próprio também aceita — um marcador, dois gates.
+#
+# NUNCA adicione fingerprint de arquivo fora de tests/ sem tratar como
+# incidente: segredo real em histórico se rotaciona, não se ignora.
+116be6b3e327a260301120c021737f0e8fa5288f:tests/test_scan_secrets.py:generic-api-key:70
+116be6b3e327a260301120c021737f0e8fa5288f:tests/test_scan_secrets.py:generic-api-key:71
+116be6b3e327a260301120c021737f0e8fa5288f:tests/test_scan_secrets.py:generic-api-key:165
+116be6b3e327a260301120c021737f0e8fa5288f:tests/test_scan_secrets.py:generic-api-key:172
+116be6b3e327a260301120c021737f0e8fa5288f:tests/test_scan_secrets.py:generic-api-key:179
+9ba019b7d71c258e274df0037bbb8754b72777a2:tests/test_scan_secrets.py:generic-api-key:75
+9ba019b7d71c258e274df0037bbb8754b72777a2:tests/test_scan_secrets.py:generic-api-key:78
+9ba019b7d71c258e274df0037bbb8754b72777a2:tests/test_scan_secrets.py:generic-api-key:96
